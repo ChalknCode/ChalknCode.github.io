@@ -6,11 +6,104 @@
   <title>相簿 — 805 班級網站</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="images/logo.jpg" type="image/jpeg">
+  <style>
+    /* 分類標籤 */
+    .cat-tabs {
+      display: flex; gap: 8px; overflow-x: auto;
+      scrollbar-width: none; padding: 0 0 12px;
+      flex-wrap: nowrap;
+    }
+    .cat-tabs::-webkit-scrollbar { display: none; }
+    .cat-tab {
+      padding: 7px 18px; border-radius: 20px;
+      border: 2px solid var(--border);
+      background: var(--card-bg); color: var(--text);
+      font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
+      transition: all 0.2s; flex-shrink: 0;
+    }
+    .cat-tab.active {
+      background: var(--primary); color: #fff;
+      border-color: var(--primary);
+    }
+
+    /* 子分類標題 */
+    .sub-heading {
+      font-size: 0.88rem; font-weight: 700;
+      color: var(--text-muted); margin: 18px 0 8px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .sub-heading::after {
+      content: ''; flex: 1; height: 1px;
+      background: var(--border);
+    }
+
+    /* Instagram 方格 */
+    .insta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+      margin-bottom: 4px;
+    }
+    @media (min-width: 600px) {
+      .insta-grid { grid-template-columns: repeat(4, 1fr); gap: 4px; }
+    }
+    @media (min-width: 900px) {
+      .insta-grid { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+    }
+
+    .insta-item {
+      position: relative; aspect-ratio: 1;
+      overflow: hidden; cursor: pointer;
+      background: var(--primary-light);
+      border-radius: 4px;
+    }
+    .insta-item img {
+      width: 100%; height: 100%;
+      object-fit: cover; display: block;
+      transition: transform 0.3s;
+    }
+    .insta-item:hover img { transform: scale(1.06); }
+    .insta-item .insta-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%);
+      opacity: 0; transition: opacity 0.25s;
+      display: flex; align-items: flex-end;
+      padding: 8px;
+    }
+    .insta-item:hover .insta-overlay { opacity: 1; }
+    .insta-label {
+      color: #fff; font-size: 0.7rem; font-weight: 600;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+      line-height: 1.3;
+    }
+
+    /* 無封面時的方格 */
+    .insta-placeholder {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--primary-light), var(--secondary-light));
+      padding: 8px; text-align: center;
+    }
+    .insta-placeholder .ph-icon { font-size: 1.8rem; margin-bottom: 4px; }
+    .insta-placeholder .ph-name {
+      font-size: 0.65rem; font-weight: 600;
+      color: var(--text); line-height: 1.3;
+    }
+
+    /* 空狀態 */
+    .cat-panel { display: none; }
+    .cat-panel.active { display: block; }
+  </style>
 </head>
 <body>
   <div class="menu-overlay" id="menu-overlay"></div>
   <nav class="mobile-menu" id="mobile-menu">
-    <div class="menu-title">✏️ 805 班級網站</div>
+    <div class="menu-title">
+      <img src="images/logo.jpg" alt="Logo" style="height:28px;width:28px;object-fit:cover;border-radius:50%;vertical-align:middle;margin-right:6px;">
+      805 班級網站
+    </div>
     <a href="index.html" data-page="index.html"><span class="menu-icon">🏠</span> 首頁</a>
     <a href="announcement.html" data-page="announcement.html"><span class="menu-icon">📢</span> 公告</a>
     <a href="gallery.html" data-page="gallery.html"><span class="menu-icon">🖼</span> 相簿</a>
@@ -19,7 +112,10 @@
   </nav>
 
   <header class="site-header">
-    <a class="site-logo" href="index.html"><img src="images/logo.jpg" alt="Logo" style="height:38px;width:38px;object-fit:cover;border-radius:50%;"> 805 班級網站</a>
+    <a class="site-logo" href="index.html">
+      <img src="images/logo.jpg" alt="Logo" style="height:38px;width:38px;object-fit:cover;border-radius:50%;">
+      805 班級網站
+    </a>
     <nav class="desktop-nav">
       <a class="nav-link" href="index.html" data-page="index.html">首頁</a>
       <a class="nav-link" href="announcement.html" data-page="announcement.html">公告</a>
@@ -36,7 +132,12 @@
     <div class="section-header">
       <div class="section-title">🖼 班級相簿</div>
     </div>
-    <div class="gallery-tree" id="gallery-tree">
+
+    <!-- 分類標籤列 -->
+    <div class="cat-tabs" id="cat-tabs"></div>
+
+    <!-- 相簿內容區 -->
+    <div id="gallery-content">
       <div class="loading">載入相簿</div>
     </div>
   </section>
@@ -55,100 +156,82 @@
   <script src="js/sheets.js"></script>
   <script src="js/nav.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      const data = await fetchSheetData(CONFIG.SHEETS.GALLERY);
-      const container = document.getElementById('gallery-tree');
-      if (!data.length) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-icon">📷</div><p>尚未新增相簿，請在試算表「相簿」工作表新增資料</p></div>';
-        return;
-      }
+  document.addEventListener('DOMContentLoaded', async () => {
+    const data = await fetchSheetData(CONFIG.SHEETS.GALLERY);
+    const tabsEl = document.getElementById('cat-tabs');
+    const contentEl = document.getElementById('gallery-content');
 
-      // 建立巢狀結構
-      const tree = {};
-      data.forEach(row => {
-        const l1 = String(row['層級1'] || '').trim();
-        const l2 = String(row['層級2'] || '').trim();
-        const l3 = String(row['層級3'] || '').trim();
-        const name = String(row['相簿名稱'] || '').trim();
-        const link = String(row['相簿連結'] || '').trim();
-        if (!l1 || !name) return;
-        if (!tree[l1]) tree[l1] = {};
-        const key2 = l2 || '__root__';
-        if (!tree[l1][key2]) tree[l1][key2] = {};
-        const key3 = l3 || '__root__';
-        if (!tree[l1][key2][key3]) tree[l1][key2][key3] = [];
-        tree[l1][key2][key3].push({ name, link });
-      });
+    if (!data.length) {
+      contentEl.innerHTML = `<div class="empty-state">
+        <div class="empty-icon">📷</div>
+        <p>尚未新增相簿</p>
+        <p style="font-size:0.8rem;margin-top:8px;">請在試算表「相簿」工作表新增資料</p>
+      </div>`;
+      return;
+    }
 
-      let html = '';
-      let uid = 0;
-      Object.entries(tree).forEach(([l1, l2obj]) => {
-        const id1 = `f${uid++}`;
-        html += `<div class="tree-item">
-          <div class="tree-folder" onclick="toggleFolder('${id1}')">
-            <span class="folder-icon">📁</span> ${l1}
-            <span class="toggle-icon">▶</span>
-          </div>
-          <div class="tree-children" id="${id1}">`;
-
-        Object.entries(l2obj).forEach(([l2, l3obj]) => {
-          if (l2 === '__root__') {
-            // 直接在 l1 下的相簿（無 l2）
-            Object.values(l3obj).forEach(albums => {
-              albums.forEach(album => {
-                html += `<a class="album-card" href="${album.link}" target="_blank">
-                  <span class="album-icon">📸</span> ${album.name}
-                </a>`;
-              });
-            });
-          } else {
-            const id2 = `f${uid++}`;
-            html += `<div class="tree-item">
-              <div class="tree-folder" onclick="toggleFolder('${id2}')">
-                <span class="folder-icon">📂</span> ${l2}
-                <span class="toggle-icon">▶</span>
-              </div>
-              <div class="tree-children" id="${id2}">`;
-
-            Object.entries(l3obj).forEach(([l3, albums]) => {
-              if (l3 === '__root__') {
-                albums.forEach(album => {
-                  html += `<a class="album-card" href="${album.link}" target="_blank">
-                    <span class="album-icon">📸</span> ${album.name}
-                  </a>`;
-                });
-              } else {
-                const id3 = `f${uid++}`;
-                html += `<div class="tree-item">
-                  <div class="tree-folder" onclick="toggleFolder('${id3}')">
-                    <span class="folder-icon">📂</span> ${l3}
-                    <span class="toggle-icon">▶</span>
-                  </div>
-                  <div class="tree-children" id="${id3}">`;
-                albums.forEach(album => {
-                  html += `<a class="album-card" href="${album.link}" target="_blank">
-                    <span class="album-icon">📸</span> ${album.name}
-                  </a>`;
-                });
-                html += `</div></div>`;
-              }
-            });
-            html += `</div></div>`;
-          }
-        });
-        html += `</div></div>`;
-      });
-
-      container.innerHTML = html;
+    // 建立巢狀結構 { l1: { l2: { l3: [albums] } } }
+    const tree = {};
+    data.forEach(row => {
+      const l1   = String(row['層級1'] || '').trim();
+      const l2   = String(row['層級2'] || '').trim();
+      const l3   = String(row['層級3'] || '').trim();
+      const name = String(row['相簿名稱'] || '').trim();
+      const link = String(row['相簿連結'] || '').trim();
+      const cover= String(row['封面圖片'] || '').trim();
+      if (!l1 || !name) return;
+      if (!tree[l1]) tree[l1] = {};
+      const k2 = l2 || '__root__';
+      if (!tree[l1][k2]) tree[l1][k2] = {};
+      const k3 = l3 || '__root__';
+      if (!tree[l1][k2][k3]) tree[l1][k2][k3] = [];
+      tree[l1][k2][k3].push({ name, link, cover });
     });
 
-    function toggleFolder(id) {
-      const children = document.getElementById(id);
-      const folder = children && children.previousElementSibling;
-      if (!children) return;
-      children.classList.toggle('open');
-      folder && folder.classList.toggle('open');
-    }
+    const l1Keys = Object.keys(tree);
+
+    // 渲染分類標籤
+    tabsEl.innerHTML = l1Keys.map((k, i) =>
+      `<button class="cat-tab ${i===0?'active':''}" onclick="switchTab(${i})">${k}</button>`
+    ).join('');
+
+    // 渲染各分類內容
+    contentEl.innerHTML = l1Keys.map((l1, i) => {
+      const l2obj = tree[l1];
+      let html = `<div class="cat-panel ${i===0?'active':''}" id="panel-${i}">`;
+
+      Object.entries(l2obj).forEach(([l2, l3obj]) => {
+        if (l2 !== '__root__') {
+          html += `<div class="sub-heading">📂 ${l2}</div>`;
+        }
+        Object.entries(l3obj).forEach(([l3, albums]) => {
+          if (l3 !== '__root__') {
+            html += `<div class="sub-heading" style="font-size:0.78rem;color:var(--text-muted);">📁 ${l3}</div>`;
+          }
+          html += `<div class="insta-grid">`;
+          albums.forEach(album => {
+            const inner = album.cover
+              ? `<img src="${album.cover}" alt="${album.name}" loading="lazy">
+                 <div class="insta-overlay"><div class="insta-label">${album.name}</div></div>`
+              : `<div class="insta-placeholder">
+                   <div class="ph-icon">📸</div>
+                   <div class="ph-name">${album.name}</div>
+                 </div>`;
+            html += `<div class="insta-item" onclick="window.open('${album.link}','_blank')" title="${album.name}">${inner}</div>`;
+          });
+          html += `</div>`;
+        });
+      });
+
+      html += `</div>`;
+      return html;
+    }).join('');
+  });
+
+  function switchTab(idx) {
+    document.querySelectorAll('.cat-tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+    document.querySelectorAll('.cat-panel').forEach((p,i) => p.classList.toggle('active', i===idx));
+  }
   </script>
 </body>
 </html>
