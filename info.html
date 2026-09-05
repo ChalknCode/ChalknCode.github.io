@@ -3,8 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>班級查詢 — 805 班級網站</title>
+  <title>常用資訊 — 805 班級網站</title>
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    .info-section { margin-bottom: 32px; }
+    .info-img-wrap {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(0,0,0,0.07);
+      overflow: hidden;
+    }
+    .info-img-wrap img {
+      width: 100%; height: auto;
+      border-radius: 8px; display: block;
+    }
+    .info-link-card {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 20px;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      border: 1px solid rgba(0,0,0,0.07);
+      box-shadow: var(--shadow);
+      text-decoration: none; color: var(--text);
+      transition: all 0.2s; margin-bottom: 10px;
+    }
+    .info-link-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); color: var(--primary); }
+    .info-link-icon { font-size: 2rem; }
+    .info-link-title { font-size: 1rem; font-weight: 700; }
+    .info-link-desc { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+  </style>
 </head>
 <body>
   <div class="menu-overlay" id="menu-overlay"></div>
@@ -32,21 +61,33 @@
   </header>
 
   <section class="section">
-    <div class="query-hero">
-      <div style="font-size:4rem;margin-bottom:16px;">🔍</div>
-      <h1 style="font-size:1.4rem;font-weight:700;color:var(--primary);margin-bottom:12px;">班級查詢系統</h1>
-      <p class="query-desc">
-        查詢個人的生活計點、段考成績、備忘錄等資訊。<br>
-        請使用老師提供的帳號密碼登入。
-      </p>
-      <br>
-      <a class="query-btn" href="https://script.google.com/macros/s/AKfycbw6REHI2aQ5vZKduROEucLeBBJwEdGfDJ1kUe10NZmKQujsjLzWnuuZTybYsv8QZ9h8jQ/exec" target="_blank">
-        🚀 前往查詢系統
-      </a>
-      <p class="query-desc" style="margin-top:24px;font-size:0.78rem;">
-        ※ 點擊後會開啟新視窗，請確認您已連上網路。<br>
-        ※ 如有問題請聯繫班導師。
-      </p>
+    <div class="section-header">
+      <div class="section-title">⭐ 常用資訊</div>
+    </div>
+
+    <!-- 行事曆 -->
+    <div class="info-section">
+      <div class="section-title" style="margin-bottom:12px;">📅 115學年度第一學期行事曆</div>
+      <div class="info-img-wrap">
+        <img src="images/calendar.jpg" alt="115學年度第一學期行事曆">
+      </div>
+    </div>
+
+    <!-- 課表 -->
+    <div class="info-section">
+      <div class="section-title" style="margin-bottom:12px;">📋 班級課表</div>
+      <div class="info-img-wrap">
+        <img src="images/schedule.jpg" alt="班級課表">
+      </div>
+    </div>
+
+    <!-- 交通車（預留位置）-->
+    <div class="info-section">
+      <div class="section-title" style="margin-bottom:12px;">🚌 交通車資訊</div>
+      <div class="card" style="text-align:center;color:var(--text-muted);padding:32px;">
+        <div style="font-size:2rem;margin-bottom:8px;">🚌</div>
+        <div>交通車資訊建置中，敬請期待</div>
+      </div>
     </div>
   </section>
 
