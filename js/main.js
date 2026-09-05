@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   await Promise.all([
     loadTicker(),
     loadCarousel(),
-    loadQuickLinks(),
     loadRecentAnnouncements(),
   ]);
 });
