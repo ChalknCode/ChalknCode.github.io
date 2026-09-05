@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>公告 — 805 班級網站</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="menu-overlay" id="menu-overlay"></div>
+  <nav class="mobile-menu" id="mobile-menu">
+    <div class="menu-title">✏️ 805 班級網站</div>
+    <a href="index.html" data-page="index.html"><span class="menu-icon">🏠</span> 首頁</a>
+    <a href="announcement.html" data-page="announcement.html"><span class="menu-icon">📢</span> 公告</a>
+    <a href="gallery.html" data-page="gallery.html"><span class="menu-icon">🖼</span> 相簿</a>
+    <a href="query.html" data-page="query.html"><span class="menu-icon">🔍</span> 查詢</a>
+  </nav>
+
+  <header class="site-header">
+    <a class="site-logo" href="index.html"><span>✏️</span> 805 班級網站</a>
+    <nav class="desktop-nav">
+      <a class="nav-link" href="index.html" data-page="index.html">首頁</a>
+      <a class="nav-link" href="announcement.html" data-page="announcement.html">公告</a>
+      <a class="nav-link" href="gallery.html" data-page="gallery.html">相簿</a>
+      <a class="nav-link" href="query.html" data-page="query.html">查詢</a>
+    </nav>
+    <button class="burger-btn" id="burger" aria-label="選單">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+
+  <section class="section">
+    <div class="section-header">
+      <div class="section-title">📢 全部公告</div>
+    </div>
+    <div id="announcement-list">
+      <div class="loading">載入公告</div>
+    </div>
+  </section>
+
+  <footer class="site-footer">© 2024 805 班級網站 ❤️</footer>
+
+  <nav class="bottom-nav">
+    <a class="bnav-item" href="index.html" data-page="index.html"><span class="bnav-icon">🏠</span>首頁</a>
+    <a class="bnav-item" href="announcement.html" data-page="announcement.html"><span class="bnav-icon">📢</span>公告</a>
+    <a class="bnav-item" href="gallery.html" data-page="gallery.html"><span class="bnav-icon">🖼</span>相簿</a>
+    <a class="bnav-item" href="query.html" data-page="query.html"><span class="bnav-icon">🔍</span>查詢</a>
+  </nav>
+
+  <script src="js/config.js"></script>
+  <script src="js/sheets.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const data = await fetchSheetData(CONFIG.SHEETS.ANNOUNCEMENTS);
+      const container = document.getElementById('announcement-list');
+      if (!data.length) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>目前沒有公告</p></div>';
+        return;
+      }
+      container.innerHTML = data.map((row, i) => {
+        const tagClass = row['重要程度'] === '緊急' ? 'tag-urgent' : row['重要程度'] === '資訊' ? 'tag-info' : 'tag-normal';
+        return `<div class="card ann-card" onclick="this.classList.toggle('expanded')">
+          <div class="card-header">
+            <span class="tag ${tagClass}">${row['重要程度'] || '公告'}</span>
+            <span class="card-date">${row['日期'] || ''}</span>
+            <span class="ann-toggle">▼</span>
+          </div>
+          <div class="card-title">${row['標題'] || ''}</div>
+          <div class="card-body">${(row['內容'] || '').replace(/\n/g, '<br>')}</div>
+        </div>`;
+      }).join('');
+    });
+  </script>
+</body>
+</html>

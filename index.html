@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>805 班級網站</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- 選單遮罩 -->
+  <div class="menu-overlay" id="menu-overlay"></div>
+
+  <!-- 手機側邊選單 -->
+  <nav class="mobile-menu" id="mobile-menu">
+    <div class="menu-title">✏️ 805 班級網站</div>
+    <a href="index.html" data-page="index.html" class="nav-link"><span class="menu-icon">🏠</span> 首頁</a>
+    <a href="announcement.html" data-page="announcement.html"><span class="menu-icon">📢</span> 公告</a>
+    <a href="gallery.html" data-page="gallery.html"><span class="menu-icon">🖼</span> 相簿</a>
+    <a href="query.html" data-page="query.html"><span class="menu-icon">🔍</span> 查詢</a>
+  </nav>
+
+  <!-- Header -->
+  <header class="site-header">
+    <a class="site-logo" href="index.html"><span>✏️</span> 805 班級網站</a>
+    <nav class="desktop-nav">
+      <a class="nav-link" href="index.html" data-page="index.html">首頁</a>
+      <a class="nav-link" href="announcement.html" data-page="announcement.html">公告</a>
+      <a class="nav-link" href="gallery.html" data-page="gallery.html">相簿</a>
+      <a class="nav-link" href="query.html" data-page="query.html">查詢</a>
+    </nav>
+    <button class="burger-btn" id="burger" aria-label="選單">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+
+  <!-- 公告跑馬燈 -->
+  <div class="ticker-bar">
+    <div class="ticker-label">📢 最新公告</div>
+    <div class="ticker-sep"></div>
+    <div class="ticker-window">
+      <div class="ticker-track" id="ticker-track">
+        <div class="ticker-item"><span class="tag tag-normal">公告</span>載入中，請稍候…</div>
+      </div>
+    </div>
+    <div class="ticker-arrows">
+      <button class="ticker-arrow" onclick="tickerUp()">▲</button>
+      <button class="ticker-arrow" onclick="tickerDown()">▼</button>
+    </div>
+  </div>
+
+  <!-- 輪播 Hero -->
+  <section class="hero-carousel" id="hero-carousel">
+    <div class="hero-slides" id="hero-slides">
+      <div class="hero-slide">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+          <h2>歡迎來到 805 班！</h2>
+          <p>載入中，請稍候…</p>
+        </div>
+      </div>
+    </div>
+    <div class="hero-controls">
+      <button class="hero-prev" onclick="prevSlide()">◀</button>
+      <div class="hero-dots" id="hero-dots"></div>
+      <button class="hero-next" onclick="nextSlide()">▶</button>
+    </div>
+  </section>
+
+  <!-- 常用資訊 -->
+  <div class="quick-links-bar" id="quick-links-bar">
+    <span style="color:var(--text-muted);font-size:0.8rem;">載入常用連結中…</span>
+  </div>
+
+  <!-- 最新公告 -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-title">📢 最新公告</div>
+      <a class="section-more" href="announcement.html">查看全部 →</a>
+    </div>
+    <div id="recent-announcements">
+      <div class="loading">載入公告</div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    © 2024 805 班級網站 ・ 用愛心與熱情建立 ❤️
+  </footer>
+
+  <!-- 手機底部導覽 -->
+  <nav class="bottom-nav">
+    <a class="bnav-item" href="index.html" data-page="index.html">
+      <span class="bnav-icon">🏠</span>首頁
+    </a>
+    <a class="bnav-item" href="announcement.html" data-page="announcement.html">
+      <span class="bnav-icon">📢</span>公告
+    </a>
+    <a class="bnav-item" href="gallery.html" data-page="gallery.html">
+      <span class="bnav-icon">🖼</span>相簿
+    </a>
+    <a class="bnav-item" href="query.html" data-page="query.html">
+      <span class="bnav-icon">🔍</span>查詢
+    </a>
+  </nav>
+
+  <script src="js/config.js"></script>
+  <script src="js/sheets.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

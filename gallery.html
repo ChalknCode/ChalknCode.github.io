@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>相簿 — 805 班級網站</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="menu-overlay" id="menu-overlay"></div>
+  <nav class="mobile-menu" id="mobile-menu">
+    <div class="menu-title">✏️ 805 班級網站</div>
+    <a href="index.html" data-page="index.html"><span class="menu-icon">🏠</span> 首頁</a>
+    <a href="announcement.html" data-page="announcement.html"><span class="menu-icon">📢</span> 公告</a>
+    <a href="gallery.html" data-page="gallery.html"><span class="menu-icon">🖼</span> 相簿</a>
+    <a href="query.html" data-page="query.html"><span class="menu-icon">🔍</span> 查詢</a>
+  </nav>
+
+  <header class="site-header">
+    <a class="site-logo" href="index.html"><span>✏️</span> 805 班級網站</a>
+    <nav class="desktop-nav">
+      <a class="nav-link" href="index.html" data-page="index.html">首頁</a>
+      <a class="nav-link" href="announcement.html" data-page="announcement.html">公告</a>
+      <a class="nav-link" href="gallery.html" data-page="gallery.html">相簿</a>
+      <a class="nav-link" href="query.html" data-page="query.html">查詢</a>
+    </nav>
+    <button class="burger-btn" id="burger" aria-label="選單">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+
+  <section class="section">
+    <div class="section-header">
+      <div class="section-title">🖼 班級相簿</div>
+    </div>
+    <div class="gallery-tree" id="gallery-tree">
+      <div class="loading">載入相簿</div>
+    </div>
+  </section>
+
+  <footer class="site-footer">© 2024 805 班級網站 ❤️</footer>
+
+  <nav class="bottom-nav">
+    <a class="bnav-item" href="index.html" data-page="index.html"><span class="bnav-icon">🏠</span>首頁</a>
+    <a class="bnav-item" href="announcement.html" data-page="announcement.html"><span class="bnav-icon">📢</span>公告</a>
+    <a class="bnav-item" href="gallery.html" data-page="gallery.html"><span class="bnav-icon">🖼</span>相簿</a>
+    <a class="bnav-item" href="query.html" data-page="query.html"><span class="bnav-icon">🔍</span>查詢</a>
+  </nav>
+
+  <script src="js/config.js"></script>
+  <script src="js/sheets.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const data = await fetchSheetData(CONFIG.SHEETS.GALLERY);
+      const container = document.getElementById('gallery-tree');
+      if (!data.length) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">📷</div><p>尚未新增相簿，請在試算表「相簿」工作表新增資料</p></div>';
+        return;
+      }
+
+      // 建立巢狀結構
+      const tree = {};
+      data.forEach(row => {
+        const l1 = String(row['層級1'] || '').trim();
+        const l2 = String(row['層級2'] || '').trim();
+        const l3 = String(row['層級3'] || '').trim();
+        const name = String(row['相簿名稱'] || '').trim();
+        const link = String(row['相簿連結'] || '').trim();
+        if (!l1 || !name) return;
+        if (!tree[l1]) tree[l1] = {};
+        const key2 = l2 || '__root__';
+        if (!tree[l1][key2]) tree[l1][key2] = {};
+        const key3 = l3 || '__root__';
+        if (!tree[l1][key2][key3]) tree[l1][key2][key3] = [];
+        tree[l1][key2][key3].push({ name, link });
+      });
+
+      let html = '';
+      let uid = 0;
+      Object.entries(tree).forEach(([l1, l2obj]) => {
+        const id1 = `f${uid++}`;
+        html += `<div class="tree-item">
+          <div class="tree-folder" onclick="toggleFolder('${id1}')">
+            <span class="folder-icon">📁</span> ${l1}
+            <span class="toggle-icon">▶</span>
+          </div>
+          <div class="tree-children" id="${id1}">`;
+
+        Object.entries(l2obj).forEach(([l2, l3obj]) => {
+          if (l2 === '__root__') {
+            // 直接在 l1 下的相簿（無 l2）
+            Object.values(l3obj).forEach(albums => {
+              albums.forEach(album => {
+                html += `<a class="album-card" href="${album.link}" target="_blank">
+                  <span class="album-icon">📸</span> ${album.name}
+                </a>`;
+              });
+            });
+          } else {
+            const id2 = `f${uid++}`;
+            html += `<div class="tree-item">
+              <div class="tree-folder" onclick="toggleFolder('${id2}')">
+                <span class="folder-icon">📂</span> ${l2}
+                <span class="toggle-icon">▶</span>
+              </div>
+              <div class="tree-children" id="${id2}">`;
+
+            Object.entries(l3obj).forEach(([l3, albums]) => {
+              if (l3 === '__root__') {
+                albums.forEach(album => {
+                  html += `<a class="album-card" href="${album.link}" target="_blank">
+                    <span class="album-icon">📸</span> ${album.name}
+                  </a>`;
+                });
+              } else {
+                const id3 = `f${uid++}`;
+                html += `<div class="tree-item">
+                  <div class="tree-folder" onclick="toggleFolder('${id3}')">
+                    <span class="folder-icon">📂</span> ${l3}
+                    <span class="toggle-icon">▶</span>
+                  </div>
+                  <div class="tree-children" id="${id3}">`;
+                albums.forEach(album => {
+                  html += `<a class="album-card" href="${album.link}" target="_blank">
+                    <span class="album-icon">📸</span> ${album.name}
+                  </a>`;
+                });
+                html += `</div></div>`;
+              }
+            });
+            html += `</div></div>`;
+          }
+        });
+        html += `</div></div>`;
+      });
+
+      container.innerHTML = html;
+    });
+
+    function toggleFolder(id) {
+      const children = document.getElementById(id);
+      const folder = children && children.previousElementSibling;
+      if (!children) return;
+      children.classList.toggle('open');
+      folder && folder.classList.toggle('open');
+    }
+  </script>
+</body>
+</html>
