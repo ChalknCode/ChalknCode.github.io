@@ -5,40 +5,89 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>常用資訊 — 805 班級網站</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="images/logo.jpg" type="image/jpeg">
   <style>
-    .info-section { margin-bottom: 32px; }
-    .info-img-wrap {
+    /* 縮圖卡片 */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .info-card {
       background: var(--card-bg);
       border-radius: var(--radius);
-      padding: 16px;
       box-shadow: var(--shadow);
       border: 1px solid rgba(0,0,0,0.07);
       overflow: hidden;
+      cursor: pointer;
+      transition: all 0.22s;
     }
-    .info-img-wrap img {
-      width: 100%; height: auto;
-      border-radius: 8px; display: block;
+    .info-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.13);
     }
-    .info-link-card {
-      display: flex; align-items: center; gap: 14px;
-      padding: 16px 20px;
+    .info-thumb {
+      width: 100%; height: 180px;
+      object-fit: cover; object-position: top;
+      display: block;
+    }
+    .info-card-body {
+      padding: 12px 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .info-card-icon { font-size: 1.3rem; }
+    .info-card-title { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+    .info-card-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+    .info-card-tap {
+      margin-left: auto; font-size: 0.7rem;
+      color: var(--secondary); white-space: nowrap;
+    }
+
+    /* Lightbox */
+    .lightbox-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.72);
+      z-index: 500; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .lightbox-overlay.open { display: flex; }
+    .lightbox-box {
+      position: relative; max-width: 860px; width: 100%;
+      max-height: 88vh;
+      background: #fff; border-radius: 14px;
+      overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      display: flex; flex-direction: column;
+    }
+    .lightbox-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 18px;
       background: var(--card-bg);
-      border-radius: var(--radius);
-      border: 1px solid rgba(0,0,0,0.07);
-      box-shadow: var(--shadow);
-      text-decoration: none; color: var(--text);
-      transition: all 0.2s; margin-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
     }
-    .info-link-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); color: var(--primary); }
-    .info-link-icon { font-size: 2rem; }
-    .info-link-title { font-size: 1rem; font-weight: 700; }
-    .info-link-desc { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+    .lightbox-title { font-weight: 700; font-size: 0.95rem; color: var(--text); }
+    .lightbox-close {
+      background: none; border: none; cursor: pointer;
+      font-size: 1.3rem; color: var(--text-muted); padding: 4px 8px;
+      border-radius: 8px; transition: background 0.15s;
+    }
+    .lightbox-close:hover { background: var(--primary-light); color: var(--primary); }
+    .lightbox-img-wrap {
+      overflow-y: auto; flex: 1;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 16px; background: #fafafa;
+    }
+    .lightbox-img-wrap img {
+      max-width: 100%; height: auto;
+      border-radius: 8px; display: block;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    }
   </style>
 </head>
 <body>
   <div class="menu-overlay" id="menu-overlay"></div>
   <nav class="mobile-menu" id="mobile-menu">
-    <div class="menu-title">✏️ 805 班級網站</div>
+    <div class="menu-title"><img src="images/logo.jpg" alt="Logo" style="height:28px;width:28px;object-fit:cover;border-radius:50%;vertical-align:middle;margin-right:6px;"> 805 班級網站</div>
     <a href="index.html" data-page="index.html"><span class="menu-icon">🏠</span> 首頁</a>
     <a href="announcement.html" data-page="announcement.html"><span class="menu-icon">📢</span> 公告</a>
     <a href="gallery.html" data-page="gallery.html"><span class="menu-icon">🖼</span> 相簿</a>
@@ -47,7 +96,10 @@
   </nav>
 
   <header class="site-header">
-    <a class="site-logo" href="index.html"><span>✏️</span> 805 班級網站</a>
+    <a class="site-logo" href="index.html">
+      <img src="images/logo.jpg" alt="Logo" style="height:38px;width:38px;object-fit:cover;border-radius:50%;">
+      805 班級網站
+    </a>
     <nav class="desktop-nav">
       <a class="nav-link" href="index.html" data-page="index.html">首頁</a>
       <a class="nav-link" href="announcement.html" data-page="announcement.html">公告</a>
@@ -64,31 +116,62 @@
     <div class="section-header">
       <div class="section-title">⭐ 常用資訊</div>
     </div>
+    <div class="info-grid">
 
-    <!-- 行事曆 -->
-    <div class="info-section">
-      <div class="section-title" style="margin-bottom:12px;">📅 115學年度第一學期行事曆</div>
-      <div class="info-img-wrap">
-        <img src="images/calendar.jpg" alt="115學年度第一學期行事曆">
+      <!-- 行事曆 -->
+      <div class="info-card" onclick="openLightbox('images/calendar.jpg','📅 115學年度第一學期行事曆')">
+        <img class="info-thumb" src="images/calendar.jpg" alt="行事曆">
+        <div class="info-card-body">
+          <span class="info-card-icon">📅</span>
+          <div>
+            <div class="info-card-title">行事曆</div>
+            <div class="info-card-hint">115學年度 第一學期</div>
+          </div>
+          <span class="info-card-tap">點擊放大 🔍</span>
+        </div>
       </div>
-    </div>
 
-    <!-- 課表 -->
-    <div class="info-section">
-      <div class="section-title" style="margin-bottom:12px;">📋 班級課表</div>
-      <div class="info-img-wrap">
-        <img src="images/schedule.jpg" alt="班級課表">
+      <!-- 課表 -->
+      <div class="info-card" onclick="openLightbox('images/schedule.jpg','📋 班級課表')">
+        <img class="info-thumb" src="images/schedule.jpg" alt="課表">
+        <div class="info-card-body">
+          <span class="info-card-icon">📋</span>
+          <div>
+            <div class="info-card-title">課表</div>
+            <div class="info-card-hint">115學年度 第一學期</div>
+          </div>
+          <span class="info-card-tap">點擊放大 🔍</span>
+        </div>
       </div>
-    </div>
 
-    <!-- 交通車 -->
-    <div class="info-section" id="bus">
-      <div class="section-title" style="margin-bottom:12px;">🚌 115學年度交通車各路線站點時間表</div>
-      <div class="info-img-wrap">
-        <img src="images/bus.jpg" alt="交通車各路線站點時間表">
+      <!-- 交通車 -->
+      <div class="info-card" onclick="openLightbox('images/bus.jpg','🚌 115學年度交通車各路線時刻表')">
+        <img class="info-thumb" src="images/bus.jpg" alt="交通車">
+        <div class="info-card-body">
+          <span class="info-card-icon">🚌</span>
+          <div>
+            <div class="info-card-title">交通車時刻表</div>
+            <div class="info-card-hint">115學年度各路線站點</div>
+          </div>
+          <span class="info-card-tap">點擊放大 🔍</span>
+        </div>
       </div>
+
     </div>
   </section>
+
+  <!-- Lightbox -->
+  <div class="lightbox-overlay" id="lightbox" onclick="closeLightboxOutside(event)">
+    <div class="lightbox-box">
+      <div class="lightbox-header">
+        <div class="lightbox-title" id="lightbox-title"></div>
+        <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+      </div>
+      <div class="lightbox-img-wrap">
+        <img id="lightbox-img" src="" alt="">
+      </div>
+    </div>
+  </div>
 
   <footer class="site-footer">© 2026 805 班級網站</footer>
 
@@ -102,5 +185,21 @@
 
   <script src="js/config.js"></script>
   <script src="js/nav.js"></script>
+  <script>
+    function openLightbox(src, title) {
+      document.getElementById('lightbox-img').src = src;
+      document.getElementById('lightbox-title').textContent = title;
+      document.getElementById('lightbox').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    function closeLightboxOutside(e) {
+      if (e.target === document.getElementById('lightbox')) closeLightbox();
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+  </script>
 </body>
 </html>
