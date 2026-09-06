@@ -232,7 +232,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('examClassRank').textContent = sum.classRank;
         document.getElementById('examSchoolRank').textContent = sum.schoolRankInterval;
 
+        const tbody = document.getElementById('examTableBody');
         const container = document.getElementById('examSubjectsContainer');
+        tbody.innerHTML = '';
         container.innerHTML = '';
         
         examChartInstances.forEach(c => c.destroy());
@@ -244,36 +246,35 @@ document.addEventListener('DOMContentLoaded', () => {
             const isAvg = subj === 'personalAverage';
             const title = isAvg ? '總平均' : subj;
             const score = currentExamData.scores[subj];
-            const classAvg = currentExamData.averages.classAvg[subj];
-            const schoolAvg = currentExamData.averages.schoolAvg[subj];
+            const classAvg = currentExamData.averages.classAvg[subj] || '-';
+            const schoolAvg = currentExamData.averages.schoolAvg[subj] || '-';
             const schoolRank = currentExamData.schoolRankEstimates[subj] || '-';
             
             const isRed = (typeof score === 'number' && score < 60);
+
+            // 填入總表
+            tbody.innerHTML += `
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="p-3 font-bold text-gray-700">${title}</td>
+                    <td class="p-3 text-center font-black font-mono ${isRed ? 'text-red-500' : 'text-gray-800'}">${score}</td>
+                    <td class="p-3 text-center text-gray-500 font-mono">${classAvg}</td>
+                    <td class="p-3 text-center text-gray-500 font-mono">${schoolAvg}</td>
+                    <td class="p-3 text-center text-gray-500 font-mono">${schoolRank}</td>
+                </tr>
+            `;
             
+            // 生成精簡版圖表卡片
             const cardHtml = `
-                <div class="border rounded-xl p-4 md:p-6 bg-white shadow-sm flex flex-col lg:flex-row gap-6 items-center">
-                    <div class="lg:w-1/3 flex flex-col justify-center w-full">
-                        <h4 class="text-xl font-bold text-gray-800 mb-4">${title}</h4>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                <div class="text-xs text-gray-500 font-bold mb-1">分數</div>
-                                <div class="text-2xl font-black ${isRed ? 'text-red-500' : 'text-gray-800'}">${score}</div>
-                            </div>
-                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                <div class="text-xs text-gray-500 font-bold mb-1">校排區間</div>
-                                <div class="text-lg font-bold text-gray-700">${schoolRank}</div>
-                            </div>
-                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                <div class="text-xs text-gray-500 font-bold mb-1">班平均</div>
-                                <div class="text-lg font-bold text-gray-700">${classAvg}</div>
-                            </div>
-                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                <div class="text-xs text-gray-500 font-bold mb-1">校平均</div>
-                                <div class="text-lg font-bold text-gray-700">${schoolAvg}</div>
-                            </div>
-                        </div>
+                <div class="border rounded-xl p-4 bg-white shadow-sm hover:shadow-md transition flex flex-col">
+                    <div class="flex justify-between items-center border-b pb-2 mb-3">
+                        <h4 class="text-lg font-bold text-gray-800">${title}</h4>
+                        <div class="text-2xl font-black ${isRed ? 'text-red-500' : 'text-gray-800'}">${score}</div>
                     </div>
-                    <div class="lg:w-2/3 relative w-full" style="height: 250px;">
+                    <div class="flex justify-between text-xs text-gray-500 mb-2 px-1">
+                        <span>班平: <b class="text-gray-700">${classAvg}</b></span>
+                        <span>校平: <b class="text-gray-700">${schoolAvg}</b></span>
+                    </div>
+                    <div class="relative w-full flex-grow" style="min-height: 160px;">
                         <canvas id="examChart-${index}"></canvas>
                     </div>
                 </div>
@@ -285,15 +286,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const isAvg = subj === 'personalAverage';
             const score = currentExamData.scores[subj];
             
-            let distData = null;
+            let distSchool = null;
+            let distClass = null;
             let labels = [];
-            let data = [];
+            let dataSchool = [];
+            let dataClass = [];
             let studentBinIndex = -1;
             
             const scoreNum = Number(score);
 
             if (isAvg) {
-                distData = currentExamData.schoolDistributionAvg.interval;
+                distSchool = currentExamData.schoolDistributionAvg.interval;
+                distClass = currentExamData.classDistributionAvg ? currentExamData.classDistributionAvg.interval : {};
                 labels = ["14.9-0", "19.9-15", "24.9-20", "29.9-25", "34.9-30", "39.9-35", "44.9-40", "49.9-45", "54.9-50", "59.9-55", "64.9-60", "69.9-65", "74.9-70", "79.9-75", "84.9-80", "89.9-85", "94.9-90", "99.9-95.0"];
                 
                 if (!isNaN(scoreNum)) {
@@ -307,7 +311,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (studentBinIndex === -1) studentBinIndex = limits.length - 1;
                 }
             } else {
-                distData = currentExamData.schoolDistribution[subj];
+                distSchool = currentExamData.schoolDistribution[subj];
+                distClass = currentExamData.classDistribution ? currentExamData.classDistribution[subj] : {};
                 labels = ["9-0", "19-10", "29-20", "39-30", "49-40", "59-50", "69-60", "79-70", "89-80", "100-90"];
                 
                 if (!isNaN(scoreNum)) {
@@ -325,41 +330,69 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            if (distData) {
-                labels.forEach(k => { data.push(distData[k] || 0); });
+            if (distSchool) {
+                labels.forEach(k => { 
+                    dataSchool.push(distSchool[k] || 0); 
+                    dataClass.push(distClass ? (distClass[k] || 0) : 0);
+                });
             }
 
-            // 自己的分數顏色使用主題副色 (靛藍 #5c6bc0)，其他使用主色透明 (粉紅)
-            const bgColors = data.map((_, i) => i === studentBinIndex ? 'rgba(92, 107, 192, 0.85)' : 'rgba(194, 81, 106, 0.35)');
-            const borderColors = data.map((_, i) => i === studentBinIndex ? 'rgba(92, 107, 192, 1)' : 'rgba(194, 81, 106, 0.6)');
+            // 班級使用藍色系 (#5c6bc0)
+            const classBg = dataClass.map((_, i) => i === studentBinIndex ? 'rgba(92, 107, 192, 0.9)' : 'rgba(92, 107, 192, 0.25)');
+            const classBorder = dataClass.map((_, i) => i === studentBinIndex ? 'rgba(92, 107, 192, 1)' : 'rgba(92, 107, 192, 0.5)');
+            
+            // 全校使用粉色系 (#c2516a)
+            const schoolBg = dataSchool.map((_, i) => i === studentBinIndex ? 'rgba(194, 81, 106, 0.9)' : 'rgba(194, 81, 106, 0.25)');
+            const schoolBorder = dataSchool.map((_, i) => i === studentBinIndex ? 'rgba(194, 81, 106, 1)' : 'rgba(194, 81, 106, 0.5)');
 
             const ctx = document.getElementById(`examChart-${index}`).getContext('2d');
             const chart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: '全校人數',
-                        data: data,
-                        backgroundColor: bgColors,
-                        borderColor: borderColors,
-                        borderWidth: 1,
-                        borderRadius: 4
-                    }]
+                    datasets: [
+                        {
+                            label: '班級人數',
+                            data: dataClass,
+                            backgroundColor: classBg,
+                            borderColor: classBorder,
+                            borderWidth: 1,
+                            borderRadius: 2,
+                            barPercentage: 0.9,
+                            categoryPercentage: 0.8
+                        },
+                        {
+                            label: '全校人數',
+                            data: dataSchool,
+                            backgroundColor: schoolBg,
+                            borderColor: schoolBorder,
+                            borderWidth: 1,
+                            borderRadius: 2,
+                            barPercentage: 0.9,
+                            categoryPercentage: 0.8
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
                     scales: {
                         y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } },
-                        x: { ticks: { font: { size: 10 } } }
+                        x: { ticks: { font: { size: 9 }, maxRotation: 45, minRotation: 45 } }
                     },
                     plugins: { 
-                        legend: { display: false },
+                        legend: { 
+                            display: true,
+                            position: 'top',
+                            labels: { boxWidth: 10, font: { size: 10 } }
+                        },
                         tooltip: {
                             callbacks: {
-                                title: (ctx) => `分數區間: ${ctx[0].label}`,
-                                label: (ctx) => `人數: ${ctx.parsed.y} 人`
+                                title: (ctx) => `分數區間: ${ctx[0].label}`
                             }
                         }
                     }

@@ -179,7 +179,26 @@
                     </div>
                 </div>
                 
-                <div id="examSubjectsContainer" class="space-y-6 mt-8">
+                <h4 class="font-bold text-gray-700 mb-3">各科成績一覽</h4>
+                <div class="overflow-x-auto bg-white rounded-xl shadow-sm border mb-8">
+                    <table class="w-full text-sm text-left border-collapse">
+                        <thead class="bg-gray-50 text-gray-600 border-b">
+                            <tr>
+                                <th class="p-3 font-bold">科目</th>
+                                <th class="p-3 text-center font-bold">分數</th>
+                                <th class="p-3 text-center font-bold">班平均</th>
+                                <th class="p-3 text-center font-bold">校平均</th>
+                                <th class="p-3 text-center font-bold">校排區間</th>
+                            </tr>
+                        </thead>
+                        <tbody id="examTableBody" class="divide-y">
+                            <!-- JS 產生 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4 class="font-bold text-gray-700 mb-3">各科成績分佈圖 (班級與全校)</h4>
+                <div id="examSubjectsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- JS 產生各科卡片與分佈圖 -->
                 </div>
             </div>
