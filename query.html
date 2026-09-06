@@ -137,14 +137,32 @@
         </div>
 
         <!-- 生活計點 -->
-        <div id="tab-life" class="tab-content active query-card p-6">
+        <div id="tab-life" class="tab-content query-card p-6">
             <h3 class="text-xl font-bold text-gray-800 border-b pb-2 mb-4">🛡️ 生活計點</h3>
-            <div class="mb-4">
-                <p class="text-gray-600">初始分數：<span id="initialPoints" class="font-bold">0</span></p>
-                <p class="text-gray-600">目前總分：<span id="currentPoints" class="font-bold text-xl text-red-700">0</span></p>
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center bg-gray-50 p-4 rounded-xl mb-6 border border-gray-100 gap-4">
+                <div>
+                    <div class="text-gray-500 text-sm mb-1">初始分數：<span id="initialPoints" class="font-bold text-gray-700">100</span></div>
+                    <div class="text-gray-700 text-lg">目前總分：<span id="totalLifePoints" class="font-black text-red-600 text-3xl ml-1">-</span></div>
+                </div>
+                <div class="flex flex-wrap gap-3 text-center">
+                    <div class="bg-white p-3 min-w-[80px] rounded-lg shadow-sm border border-gray-100">
+                        <div class="text-xs text-gray-500 font-bold mb-1">班級排名</div>
+                        <div id="lpRank" class="text-xl font-black text-blue-600">-</div>
+                    </div>
+                    <div class="bg-white p-3 min-w-[80px] rounded-lg shadow-sm border border-gray-100">
+                        <div class="text-xs text-gray-500 font-bold mb-1">前一名分數</div>
+                        <div id="lpPrev" class="text-xl font-black text-gray-600">-</div>
+                    </div>
+                    <div class="bg-white p-3 min-w-[80px] rounded-lg shadow-sm border border-gray-100">
+                        <div class="text-xs text-gray-500 font-bold mb-1">後一名分數</div>
+                        <div id="lpNext" class="text-xl font-black text-gray-600">-</div>
+                    </div>
+                </div>
             </div>
+
             <div id="lifePointsList" class="space-y-4">
-                <!-- 列表由 JS 產生 -->
+                <!-- 由 JS 產生 -->
             </div>
         </div>
 

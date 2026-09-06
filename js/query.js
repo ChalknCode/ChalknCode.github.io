@@ -55,7 +55,23 @@ document.addEventListener('DOMContentLoaded', () => {
             currentStudent = data;
             currentStudent.idNumber = idNumber; // for subsequent requests if needed
             
+            // 根據學期設定控制頁籤顯示
+            const btnLife = document.querySelector('.tab-btn[data-target="tab-life"]');
+            const btnExam = document.querySelector('.tab-btn[data-target="tab-exam"]');
+            const btnSubject = document.querySelector('.tab-btn[data-target="tab-subject"]');
+            
+            if (btnLife) btnLife.style.display = currentStudent.showLifePoints === false ? 'none' : '';
+            if (btnExam) btnExam.style.display = (currentStudent.showMajorExam === false || !currentStudent.availableExams || currentStudent.availableExams.length === 0) ? 'none' : '';
+            if (btnSubject) btnSubject.style.display = currentStudent.showSubjects === false ? 'none' : '';
+
             renderDashboard();
+            
+            // 自動切換到第一個可見的頁籤
+            const visibleTabs = Array.from(document.querySelectorAll('.tab-btn')).filter(btn => btn.style.display !== 'none');
+            if (visibleTabs.length > 0) {
+                switchTab(visibleTabs[0].dataset.target);
+            }
+
             loginSection.classList.add('hidden');
             dashboardSection.classList.remove('hidden');
             
@@ -130,9 +146,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 html += `
                     <div class="p-3 flex justify-between items-center text-sm">
                         <div>
-                            <span class="text-gray-500 mr-3">${rec.date}</span>
-                            <span class="font-bold text-gray-800">${rec.reason}</span>
-                            ${rec.remarks ? `<span class="text-gray-400 ml-2">(${rec.remarks})</span>` : ''}
+                            <div class="font-bold text-gray-800">${rec.date} <span class="ml-2">${rec.reason}</span></div>
+                            <div class="text-xs text-gray-500 mt-1">${rec.remarks || ''}</div>
                         </div>
                         <div class="font-bold font-mono ${ptsClass}">${ptsSign}${rec.points}</div>
                     </div>
@@ -140,13 +155,19 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             html += `</div></div>`;
         });
-
+        
         if (html === '') {
-            html = '<div class="text-gray-500 text-center py-4">尚無計點紀錄</div>';
+            html = '<div class="text-gray-500 text-center py-4">目前沒有生活計點紀錄</div>';
         }
-
+        
         document.getElementById('lifePointsList').innerHTML = html;
-        document.getElementById('currentPoints').textContent = total;
+        document.getElementById('totalLifePoints').textContent = total;
+
+        // 處理排名與前後分數 (若後端有回傳)
+        const summary = currentStudent.lifePointsSummary;
+        document.getElementById('lpRank').textContent = summary && summary.rank ? summary.rank : '需更新後端';
+        document.getElementById('lpPrev').textContent = summary && summary.prevScore !== undefined ? summary.prevScore : '需更新後端';
+        document.getElementById('lpNext').textContent = summary && summary.nextScore !== undefined ? summary.nextScore : '需更新後端';
     }
 
     function renderSubjects() {
