@@ -20,10 +20,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // === Login Logic ===
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const seatNo = document.getElementById('seatNo').value.trim();
+        const rawSeatNo = document.getElementById('seatNo').value.trim();
         const idNumber = document.getElementById('idNumber').value.trim();
 
-        if (!seatNo || !idNumber) return;
+        if (!rawSeatNo || !idNumber) return;
+
+        // 處理班級座號：例如將 "80501" 轉為 "1" 或 "01" (預設轉為數字字串 "1")
+        let seatNo = rawSeatNo;
+        if (rawSeatNo.length >= 4 && rawSeatNo.startsWith('805')) {
+            seatNo = parseInt(rawSeatNo.replace('805', ''), 10).toString(); 
+            // 若試算表存的是純文字 "01"，此處可能需要改為 seatNo = rawSeatNo.replace('805', '');
+        } else if (!isNaN(rawSeatNo)) {
+            seatNo = parseInt(rawSeatNo, 10).toString();
+        }
 
         // UI Loading
         loginBtn.disabled = true;
