@@ -179,29 +179,8 @@
                     </div>
                 </div>
                 
-                <h4 class="font-bold text-gray-700 mb-3">各科成績</h4>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left border-collapse">
-                        <thead class="bg-gray-100 text-gray-600">
-                            <tr>
-                                <th class="p-2 border">科目</th>
-                                <th class="p-2 border text-center">分數</th>
-                                <th class="p-2 border text-center">班平均</th>
-                                <th class="p-2 border text-center">校平均</th>
-                            </tr>
-                        </thead>
-                        <tbody id="examTableBody">
-                            <!-- JS 產生 -->
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="mt-8">
-                    <h4 class="font-bold text-gray-700 mb-3">成績分佈圖</h4>
-                    <select id="examChartSelect" class="query-input max-w-xs mb-4"></select>
-                    <div class="relative w-full" style="height:300px;">
-                        <canvas id="examChartCanvas"></canvas>
-                    </div>
+                <div id="examSubjectsContainer" class="space-y-6 mt-8">
+                    <!-- JS 產生各科卡片與分佈圖 -->
                 </div>
             </div>
         </div>

@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // === State ===
     let currentStudent = null;
     let currentExamData = null;
-    let examChartInstance = null;
+    let examChartInstances = [];
 
     // === Login Logic ===
     loginForm.addEventListener('submit', async (e) => {
@@ -232,80 +232,140 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('examClassRank').textContent = sum.classRank;
         document.getElementById('examSchoolRank').textContent = sum.schoolRankInterval;
 
-        const tbody = document.getElementById('examTableBody');
-        tbody.innerHTML = '';
+        const container = document.getElementById('examSubjectsContainer');
+        container.innerHTML = '';
         
-        let chartOptions = '<option value="personalAverage">總平均</option>';
+        examChartInstances.forEach(c => c.destroy());
+        examChartInstances = [];
 
-        currentExamData.subjectOrder.forEach(subj => {
+        const subjectsToRender = ['personalAverage', ...currentExamData.subjectOrder];
+
+        subjectsToRender.forEach((subj, index) => {
+            const isAvg = subj === 'personalAverage';
+            const title = isAvg ? '總平均' : subj;
             const score = currentExamData.scores[subj];
             const classAvg = currentExamData.averages.classAvg[subj];
             const schoolAvg = currentExamData.averages.schoolAvg[subj];
+            const schoolRank = currentExamData.schoolRankEstimates[subj] || '-';
             
             const isRed = (typeof score === 'number' && score < 60);
             
-            tbody.innerHTML += `
-                <tr class="border-b hover:bg-gray-50">
-                    <td class="p-2 border font-medium text-gray-700">${subj}</td>
-                    <td class="p-2 border text-center font-bold font-mono ${isRed ? 'text-red-500' : 'text-gray-800'}">${score}</td>
-                    <td class="p-2 border text-center text-gray-500 font-mono">${classAvg}</td>
-                    <td class="p-2 border text-center text-gray-500 font-mono">${schoolAvg}</td>
-                </tr>
+            const cardHtml = `
+                <div class="border rounded-xl p-4 md:p-6 bg-white shadow-sm flex flex-col lg:flex-row gap-6 items-center">
+                    <div class="lg:w-1/3 flex flex-col justify-center w-full">
+                        <h4 class="text-xl font-bold text-gray-800 mb-4">${title}</h4>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                <div class="text-xs text-gray-500 font-bold mb-1">分數</div>
+                                <div class="text-2xl font-black ${isRed ? 'text-red-500' : 'text-gray-800'}">${score}</div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                <div class="text-xs text-gray-500 font-bold mb-1">校排區間</div>
+                                <div class="text-lg font-bold text-gray-700">${schoolRank}</div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                <div class="text-xs text-gray-500 font-bold mb-1">班平均</div>
+                                <div class="text-lg font-bold text-gray-700">${classAvg}</div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                <div class="text-xs text-gray-500 font-bold mb-1">校平均</div>
+                                <div class="text-lg font-bold text-gray-700">${schoolAvg}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="lg:w-2/3 relative w-full" style="height: 250px;">
+                        <canvas id="examChart-${index}"></canvas>
+                    </div>
+                </div>
             `;
-            chartOptions += `<option value="${subj}">${subj}</option>`;
+            container.insertAdjacentHTML('beforeend', cardHtml);
         });
 
-        examChartSelect.innerHTML = chartOptions;
-        renderExamChart('personalAverage');
-    }
+        subjectsToRender.forEach((subj, index) => {
+            const isAvg = subj === 'personalAverage';
+            const score = currentExamData.scores[subj];
+            
+            let distData = null;
+            let labels = [];
+            let data = [];
+            let studentBinIndex = -1;
+            
+            const scoreNum = Number(score);
 
-    examChartSelect.addEventListener('change', (e) => {
-        renderExamChart(e.target.value);
-    });
-
-    function renderExamChart(subjectKey) {
-        if (!currentExamData) return;
-        
-        let distData = null;
-        let labels = [];
-        let data = [];
-        
-        if (subjectKey === 'personalAverage') {
-            distData = currentExamData.schoolDistributionAvg.interval;
-            labels = ["99.9-95.0", "94.9-90", "89.9-85", "84.9-80", "79.9-75", "74.9-70", "69.9-65", "64.9-60", "59.9-55", "54.9-50", "49.9-45", "44.9-40", "39.9-35", "34.9-30", "29.9-25", "24.9-20", "19.9-15", "14.9-0"].reverse();
-        } else {
-            distData = currentExamData.schoolDistribution[subjectKey];
-            labels = ["9-0", "19-10", "29-20", "39-30", "49-40", "59-50", "69-60", "79-70", "89-80", "100-90"];
-        }
-
-        if (distData) {
-            labels.forEach(k => { data.push(distData[k] || 0); });
-        }
-
-        const ctx = document.getElementById('examChartCanvas').getContext('2d');
-        if (examChartInstance) examChartInstance.destroy();
-
-        examChartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: '全校人數',
-                    data: data,
-                    backgroundColor: 'rgba(194, 81, 106, 0.6)',
-                    borderColor: 'rgba(194, 81, 106, 1)',
-                    borderWidth: 1,
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
-                },
-                plugins: { legend: { display: false } }
+            if (isAvg) {
+                distData = currentExamData.schoolDistributionAvg.interval;
+                labels = ["14.9-0", "19.9-15", "24.9-20", "29.9-25", "34.9-30", "39.9-35", "44.9-40", "49.9-45", "54.9-50", "59.9-55", "64.9-60", "69.9-65", "74.9-70", "79.9-75", "84.9-80", "89.9-85", "94.9-90", "99.9-95.0"];
+                
+                if (!isNaN(scoreNum)) {
+                    const limits = [15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
+                    for (let i = 0; i < limits.length; i++) {
+                        if (scoreNum < limits[i]) {
+                            studentBinIndex = i;
+                            break;
+                        }
+                    }
+                    if (studentBinIndex === -1) studentBinIndex = limits.length - 1;
+                }
+            } else {
+                distData = currentExamData.schoolDistribution[subj];
+                labels = ["9-0", "19-10", "29-20", "39-30", "49-40", "59-50", "69-60", "79-70", "89-80", "100-90"];
+                
+                if (!isNaN(scoreNum)) {
+                    const intScore = Math.floor(scoreNum);
+                    if (intScore >= 90) studentBinIndex = 9;
+                    else if (intScore >= 80) studentBinIndex = 8;
+                    else if (intScore >= 70) studentBinIndex = 7;
+                    else if (intScore >= 60) studentBinIndex = 6;
+                    else if (intScore >= 50) studentBinIndex = 5;
+                    else if (intScore >= 40) studentBinIndex = 4;
+                    else if (intScore >= 30) studentBinIndex = 3;
+                    else if (intScore >= 20) studentBinIndex = 2;
+                    else if (intScore >= 10) studentBinIndex = 1;
+                    else studentBinIndex = 0;
+                }
             }
+
+            if (distData) {
+                labels.forEach(k => { data.push(distData[k] || 0); });
+            }
+
+            // 自己的分數顏色使用主題副色 (靛藍 #5c6bc0)，其他使用主色透明 (粉紅)
+            const bgColors = data.map((_, i) => i === studentBinIndex ? 'rgba(92, 107, 192, 0.85)' : 'rgba(194, 81, 106, 0.35)');
+            const borderColors = data.map((_, i) => i === studentBinIndex ? 'rgba(92, 107, 192, 1)' : 'rgba(194, 81, 106, 0.6)');
+
+            const ctx = document.getElementById(`examChart-${index}`).getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '全校人數',
+                        data: data,
+                        backgroundColor: bgColors,
+                        borderColor: borderColors,
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } },
+                        x: { ticks: { font: { size: 10 } } }
+                    },
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: (ctx) => `分數區間: ${ctx[0].label}`,
+                                label: (ctx) => `人數: ${ctx.parsed.y} 人`
+                            }
+                        }
+                    }
+                }
+            });
+            examChartInstances.push(chart);
         });
     }
 
