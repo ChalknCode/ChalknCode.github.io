@@ -223,14 +223,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function formatScore(val) {
+        if (val === undefined || val === null || val === '' || val === 'N/A' || val === 'NaN') {
+            return '-';
+        }
+        const num = Number(val);
+        if (!isNaN(num)) {
+            return Math.round(num * 100) / 100;
+        }
+        return val;
+    }
+
     function renderExamContent() {
         document.getElementById('examContent').classList.remove('hidden');
         
         const sum = currentExamData.summary;
-        document.getElementById('examTotal').textContent = sum.totalScore;
-        document.getElementById('examAvg').textContent = sum.personalAverage;
-        document.getElementById('examClassRank').textContent = sum.classRank;
-        document.getElementById('examSchoolRank').textContent = sum.schoolRankInterval;
+        document.getElementById('examTotal').textContent = formatScore(sum.totalScore);
+        document.getElementById('examAvg').textContent = formatScore(sum.personalAverage);
+        document.getElementById('examClassRank').textContent = sum.classRank || '-';
+        document.getElementById('examSchoolRank').textContent = sum.schoolRankInterval || '-';
 
         const tbody = document.getElementById('examTableBody');
         const container = document.getElementById('examSubjectsContainer');
@@ -245,10 +256,12 @@ document.addEventListener('DOMContentLoaded', () => {
         subjectsToRender.forEach((subj, index) => {
             const isAvg = subj === 'personalAverage';
             const title = isAvg ? '總平均' : subj;
-            const score = currentExamData.scores[subj];
-            const classAvg = currentExamData.averages.classAvg[subj] || '-';
-            const schoolAvg = currentExamData.averages.schoolAvg[subj] || '-';
-            const schoolRank = currentExamData.schoolRankEstimates[subj] || '-';
+            const score = formatScore(currentExamData.scores[subj]);
+            const classAvg = formatScore(currentExamData.averages.classAvg[subj]);
+            const schoolAvg = formatScore(currentExamData.averages.schoolAvg[subj]);
+            
+            let schoolRank = currentExamData.schoolRankEstimates[subj] || '-';
+            if (schoolRank === 'N/A' || schoolRank === 'NaN') schoolRank = '-';
             
             const isRed = (typeof score === 'number' && score < 60);
 
