@@ -1,17 +1,16 @@
-// ======================================================
-//  網站設定檔 — 所有重要設定都在這裡修改
-// ======================================================
+// 全域設定與常數
 const CONFIG = {
+  // Google Sheets 的 ID
   SHEET_ID: '1dtqdnPgVUWuCY-GmKwqK-ZYXXRCURIumiUAB2DFHoug',
-  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw6REHI2aQ5vZKduROEucLeBBJwEdGfDJ1kUe10NZmKQujsjLzWnuuZTybYsv8QZ9h8jQ/exec',
-  CLASS_NAME: '805 班級網站',
+  
+  // Apps Script 部署後的 Web App URL (用於查詢系統 API)
+  API_URL: 'https://script.google.com/macros/s/AKfycbwYPrpAC4GNxezCr-nUNNYOzcfu4J0na2CaK9XZm_9hi3RsVDulcSb65nw4MS3LSgNt/exec',
+
+  // 工作表名稱
   SHEETS: {
-    ANNOUNCEMENTS: '公告',
-    GALLERY:       '相簿',
-    CAROUSEL:      '輪播',
-    QUICK_LINKS:   '常用資訊',
-  },
-  TICKER_COUNT: 5,
-  CAROUSEL_INTERVAL: 5000,
-  TICKER_INTERVAL: 4000,
+    ANNOUNCEMENT: '公告',
+    ALBUM: '相簿',
+    CAROUSEL: '輪播',
+    INFO: '常用資訊'
+  }
 };
