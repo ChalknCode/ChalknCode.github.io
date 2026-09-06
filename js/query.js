@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 自動切換到第一個可見的頁籤
             const visibleTabs = Array.from(document.querySelectorAll('.tab-btn')).filter(btn => btn.style.display !== 'none');
             if (visibleTabs.length > 0) {
-                switchTab(visibleTabs[0].dataset.target);
+                visibleTabs[0].click();
             }
 
             loginSection.classList.add('hidden');
