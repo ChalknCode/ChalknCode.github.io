@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新版介面預覽測試</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+    body { 
+        font-family: 'Noto Sans TC', sans-serif; 
+        background-color: #fdf6e3; 
+        background-image: 
+            radial-gradient(circle at 10% 20%, rgba(252, 228, 236, 0.8) 0%, transparent 40%),
+            radial-gradient(circle at 90% 80%, rgba(227, 242, 253, 0.8) 0%, transparent 40%),
+            radial-gradient(circle at 50% 50%, rgba(232, 245, 233, 0.6) 0%, transparent 60%);
+        background-attachment: fixed;
+    }
+    .glass-card {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+    }
+  </style>
+</head>
+<body class="p-4 md:p-8 text-gray-800">
+  <div class="max-w-5xl mx-auto space-y-8">
+    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded text-red-700 font-bold">
+      這是一個獨立的測試預覽頁面，完全不會影響到您的正式網站。請在這裡確認排版是否符合您的需求。
+    </div>
+
+    <!-- 段考預覽 -->
+    <div class="glass-card rounded-2xl p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-gray-800">🏆 段考成績 (並排卡片 + 切換圖表功能)</h3>
+            <div class="bg-white/80 p-1 rounded-lg flex gap-1 shadow-sm border border-gray-100">
+                <button class="px-4 py-1.5 bg-[#5c6bc0] text-white text-sm font-bold rounded-md shadow">班級分佈圖</button>
+                <button class="px-4 py-1.5 bg-transparent text-gray-500 hover:text-gray-800 text-sm font-bold rounded-md">全校分佈圖</button>
+            </div>
+        </div>
+
+        <!-- 4 卡片並排 (使用 grid-cols-4 強制並排) -->
+        <div class="grid grid-cols-4 gap-2 md:gap-4 mb-6">
+            <div class="bg-white/90 p-3 rounded-xl shadow-sm border-t-4 border-t-emerald-400 text-center">
+                <div class="text-xs text-gray-500 font-bold mb-1">班級排名</div>
+                <div class="text-xl md:text-3xl font-black text-gray-800">8</div>
+            </div>
+            <div class="bg-white/90 p-3 rounded-xl shadow-sm border-t-4 border-t-orange-400 text-center">
+                <div class="text-xs text-gray-500 font-bold mb-1">校排(估算)</div>
+                <div class="text-xl md:text-3xl font-black text-gray-800">149</div>
+            </div>
+            <div class="bg-white/90 p-3 rounded-xl shadow-sm border-t-4 border-t-indigo-400 text-center">
+                <div class="text-xs text-gray-500 font-bold mb-1">總平均</div>
+                <div class="text-xl md:text-3xl font-black text-gray-800">68.5</div>
+            </div>
+            <div class="bg-white/90 p-3 rounded-xl shadow-sm border-t-4 border-t-yellow-400 text-center">
+                <div class="text-xs text-gray-500 font-bold mb-1">總分</div>
+                <div class="text-xl md:text-3xl font-black text-gray-800">342.5</div>
+            </div>
+        </div>
+
+        <!-- 成績表 -->
+        <div class="bg-white/90 rounded-xl border border-gray-100 overflow-hidden">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-gray-50/50 text-gray-600 text-sm border-b">
+                    <tr>
+                        <th class="p-4 font-bold">科目</th>
+                        <th class="p-4 text-center font-bold">您的分數</th>
+                        <th class="p-4 text-center font-bold">班平</th>
+                        <th class="p-4 font-bold w-2/5">班級分佈 (迷你長條圖)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    <tr class="bg-orange-50/30">
+                        <td class="p-4 font-black text-gray-800">總平均</td>
+                        <td class="p-4 text-center font-black text-[#c2516a] text-lg">68.5</td>
+                        <td class="p-4 text-center font-bold text-gray-600">60.4</td>
+                        <td class="p-4">
+                            <!-- 迷你長條圖 -->
+                            <div class="flex items-end gap-1 h-8">
+                                <div class="w-4 bg-gray-200 h-[10%] rounded-t-sm"></div>
+                                <div class="w-4 bg-gray-200 h-[30%] rounded-t-sm"></div>
+                                <div class="w-4 bg-[#c2516a] h-[80%] rounded-t-sm shadow-sm relative"><div class="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-bold text-[#c2516a]">7</div></div>
+                                <div class="w-4 bg-gray-200 h-[40%] rounded-t-sm"></div>
+                                <div class="w-4 bg-gray-200 h-[20%] rounded-t-sm"></div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 生活計點預覽 -->
+    <div class="glass-card rounded-2xl p-6">
+        <h3 class="text-2xl font-bold text-gray-800 mb-6">🛡️ 生活計點 (統一每一天排版 + 緊湊標頭)</h3>
+
+        <!-- 緊湊總分區塊 -->
+        <div class="bg-gradient-to-r from-green-50 to-emerald-50/30 border-l-[6px] border-emerald-500 rounded-r-xl p-5 mb-8 shadow-sm flex items-center gap-8">
+            <div class="flex items-baseline gap-2">
+                <span class="text-emerald-800 font-bold">總積分</span>
+                <span class="text-4xl font-black text-emerald-600">117</span>
+            </div>
+            <div class="w-px h-8 bg-emerald-200"></div>
+            <div class="flex items-center gap-4">
+                <div class="flex items-baseline gap-2">
+                    <span class="text-emerald-800 font-bold">排名</span>
+                    <span class="text-3xl font-black text-gray-800">7<span class="text-lg text-gray-400">/27</span></span>
+                </div>
+                <div class="flex flex-col gap-1 text-[11px]">
+                    <span class="bg-white/80 px-2 py-0.5 rounded border border-emerald-100 text-gray-600">前一: <b class="text-gray-800">118</b></span>
+                    <span class="bg-white/80 px-2 py-0.5 rounded border border-rose-100 text-gray-600">後一: <b class="text-rose-500">115</b></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 依天數合併的表格 -->
+        <div class="bg-white/90 rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="bg-gray-50 px-5 py-3 border-b border-gray-100 font-bold text-gray-700">📅 2026-09-11 (週五)</div>
+            <table class="w-full text-left text-sm">
+                <tbody class="divide-y divide-gray-50">
+                    <tr class="hover:bg-gray-50/50">
+                        <td class="px-5 py-3 font-bold text-gray-700 w-1/2">聯絡簿確實完成</td>
+                        <td class="px-5 py-3 text-center font-black text-emerald-500">+1</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50/50">
+                        <td class="px-5 py-3 font-bold text-gray-700 w-1/2">確實完成打掃工作</td>
+                        <td class="px-5 py-3 text-center font-black text-emerald-500">+1</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="bg-gray-50 px-5 py-3 border-y border-gray-100 font-bold text-gray-700 mt-2">📅 2026-09-07 (週一)</div>
+            <table class="w-full text-left text-sm">
+                <tbody class="divide-y divide-gray-50">
+                    <tr class="hover:bg-gray-50/50 bg-rose-50/30">
+                        <td class="px-5 py-3 font-bold text-gray-800 w-1/2">週報表未簽名</td>
+                        <td class="px-5 py-3 text-center font-black text-rose-500">-0.5</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+  </div>
+</body>
+</html>
