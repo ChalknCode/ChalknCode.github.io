@@ -320,10 +320,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const lpData = currentStudent.grades['生活計點'] || {};
         let total = initPts;
         
-        const summary = currentStudent.lifePointsSummary || {};
-        document.getElementById('lpRank').textContent = summary.rank || '-';
-        document.getElementById('lpPrev').textContent = summary.prevScore !== undefined ? summary.prevScore : '-';
-        document.getElementById('lpNext').textContent = summary.nextScore !== undefined ? summary.nextScore : '-';
+        const lpRank = currentStudent.rank || '-';
+        const totalStudents = currentStudent.totalStudents || '-';
+        document.getElementById('lpRank').textContent = `${lpRank} / ${totalStudents}`;
 
         let html = '';
         const sortedWeeks = Object.keys(lpData).sort((a,b) => b - a);
