@@ -96,13 +96,13 @@ document.addEventListener('DOMContentLoaded', () => {
             examSelector.innerHTML = options;
             examSelector.onchange = (e) => {
                 const eid = e.target.value;
-                currentExamData = currentStudent.grades[eid];
-                if (currentExamData) {
-                    
+                const match = currentStudent.availableExams.find(x => x.examId === eid);
+                if (match) {
+                    currentExamData = match;
                     renderExamContent();
                 }
             };
-            currentExamData = currentStudent.grades[currentStudent.availableExams[0].examId];
+            currentExamData = currentStudent.availableExams[0];
             renderExamContent();
         }
 

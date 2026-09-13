@@ -1,0 +1,13 @@
+@@ -82,9 +82,8 @@
+             examSelector.onchange = (e) => {
+                 const eid = e.target.value;
+-                const match = currentStudent.availableExams.find(x => x.examId === eid);
+-                if (match) {
+-                    currentExamData = match;
++                currentExamData = currentStudent.grades[eid];
++                if (currentExamData) {
+                     renderExamContent();
+                 }
+             };
+-            currentExamData = currentStudent.availableExams[0];
++            currentExamData = currentStudent.grades[currentStudent.availableExams[0].examId];

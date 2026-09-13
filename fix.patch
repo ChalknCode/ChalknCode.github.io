@@ -1,0 +1,29 @@
+--- js/query_dev.js
++++ js/query_dev.js
+@@ -19,15 +19,26 @@
+     loginForm.addEventListener('submit', async (e) => {
+         e.preventDefault();
+-        const seatNo = document.getElementById('seatNo').value.trim();
++        const rawSeatNo = document.getElementById('seatNo').value.trim();
+         const idNumber = document.getElementById('idNumber').value.trim();
+         
+-        if (!seatNo || !idNumber) return;
++        if (!rawSeatNo || !idNumber) return;
++        
++        // 處理班級座號：例如將 "80501" 轉為 "1" 或 "01" (預設轉為數字字串 "1")
++        let seatNo = rawSeatNo;
++        if (rawSeatNo.length >= 4 && rawSeatNo.startsWith('805')) {
++            seatNo = parseInt(rawSeatNo.replace('805', ''), 10).toString(); 
++        } else if (!isNaN(rawSeatNo)) {
++            seatNo = parseInt(rawSeatNo, 10).toString();
++        }
+         
+         loginBtn.disabled = true;
+         loginBtn.innerHTML = '登入中...';
+         loginError.classList.add('dev-hidden');
+ 
+         try {
+-            const response = await fetch(CONFIG.scriptUrl, {
++            const response = await fetch(CONFIG.API_URL, {
+                 method: 'POST',
+                 body: JSON.stringify({
