@@ -28,8 +28,12 @@ document.addEventListener('DOMContentLoaded', () => {
             seatNo = parseInt(rawSeatNo, 10).toString();
         }
         
+        // Login Animation
+        const btnText = document.getElementById('btnText');
+        const btnLoader = document.getElementById('btnLoader');
         loginBtn.disabled = true;
-        loginBtn.innerHTML = '登入中...';
+        btnText.textContent = '登入中...';
+        btnLoader.classList.remove('dev-hidden');
         loginError.classList.add('dev-hidden');
 
         try {
@@ -44,8 +48,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
             
-            if (data.status !== 'success') {
-                throw new Error(data.message || '登入失敗，請檢查資料');
+            if (data.status === 'error' || data.error) {
+                throw new Error(data.message || data.error || '登入失敗，請檢查資料');
             }
 
             currentStudent = data;
@@ -63,7 +67,8 @@ document.addEventListener('DOMContentLoaded', () => {
             loginError.classList.remove('dev-hidden');
         } finally {
             loginBtn.disabled = false;
-            loginBtn.innerHTML = '登入查詢';
+            btnText.textContent = '登入查詢';
+            btnLoader.classList.add('dev-hidden');
         }
     });
 
@@ -96,13 +101,9 @@ document.addEventListener('DOMContentLoaded', () => {
             examSelector.innerHTML = options;
             examSelector.onchange = (e) => {
                 const eid = e.target.value;
-                currentExamData = currentStudent.grades[eid];
-                if (currentExamData) {
-                    renderExamContent();
-                }
+                loadExamData(eid);
             };
-            currentExamData = currentStudent.grades[currentStudent.availableExams[0]];
-            renderExamContent();
+            loadExamData(currentStudent.availableExams[0]);
         }
 
         document.getElementById('toggleChartClass').onclick = () => {
@@ -117,6 +118,34 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         renderLifePoints();
+    }
+
+    async function loadExamData(examName) {
+        if (!examName) return;
+        
+        const content = document.getElementById('examContent');
+        const loader = document.getElementById('examLoader');
+        
+        content.classList.add('dev-hidden');
+        if(loader) loader.classList.remove('dev-hidden');
+
+        try {
+            const response = await fetch(CONFIG.API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'getMajorExamData', examName, seatNo: currentStudent.seatNo })
+            });
+            const data = await response.json();
+
+            if (data.error) throw new Error(data.error);
+
+            currentExamData = data;
+            renderExamContent();
+        } catch (err) {
+            console.error('段考讀取失敗:', err);
+        } finally {
+            if(loader) loader.classList.add('dev-hidden');
+            content.classList.remove('dev-hidden');
+        }
     }
 
     function updateChartToggleUI() {
@@ -286,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let html = '';
         const sortedWeeks = Object.keys(lpData).sort((a,b) => b - a);
 
-        sortedWeeks.forEach(week => {
+        sortedWeeks.forEach((week, idx) => {
             const weekData = lpData[week];
             
             const dailyGroups = {};
@@ -330,24 +359,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 dailyHtml += `</tbody></table></div>`;
             });
 
+            // 只有第一筆 (最新的一週) 才展開，其餘加上 dev-hidden 隱藏
+            const isHidden = idx === 0 ? '' : 'dev-hidden';
+            const iconRotate = idx === 0 ? 'rotate-180' : '';
+
             html += `
                 <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm mb-4">
-                    <div class="bg-gradient-to-r from-gray-50 to-white px-5 py-3.5 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition-colors border-b border-gray-100" onclick="this.nextElementSibling.classList.toggle('dev-hidden')">
+                    <div class="bg-gradient-to-r from-gray-50 to-white px-5 py-3.5 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition-colors border-b border-gray-100" onclick="this.nextElementSibling.classList.toggle('dev-hidden'); this.querySelector('.arrow-icon').classList.toggle('rotate-180')">
                         <div class="flex items-center">
                             <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                             <span class="font-black text-gray-700 tracking-wide">第 ${week} 週</span>
                             <span class="text-xs text-gray-400 ml-3 font-medium">(${weekData.range})</span>
                         </div>
-                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        <svg class="arrow-icon w-4 h-4 text-gray-400 transform transition-transform ${iconRotate}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </div>
-                    <div class="pb-3">
+                    <div class="pb-3 ${isHidden}">
                         ${dailyHtml}
                     </div>
                 </div>
             `;
         });
         
-        document.getElementById('totalLifePoints').textContent = total; 
+        document.getElementById('totalLifePoints').textContent = total;
+        if (sortedWeeks.length > 0) {
+            const wInfo = document.getElementById('weekInfo');
+            if (wInfo) wInfo.textContent = '(第 ' + sortedWeeks[0] + ' 週)';
+        } 
 
         if (html === '') {
             html = '<div class="text-gray-500 text-center py-4 bg-white rounded-xl border border-dashed border-gray-200">目前沒有生活計點紀錄</div>';
