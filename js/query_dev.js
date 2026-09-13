@@ -19,17 +19,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // === Login Logic ===
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const seatNo = document.getElementById('seatNo').value.trim();
+        const rawSeatNo = document.getElementById('seatNo').value.trim();
         const idNumber = document.getElementById('idNumber').value.trim();
         
-        if (!seatNo || !idNumber) return;
+        if (!rawSeatNo || !idNumber) return;
+
+        // 處理班級座號
+        let seatNo = rawSeatNo;
+        if (rawSeatNo.length >= 4 && rawSeatNo.startsWith('805')) {
+            seatNo = parseInt(rawSeatNo.replace('805', ''), 10).toString(); 
+        } else if (!isNaN(rawSeatNo)) {
+            seatNo = parseInt(rawSeatNo, 10).toString();
+        }
         
         loginBtn.disabled = true;
         loginBtn.innerHTML = '登入中...';
         loginError.classList.add('dev-hidden');
 
         try {
-            const response = await fetch(CONFIG.scriptUrl, {
+            const response = await fetch(CONFIG.API_URL, {
                 method: 'POST',
                 body: JSON.stringify({
                     action: 'getStudentData',
@@ -63,6 +71,18 @@ document.addEventListener('DOMContentLoaded', () => {
             loginBtn.innerHTML = '登入查詢';
         }
     });
+
+    // === Password Toggle Logic ===
+    const togglePassword = document.getElementById('togglePassword');
+    if(togglePassword) {
+        togglePassword.addEventListener('click', function () {
+            const pwdInput = document.getElementById('idNumber');
+            const type = pwdInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            pwdInput.setAttribute('type', type);
+            // 切換眼睛 icon
+            this.textContent = type === 'password' ? '👁️' : '🙈';
+        });
+    }
 
     // === Render Dashboard ===
     function renderDashboard() {
@@ -163,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (distData && distData.length > 0) {
             const maxCount = Math.max(...distData);
-            const numBins = distData.length; // Can be 10 or 19 depending on setting
+            const numBins = distData.length; 
             
             let barsHtml = '';
             for(let i=0; i<numBins; i++) {
@@ -171,14 +191,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 let pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
                 if (pct < 10 && pct > 0) pct = 10;
                 
-                // Estimate which bin the student falls into
                 let isMyBin = false;
                 const rawScore = Number(subj.score);
                 if (!isNaN(rawScore)) {
-                    // For 10 bins: width is 10 (100-90, 89-80, etc.)
-                    // For 19 bins: maybe different logic? Standard formula:
-                    // Bin size = 100 / numBins
-                    // Since it depends on backend, we can approximate:
                     const binSize = 100 / numBins;
                     const expectedBinIndex = Math.floor((100 - rawScore) / binSize);
                     if (expectedBinIndex === i || (rawScore === 100 && i === 0)) {
@@ -186,7 +201,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                // Inline styles guarantee it works without Tailwind JIT
                 const bgColor = isMyBin ? (chartMode === 'class' ? '#c2516a' : '#5c6bc0') : (count > 0 ? '#cbd5e1' : '#f1f5f9');
                 const height = count > 0 ? `${pct}%` : '2px';
                 
@@ -235,14 +249,13 @@ document.addEventListener('DOMContentLoaded', () => {
         sortedWeeks.forEach(week => {
             const weekData = lpData[week];
             
-            // Group records by Date inside this week
             const dailyGroups = {};
             weekData.records.forEach(rec => {
                 total += rec.points;
                 if(!dailyGroups[rec.date]) dailyGroups[rec.date] = [];
                 dailyGroups[rec.date].push(rec);
             });
-            document.getElementById('totalLifePoints').textContent = total; // update total
+            document.getElementById('totalLifePoints').textContent = total; 
 
             const sortedDates = Object.keys(dailyGroups).sort((a,b) => new Date(b) - new Date(a));
             
@@ -269,14 +282,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 dailyHtml += `</tbody></table>`;
             });
 
-            // Weekly Accordion Wrapper
             html += `
                 <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm mb-4">
                     <div class="bg-gray-50/80 px-5 py-4 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition-colors" onclick="this.nextElementSibling.classList.toggle('dev-hidden')">
                         <span class="font-bold text-gray-700">第 ${week} 週 (${weekData.range})</span>
                         <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </div>
-                    <div class=""> <!-- Initially expanded -->
+                    <div class="">
                         ${dailyHtml}
                     </div>
                 </div>
