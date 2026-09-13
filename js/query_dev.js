@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     chartHtml = `
-                        <div class="flex items-end gap-[2px] h-20 pt-6 pb-4 w-full max-w-[250px] border-b border-gray-200">
+                        <div class="flex items-end gap-1 md:gap-1.5 h-20 pt-6 pb-4 w-full min-w-[300px] border-b border-gray-200 overflow-x-auto scrollbar-hide pr-2">
                             ${barsHtml}
                         </div>
                     `;
@@ -323,6 +323,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const lpRank = currentStudent.rank || '-';
         const totalStudents = currentStudent.totalStudents || '-';
         document.getElementById('lpRank').textContent = `${lpRank} / ${totalStudents}`;
+        const lpPrev = currentStudent.prevScore || '-';
+        const lpNext = currentStudent.nextScore || '-';
+        const prevEl = document.getElementById('lpPrev');
+        const nextEl = document.getElementById('lpNext');
+        if(prevEl) prevEl.textContent = lpPrev;
+        if(nextEl) nextEl.textContent = lpNext;
 
         let html = '';
         const sortedWeeks = Object.keys(lpData).sort((a,b) => b - a);
