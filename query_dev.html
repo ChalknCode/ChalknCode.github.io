@@ -277,7 +277,12 @@
           </div>
 
           <!-- 圖表切換 -->
-          <div class="flex justify-end mb-2">
+          <div class="flex justify-end mb-2 gap-2 flex-wrap">
+              <!-- 區間/累計 切換 (只在全校分佈時顯示) -->
+              <div id="schoolSubmodeToggle" class="dev-hidden inline-flex bg-gray-100 rounded-lg p-1 border border-gray-200">
+                  <button id="toggleSubInterval" class="px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800">區間人數</button>
+                  <button id="toggleSubCumulative" class="px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800">累計人數</button>
+              </div>
               <div class="inline-flex bg-gray-100 rounded-lg p-1 border border-gray-200">
                   <button id="toggleChartClass" class="px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800">班級分佈</button>
                   <button id="toggleChartSchool" class="px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800">全校分佈</button>
@@ -344,7 +349,7 @@
 
   </main>
 
-  <script src="js/config.js?v=16"></script>
-  <script src="js/query_dev.js?v=16"></script>
+  <script src="js/config.js?v=17"></script>
+  <script src="js/query_dev.js?v=17"></script>
 </body>
 </html>

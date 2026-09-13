@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentStudent = null;
     let currentExamData = null;
     let chartMode = 'class'; // 'class' or 'school'
+    let schoolAvgSubmode = 'interval'; // 'interval' or 'cumulative' – only used when chartMode==='school' and isAvg
 
     window.navTo = function(viewId) {
         ['login', 'dashboard', 'exam', 'life'].forEach(id => {
@@ -120,6 +121,16 @@ document.addEventListener('DOMContentLoaded', () => {
             updateChartToggleUI();
             renderExamContent();
         };
+        document.getElementById('toggleSubInterval').onclick = () => {
+            schoolAvgSubmode = 'interval';
+            updateChartToggleUI();
+            renderExamContent();
+        };
+        document.getElementById('toggleSubCumulative').onclick = () => {
+            schoolAvgSubmode = 'cumulative';
+            updateChartToggleUI();
+            renderExamContent();
+        };
 
         // 顯示備忘錄
         const memoInput = document.getElementById('memoInput');
@@ -195,16 +206,30 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateChartToggleUI() {
         const btnC = document.getElementById('toggleChartClass');
         const btnS = document.getElementById('toggleChartSchool');
+        const subToggle = document.getElementById('schoolSubmodeToggle');
+        const btnInt = document.getElementById('toggleSubInterval');
+        const btnCum = document.getElementById('toggleSubCumulative');
         if (chartMode === 'class') {
             btnC.className = "px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800";
             btnS.className = "px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800 bg-transparent";
             document.getElementById('chartTypeLabel').textContent = '班級';
             document.getElementById('avgHeaderTitle').textContent = '班級平均';
+            if (subToggle) subToggle.classList.add('dev-hidden');
         } else {
             btnS.className = "px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800";
             btnC.className = "px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800 bg-transparent";
             document.getElementById('chartTypeLabel').textContent = '全校';
             document.getElementById('avgHeaderTitle').textContent = '學校平均';
+            if (subToggle) subToggle.classList.remove('dev-hidden');
+        }
+        if (btnInt && btnCum) {
+            if (schoolAvgSubmode === 'interval') {
+                btnInt.className = "px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800";
+                btnCum.className = "px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800 bg-transparent";
+            } else {
+                btnCum.className = "px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800";
+                btnInt.className = "px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800 bg-transparent";
+            }
         }
     }
 
@@ -261,26 +286,47 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const scoreNum = Number(currentExamData.scores[subj]);
 
-            if (isAvg) {
-                distSchool = currentExamData.schoolDistributionAvg ? currentExamData.schoolDistributionAvg.interval : {};
+            // 班級分佈永遠用 10-bin；全校總平均用 18-bin
+            const labels10 = ["9-0", "19-10", "29-20", "39-30", "49-40", "59-50", "69-60", "79-70", "89-80", "100-90"];
+            const labels18 = ["14.9-0", "19.9-15", "24.9-20", "29.9-25", "34.9-30", "39.9-35", "44.9-40", "49.9-45", "54.9-50", "59.9-55", "64.9-60", "69.9-65", "74.9-70", "79.9-75", "84.9-80", "89.9-85", "94.9-90", "99.9-95.0"];
+
+            if (isAvg && chartMode === 'school') {
+                // 全校總平均：18-bin，支援區間/累計切換
+                const avgData = currentExamData.schoolDistributionAvg || {};
+                distSchool = schoolAvgSubmode === 'cumulative'
+                    ? (avgData.cumulative || avgData.interval || {})
+                    : (avgData.interval || {});
                 distClass = currentExamData.distribution ? currentExamData.distribution['personalAverage'] : {};
-                labels = ["14.9-0", "19.9-15", "24.9-20", "29.9-25", "34.9-30", "39.9-35", "44.9-40", "49.9-45", "54.9-50", "59.9-55", "64.9-60", "69.9-65", "74.9-70", "79.9-75", "84.9-80", "89.9-85", "94.9-90", "99.9-95.0"];
-                
+                labels = labels18;
                 if (!isNaN(scoreNum)) {
-                    const limits = [15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
+                    const limits = [15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100];
                     for (let i = 0; i < limits.length; i++) {
-                        if (scoreNum < limits[i]) {
-                            studentBinIndex = i;
-                            break;
-                        }
+                        if (scoreNum < limits[i]) { studentBinIndex = i; break; }
                     }
                     if (studentBinIndex === -1) studentBinIndex = limits.length - 1;
+                }
+            } else if (isAvg && chartMode === 'class') {
+                // 班級總平均：10-bin（API 的 distribution.personalAverage 是 10-bin）
+                distSchool = {};
+                distClass = currentExamData.distribution ? currentExamData.distribution['personalAverage'] : {};
+                labels = labels10;
+                if (!isNaN(scoreNum)) {
+                    const intScore = Math.floor(scoreNum);
+                    if (intScore >= 90) studentBinIndex = 9;
+                    else if (intScore >= 80) studentBinIndex = 8;
+                    else if (intScore >= 70) studentBinIndex = 7;
+                    else if (intScore >= 60) studentBinIndex = 6;
+                    else if (intScore >= 50) studentBinIndex = 5;
+                    else if (intScore >= 40) studentBinIndex = 4;
+                    else if (intScore >= 30) studentBinIndex = 3;
+                    else if (intScore >= 20) studentBinIndex = 2;
+                    else if (intScore >= 10) studentBinIndex = 1;
+                    else studentBinIndex = 0;
                 }
             } else {
                 distSchool = currentExamData.schoolDistribution ? currentExamData.schoolDistribution[subj] : {};
                 distClass = currentExamData.distribution ? currentExamData.distribution[subj] : {};
-                labels = ["9-0", "19-10", "29-20", "39-30", "49-40", "59-50", "69-60", "79-70", "89-80", "100-90"];
-                
+                labels = labels10;
                 if (!isNaN(scoreNum)) {
                     const intScore = Math.floor(scoreNum);
                     if (intScore >= 90) studentBinIndex = 9;
@@ -307,37 +353,48 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (activeData && activeData.length > 0) {
                 const maxCount = Math.max(...activeData);
-                const numBins = activeData.length; 
+                const numBins = activeData.length;
+                const totalCount = chartMode === 'class'
+                    ? (distClass ? (distClass.total || activeData.reduce((a,b)=>a+b,0)) : 0)
+                    : (distSchool ? (distSchool.total || activeData.reduce((a,b)=>a+b,0)) : 0);
                 
                 if (maxCount === 0) {
                     chartHtml = '<div class="text-xs text-gray-400 py-2">無此分佈資料</div>';
                 } else {
                     let barsHtml = '';
+                    const is18bin = (numBins === 18);
+                    const barW = is18bin ? '9px' : '14px';
+                    const labelRot = is18bin ? 'rotate(-40deg)' : 'none';
+                    const labelBot = is18bin ? '-22px' : '-16px';
+                    const pbottom = is18bin ? '28px' : '20px';
+
                     for(let i=0; i<numBins; i++) {
                         const count = activeData[i] || 0;
-                        let pct = (count / maxCount) * 100;
-                        if (pct < 10 && pct > 0) pct = 10; // minimum height
+                        let pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                        if (pct < 8 && pct > 0) pct = 8;
                         
                         const isMyBin = (i === studentBinIndex);
                         const bgColor = isMyBin ? (chartMode === 'class' ? '#c2516a' : '#5c6bc0') : (count > 0 ? '#cbd5e1' : '#f1f5f9');
                         const height = count > 0 ? `${pct}%` : '2px';
-                        
-                        let labelText = labels[i] || '';
-                        // Simplified label if it's too long, optional. Just use labels[i].
+                        const labelText = labels[i] || '';
                         
                         barsHtml += `
-                            <div style="flex:1; min-width:0; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;">
+                            <div style="width:${barW}; flex-shrink:0; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;">
                                 <div style="width:100%; border-radius:2px 2px 0 0; background-color:${bgColor}; height:${height}; min-height:2px; position:relative; transition:all 0.2s;">
-                                    ${count > 0 ? `<div style="position:absolute; top:-18px; left:50%; transform:translateX(-50%); font-size:9px; white-space:nowrap; font-weight:${isMyBin?'bold':'400'}; color:${isMyBin ? bgColor : '#9ca3af'};">${count}</div>` : ''}
+                                    ${count > 0 ? `<div style="position:absolute; top:-17px; left:50%; transform:translateX(-50%); font-size:9px; white-space:nowrap; font-weight:${isMyBin?'bold':'400'}; color:${isMyBin ? bgColor : '#9ca3af'};">${count}</div>` : ''}
                                 </div>
-                                <div style="position:absolute; bottom:-22px; left:50%; transform:translateX(-50%) rotate(-40deg); transform-origin:top center; font-size:7px; color:#9ca3af; white-space:nowrap;">${labelText}</div>
+                                <div style="position:absolute; bottom:${labelBot}; left:50%; transform:translateX(-50%) ${labelRot}; transform-origin:top center; font-size:7px; color:#9ca3af; white-space:nowrap;">${labelText}</div>
                             </div>
                         `;
                     }
 
+                    const totalLabel = totalCount > 0 ? `共 ${totalCount} 人` : '';
                     chartHtml = `
-                        <div style="display:flex; align-items:flex-end; gap:1px; height:64px; padding-top:22px; padding-bottom:26px; width:100%; border-bottom:1px solid #e5e7eb;">
-                            ${barsHtml}
+                        <div style="display:flex; flex-direction:column; gap:0;">
+                            ${totalLabel ? `<div style="font-size:9px; color:#9ca3af; text-align:right; margin-bottom:1px;">${totalLabel}</div>` : ''}
+                            <div style="display:flex; align-items:flex-end; gap:2px; height:56px; padding-top:20px; padding-bottom:${pbottom}; border-bottom:1px solid #e5e7eb; overflow-x:auto;">
+                                ${barsHtml}
+                            </div>
                         </div>
                     `;
                 }
