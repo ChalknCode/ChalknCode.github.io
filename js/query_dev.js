@@ -53,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             currentStudent = data;
+            _savedIdNumber = idNumber; // 儲存供備忘錄使用
             
             const btnLife = document.getElementById('btn-life');
             const btnExam = document.getElementById('btn-exam');
@@ -87,6 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 儲存登入的身分證號碼供備忘錄使用
+    let _savedIdNumber = '';
+
     function renderDashboard() {
         document.getElementById('studentName').textContent = currentStudent.name || '';
         document.getElementById('studentClass').textContent = currentStudent.className || '';
@@ -116,6 +120,46 @@ document.addEventListener('DOMContentLoaded', () => {
             updateChartToggleUI();
             renderExamContent();
         };
+
+        // 顯示備忘錄
+        const memoInput = document.getElementById('memoInput');
+        if (memoInput) {
+            memoInput.value = currentStudent.memo || '';
+        }
+
+        // 綁定備忘錄儲存按鈕
+        const saveMemoBtn = document.getElementById('saveMemoBtn');
+        if (saveMemoBtn && !saveMemoBtn._bound) {
+            saveMemoBtn._bound = true;
+            saveMemoBtn.addEventListener('click', async () => {
+                const btn = document.getElementById('saveMemoBtn');
+                const text = document.getElementById('memoBtnText');
+                btn.disabled = true;
+                if (text) text.textContent = '儲存中...';
+                try {
+                    const response = await fetch(CONFIG.API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'saveMemo',
+                            seatNo: currentStudent.seatNo,
+                            idNumber: _savedIdNumber,
+                            memoText: document.getElementById('memoInput').value
+                        })
+                    });
+                    const res = await response.json();
+                    if (res.status === 'success') {
+                        if (text) text.textContent = '✓ 已儲存';
+                        setTimeout(() => { if (text) text.textContent = '儲存備忘錄'; btn.disabled = false; }, 2000);
+                    } else {
+                        alert('儲存失敗：' + res.message);
+                        if (text) text.textContent = '儲存備忘錄'; btn.disabled = false;
+                    }
+                } catch (e) {
+                    alert('儲存失敗，請檢查網路');
+                    if (text) text.textContent = '儲存備忘錄'; btn.disabled = false;
+                }
+            });
+        }
 
         renderLifePoints();
     }
@@ -219,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (isAvg) {
                 distSchool = currentExamData.schoolDistributionAvg ? currentExamData.schoolDistributionAvg.interval : {};
-                distClass = currentExamData.classDistributionAvg ? currentExamData.classDistributionAvg.interval : {};
+                distClass = currentExamData.distribution ? currentExamData.distribution['personalAverage'] : {};
                 labels = ["14.9-0", "19.9-15", "24.9-20", "29.9-25", "34.9-30", "39.9-35", "44.9-40", "49.9-45", "54.9-50", "59.9-55", "64.9-60", "69.9-65", "74.9-70", "79.9-75", "84.9-80", "89.9-85", "94.9-90", "99.9-95.0"];
                 
                 if (!isNaN(scoreNum)) {
@@ -234,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else {
                 distSchool = currentExamData.schoolDistribution ? currentExamData.schoolDistribution[subj] : {};
-                distClass = currentExamData.classDistribution ? currentExamData.classDistribution[subj] : {};
+                distClass = currentExamData.distribution ? currentExamData.distribution[subj] : {};
                 labels = ["9-0", "19-10", "29-20", "39-30", "49-40", "59-50", "69-60", "79-70", "89-80", "100-90"];
                 
                 if (!isNaN(scoreNum)) {
@@ -282,17 +326,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Simplified label if it's too long, optional. Just use labels[i].
                         
                         barsHtml += `
-                            <div class="flex-1 relative group flex flex-col items-center justify-end h-full">
-                                <div class="w-full rounded-t-sm transition-all relative" style="height: ${height}; background-color: ${bgColor}; min-height: 2px;">
-                                    <div class="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-inter whitespace-nowrap z-10 ${isMyBin ? 'block font-bold' : 'hidden group-hover:block text-gray-500'}" style="color: ${isMyBin ? bgColor : ''}">${count}</div>
+                            <div style="flex:1; min-width:0; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;">
+                                <div style="width:100%; border-radius:2px 2px 0 0; background-color:${bgColor}; height:${height}; min-height:2px; position:relative; transition:all 0.2s;">
+                                    ${count > 0 ? `<div style="position:absolute; top:-18px; left:50%; transform:translateX(-50%); font-size:9px; white-space:nowrap; font-weight:${isMyBin?'bold':'400'}; color:${isMyBin ? bgColor : '#9ca3af'};">${count}</div>` : ''}
                                 </div>
-                                <div class="absolute -bottom-4 text-[8px] text-gray-400 whitespace-nowrap scale-90">${labelText}</div>
+                                <div style="position:absolute; bottom:-22px; left:50%; transform:translateX(-50%) rotate(-40deg); transform-origin:top center; font-size:7px; color:#9ca3af; white-space:nowrap;">${labelText}</div>
                             </div>
                         `;
                     }
 
                     chartHtml = `
-                        <div class="flex items-end gap-1 md:gap-1.5 h-20 pt-6 pb-4 w-full min-w-[300px] border-b border-gray-200 overflow-x-auto scrollbar-hide pr-2">
+                        <div style="display:flex; align-items:flex-end; gap:1px; height:64px; padding-top:22px; padding-bottom:26px; width:100%; border-bottom:1px solid #e5e7eb;">
                             ${barsHtml}
                         </div>
                     `;

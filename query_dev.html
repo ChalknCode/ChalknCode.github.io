@@ -184,8 +184,13 @@
                       <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                       備忘錄 (本週目標)
                   </h3>
-                  <div id="memoText" class="border border-gray-200 rounded-lg bg-white/50 p-4 text-gray-700 text-sm flex-grow whitespace-pre-wrap">
-                      
+                  <div class="flex flex-col gap-2 flex-grow">
+                      <textarea id="memoInput" rows="4" class="w-full border border-gray-200 rounded-lg bg-white/70 p-3 text-gray-700 text-sm focus:ring-2 focus:ring-blue-400 outline-none resize-none flex-grow" placeholder="在此輸入備忘錄或本週目標..."></textarea>
+                      <div class="flex justify-end">
+                          <button id="saveMemoBtn" class="bg-[#5c6bc0] hover:bg-[#49559c] disabled:opacity-60 text-white px-4 py-2 rounded-lg text-sm font-bold shadow transition">
+                              <span id="memoBtnText">儲存備忘錄</span>
+                          </button>
+                      </div>
                   </div>
               </div>
               
@@ -339,7 +344,7 @@
 
   </main>
 
-  <script src="js/config.js?v=15"></script>
-  <script src="js/query_dev.js?v=15"></script>
+  <script src="js/config.js?v=16"></script>
+  <script src="js/query_dev.js?v=16"></script>
 </body>
 </html>
