@@ -1,0 +1,22 @@
+--- js/query_dev.js
++++ js/query_dev.js
+@@ -95,16 +95,15 @@
+         const examSelector = document.getElementById('examSelector');
+         if (currentStudent.availableExams && currentStudent.availableExams.length > 0) {
+             let options = '';
+             currentStudent.availableExams.forEach(exam => {
+-                options += `<option value="${exam.examId}">${exam.examName}</option>`;
++                options += `<option value="${exam}">${exam}</option>`;
+             });
+             examSelector.innerHTML = options;
+             examSelector.onchange = (e) => {
+                 const eid = e.target.value;
+                 currentExamData = currentStudent.grades[eid];
+                 if (currentExamData) {
+                     renderExamContent();
+                 }
+             };
+-            currentExamData = currentStudent.grades[currentStudent.availableExams[0].examId];
++            currentExamData = currentStudent.grades[currentStudent.availableExams[0]];
+             renderExamContent();
+         }

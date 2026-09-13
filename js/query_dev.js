@@ -91,18 +91,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentStudent.availableExams && currentStudent.availableExams.length > 0) {
             let options = '';
             currentStudent.availableExams.forEach(exam => {
-                options += `<option value="${exam.examId}">${exam.examName}</option>`;
+                options += `<option value="${exam}">${exam}</option>`;
             });
             examSelector.innerHTML = options;
             examSelector.onchange = (e) => {
                 const eid = e.target.value;
                 currentExamData = currentStudent.grades[eid];
                 if (currentExamData) {
-                    
                     renderExamContent();
                 }
             };
-            currentExamData = currentStudent.grades[currentStudent.availableExams[0].examId];
+            currentExamData = currentStudent.grades[currentStudent.availableExams[0]];
             renderExamContent();
         }
 
@@ -146,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderExamContent() {
         if (!currentExamData) return;
         
-        const sum = currentExamData.summary;
+        const sum = currentExamData.summary || {};
         document.getElementById('cardRank').textContent = sum.classRank || '-';
         document.getElementById('cardSchoolRank').textContent = sum.schoolRankInterval || '-';
         document.getElementById('cardAvg').textContent = formatScore(sum.personalAverage);
@@ -162,8 +161,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const title = isAvg ? '總平均' : subj;
             
             const score = formatScore(currentExamData.scores[subj]);
-            const classAvg = formatScore(currentExamData.averages.classAvg[subj]);
-            const schoolAvg = formatScore(currentExamData.averages.schoolAvg[subj]);
+            const classAvg = formatScore(currentExamData.averages?.classAvg?.[subj]);
+            const schoolAvg = formatScore(currentExamData.averages?.schoolAvg?.[subj]);
             
             let rowClass = isAvg ? 'bg-orange-50/40' : 'hover:bg-gray-50/80 transition-colors';
             let subjClass = isAvg ? 'p-3 font-black text-gray-800' : 'p-3 font-bold text-gray-700';
@@ -279,12 +278,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const lpData = currentStudent.grades['生活計點'] || {};
         let total = initPts;
         
-        document.getElementById('totalLifePoints').textContent = total;
-
-        const summary = currentStudent.lifePointsSummary;
-        document.getElementById('lpRank').textContent = summary && summary.rank ? summary.rank : '-';
-        document.getElementById('lpPrev').textContent = summary && summary.prevScore !== undefined ? summary.prevScore : '-';
-        document.getElementById('lpNext').textContent = summary && summary.nextScore !== undefined ? summary.nextScore : '-';
+        const summary = currentStudent.lifePointsSummary || {};
+        document.getElementById('lpRank').textContent = summary.rank || '-';
+        document.getElementById('lpPrev').textContent = summary.prevScore !== undefined ? summary.prevScore : '-';
+        document.getElementById('lpNext').textContent = summary.nextScore !== undefined ? summary.nextScore : '-';
 
         let html = '';
         const sortedWeeks = Object.keys(lpData).sort((a,b) => b - a);
@@ -298,46 +295,60 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(!dailyGroups[rec.date]) dailyGroups[rec.date] = [];
                 dailyGroups[rec.date].push(rec);
             });
-            document.getElementById('totalLifePoints').textContent = total; 
 
             const sortedDates = Object.keys(dailyGroups).sort((a,b) => new Date(b) - new Date(a));
             
             let dailyHtml = '';
             sortedDates.forEach(dateStr => {
                 dailyHtml += `
-                    <div class="bg-gray-100/50 px-4 py-2 border-y border-gray-100 font-bold text-gray-600 text-xs">
-                        📅 ${dateStr}
+                    <div class="pl-4 pr-3 py-1 mt-3 font-bold text-[#5c6bc0] text-xs flex items-center border-l-2 border-[#5c6bc0] bg-indigo-50/20">
+                        <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        ${dateStr}
                     </div>
-                    <table class="w-full text-left text-sm">
-                        <tbody class="divide-y divide-gray-50">
+                    <div class="ml-4 mr-2">
+                        <table class="w-full text-left text-sm mt-1">
+                            <tbody class="divide-y divide-gray-100">
                 `;
                 dailyGroups[dateStr].forEach(rec => {
-                    const ptsClass = rec.points > 0 ? 'text-green-600' : (rec.points < 0 ? 'text-red-600' : 'text-gray-500');
+                    const ptsClass = rec.points > 0 ? 'text-green-600 bg-green-50' : (rec.points < 0 ? 'text-red-600 bg-red-50' : 'text-gray-500 bg-gray-50');
                     const ptsSign = rec.points > 0 ? '+' : '';
-                    const rowClass = rec.points < 0 ? 'bg-red-50/30' : 'hover:bg-gray-50/50';
                     dailyHtml += `
-                        <tr class="${rowClass}">
-                            <td class="p-3 font-bold text-gray-700 w-2/3">${rec.reason} <span class="text-xs text-gray-400 font-normal ml-2">${rec.remarks||''}</span></td>
-                            <td class="p-3 text-center font-black ${ptsClass}">${ptsSign}${rec.points}</td>
-                        </tr>
+                                <tr class="hover:bg-gray-50/50 transition-colors">
+                                    <td class="py-2.5 px-2 text-gray-600 w-full">
+                                        <div class="flex items-center">
+                                            <span class="w-1.5 h-1.5 rounded-full ${rec.points > 0 ? 'bg-green-400' : (rec.points < 0 ? 'bg-red-400' : 'bg-gray-400')} mr-2"></span>
+                                            ${rec.reason}
+                                            ${rec.remarks ? `<span class="text-[10px] text-gray-400 font-normal ml-2 bg-gray-100 px-1.5 py-0.5 rounded">${rec.remarks}</span>` : ''}
+                                        </div>
+                                    </td>
+                                    <td class="py-2.5 pr-2 pl-4 text-right">
+                                        <span class="inline-block px-2 py-0.5 rounded font-black text-xs ${ptsClass}">${ptsSign}${rec.points}</span>
+                                    </td>
+                                </tr>
                     `;
                 });
-                dailyHtml += `</tbody></table>`;
+                dailyHtml += `</tbody></table></div>`;
             });
 
             html += `
                 <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm mb-4">
-                    <div class="bg-gray-50/80 px-5 py-4 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition-colors" onclick="this.nextElementSibling.classList.toggle('dev-hidden')">
-                        <span class="font-bold text-gray-700">第 ${week} 週 (${weekData.range})</span>
-                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    <div class="bg-gradient-to-r from-gray-50 to-white px-5 py-3.5 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition-colors border-b border-gray-100" onclick="this.nextElementSibling.classList.toggle('dev-hidden')">
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                            <span class="font-black text-gray-700 tracking-wide">第 ${week} 週</span>
+                            <span class="text-xs text-gray-400 ml-3 font-medium">(${weekData.range})</span>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </div>
-                    <div class="">
+                    <div class="pb-3">
                         ${dailyHtml}
                     </div>
                 </div>
             `;
         });
         
+        document.getElementById('totalLifePoints').textContent = total; 
+
         if (html === '') {
             html = '<div class="text-gray-500 text-center py-4 bg-white rounded-xl border border-dashed border-gray-200">目前沒有生活計點紀錄</div>';
         }
