@@ -3,12 +3,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginError = document.getElementById('loginError');
     const loginBtn = document.getElementById('loginBtn');
     
-    // === State ===
     let currentStudent = null;
     let currentExamData = null;
     let chartMode = 'class'; // 'class' or 'school'
 
-    // === Navigation ===
     window.navTo = function(viewId) {
         ['login', 'dashboard', 'exam', 'life'].forEach(id => {
             document.getElementById('view-' + id).classList.add('dev-hidden');
@@ -16,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('view-' + viewId).classList.remove('dev-hidden');
     };
 
-    // === Login Logic ===
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const rawSeatNo = document.getElementById('seatNo').value.trim();
@@ -24,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (!rawSeatNo || !idNumber) return;
 
-        // 處理班級座號
         let seatNo = rawSeatNo;
         if (rawSeatNo.length >= 4 && rawSeatNo.startsWith('805')) {
             seatNo = parseInt(rawSeatNo.replace('805', ''), 10).toString(); 
@@ -54,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             currentStudent = data;
             
-            // Handle Feature Toggles
             const btnLife = document.getElementById('btn-life');
             const btnExam = document.getElementById('btn-exam');
             if (btnLife) btnLife.style.display = currentStudent.showLifePoints === false ? 'none' : 'flex';
@@ -72,25 +67,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // === Password Toggle Logic ===
     const togglePassword = document.getElementById('togglePassword');
     if(togglePassword) {
         togglePassword.addEventListener('click', function () {
             const pwdInput = document.getElementById('idNumber');
             const type = pwdInput.getAttribute('type') === 'password' ? 'text' : 'password';
             pwdInput.setAttribute('type', type);
-            // 切換眼睛 icon
-            this.textContent = type === 'password' ? '👁️' : '🙈';
+            const svg = document.getElementById('eyeIcon');
+            if (type === 'password') {
+                svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />';
+            } else {
+                svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />';
+            }
         });
     }
 
-    // === Render Dashboard ===
     function renderDashboard() {
         document.getElementById('studentName').textContent = currentStudent.name || '';
         document.getElementById('studentClass').textContent = currentStudent.className || '';
         document.getElementById('studentSeatNo').textContent = currentStudent.seatNo || '';
 
-        // Setup Exam Select
         const examSelector = document.getElementById('examSelector');
         if (currentStudent.availableExams && currentStudent.availableExams.length > 0) {
             let options = '';
@@ -110,7 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
             renderExamContent();
         }
 
-        // Setup Chart Toggles
         document.getElementById('toggleChartClass').onclick = () => {
             chartMode = 'class';
             updateChartToggleUI();
@@ -122,7 +117,6 @@ document.addEventListener('DOMContentLoaded', () => {
             renderExamContent();
         };
 
-        // Life Points
         renderLifePoints();
     }
 
@@ -142,91 +136,140 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function formatScore(score) {
-        if (score === undefined || score === null || score === '' || isNaN(score)) return '-';
-        return Math.round(score * 100) / 100;
+    function formatScore(val) {
+        if (val === undefined || val === null || val === '') return '-';
+        const num = Number(val);
+        if (!isNaN(num)) return Math.round(num * 100) / 100;
+        return val;
     }
 
     function renderExamContent() {
         if (!currentExamData) return;
         
-        const summary = currentExamData.summary || {};
-        document.getElementById('cardRank').textContent = summary.classRank || '-';
-        document.getElementById('cardSchoolRank').textContent = summary.schoolRank || '-';
-        document.getElementById('cardAvg').textContent = formatScore(summary.average);
-        document.getElementById('cardTotal').textContent = formatScore(summary.totalScore);
+        const sum = currentExamData.summary;
+        document.getElementById('cardRank').textContent = sum.classRank || '-';
+        document.getElementById('cardSchoolRank').textContent = sum.schoolRankInterval || '-';
+        document.getElementById('cardAvg').textContent = formatScore(sum.personalAverage);
+        document.getElementById('cardTotal').textContent = formatScore(sum.totalScore);
 
         const tbody = document.getElementById('examTableBody');
         let html = '';
 
-        const avgRow = currentExamData.subjects.find(s => s.subject === '總平均');
-        if (avgRow) html += generateTableRow(avgRow, true);
+        const subjectsToRender = ['personalAverage', ...(currentExamData.subjectOrder || [])];
 
-        currentExamData.subjects.forEach(subj => {
-            if (subj.subject !== '總平均') html += generateTableRow(subj, false);
-        });
-
-        tbody.innerHTML = html;
-    }
-
-    function generateTableRow(subj, isTotal) {
-        const score = formatScore(subj.score);
-        const avgScore = chartMode === 'class' ? formatScore(subj.classAverage) : formatScore(subj.schoolAverage);
-        
-        let rowClass = isTotal ? 'bg-orange-50/40' : 'hover:bg-gray-50/80 transition-colors';
-        let subjClass = isTotal ? 'p-3 font-black text-gray-800' : 'p-3 font-bold text-gray-700';
-        let scoreClass = isTotal ? 'p-3 text-center font-black text-[#c2516a] text-lg' : 'p-3 text-center font-bold text-[#c2516a]';
-        let avgClass = isTotal ? 'p-3 text-center font-bold text-gray-600' : 'p-3 text-center font-bold text-gray-600';
-
-        const distData = chartMode === 'class' ? subj.classDistribution : subj.schoolDistribution;
-        let chartHtml = '<div class="text-xs text-gray-400">無資料</div>';
-        
-        if (distData && distData.length > 0) {
-            const maxCount = Math.max(...distData);
-            const numBins = distData.length; 
+        subjectsToRender.forEach((subj) => {
+            const isAvg = subj === 'personalAverage';
+            const title = isAvg ? '總平均' : subj;
             
-            let barsHtml = '';
-            for(let i=0; i<numBins; i++) {
-                const count = distData[i] || 0;
-                let pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
-                if (pct < 10 && pct > 0) pct = 10;
+            const score = formatScore(currentExamData.scores[subj]);
+            const classAvg = formatScore(currentExamData.averages.classAvg[subj]);
+            const schoolAvg = formatScore(currentExamData.averages.schoolAvg[subj]);
+            
+            let rowClass = isAvg ? 'bg-orange-50/40' : 'hover:bg-gray-50/80 transition-colors';
+            let subjClass = isAvg ? 'p-3 font-black text-gray-800' : 'p-3 font-bold text-gray-700';
+            
+            const isRed = (typeof score === 'number' && score < 60) || (typeof currentExamData.scores[subj] === 'number' && currentExamData.scores[subj] < 60);
+            let scoreClass = isAvg 
+                ? `p-3 text-center font-black ${isRed ? 'text-red-500' : 'text-[#c2516a]'} text-lg` 
+                : `p-3 text-center font-bold ${isRed ? 'text-red-500' : 'text-[#c2516a]'}`;
                 
-                let isMyBin = false;
-                const rawScore = Number(subj.score);
-                if (!isNaN(rawScore)) {
-                    const binSize = 100 / numBins;
-                    const expectedBinIndex = Math.floor((100 - rawScore) / binSize);
-                    if (expectedBinIndex === i || (rawScore === 100 && i === 0)) {
-                        isMyBin = true;
+            let avgClass = 'p-3 text-center font-bold text-gray-600';
+            const displayAvg = chartMode === 'class' ? classAvg : schoolAvg;
+
+            let distSchool = null;
+            let distClass = null;
+            let labels = [];
+            let dataSchool = [];
+            let dataClass = [];
+            let studentBinIndex = -1;
+            
+            const scoreNum = Number(currentExamData.scores[subj]);
+
+            if (isAvg) {
+                distSchool = currentExamData.schoolDistributionAvg ? currentExamData.schoolDistributionAvg.interval : {};
+                distClass = currentExamData.classDistributionAvg ? currentExamData.classDistributionAvg.interval : {};
+                labels = ["14.9-0", "19.9-15", "24.9-20", "29.9-25", "34.9-30", "39.9-35", "44.9-40", "49.9-45", "54.9-50", "59.9-55", "64.9-60", "69.9-65", "74.9-70", "79.9-75", "84.9-80", "89.9-85", "94.9-90", "99.9-95.0"];
+                
+                if (!isNaN(scoreNum)) {
+                    const limits = [15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
+                    for (let i = 0; i < limits.length; i++) {
+                        if (scoreNum < limits[i]) {
+                            studentBinIndex = i;
+                            break;
+                        }
                     }
+                    if (studentBinIndex === -1) studentBinIndex = limits.length - 1;
+                }
+            } else {
+                distSchool = currentExamData.schoolDistribution ? currentExamData.schoolDistribution[subj] : {};
+                distClass = currentExamData.classDistribution ? currentExamData.classDistribution[subj] : {};
+                labels = ["9-0", "19-10", "29-20", "39-30", "49-40", "59-50", "69-60", "79-70", "89-80", "100-90"];
+                
+                if (!isNaN(scoreNum)) {
+                    const intScore = Math.floor(scoreNum);
+                    if (intScore >= 90) studentBinIndex = 9;
+                    else if (intScore >= 80) studentBinIndex = 8;
+                    else if (intScore >= 70) studentBinIndex = 7;
+                    else if (intScore >= 60) studentBinIndex = 6;
+                    else if (intScore >= 50) studentBinIndex = 5;
+                    else if (intScore >= 40) studentBinIndex = 4;
+                    else if (intScore >= 30) studentBinIndex = 3;
+                    else if (intScore >= 20) studentBinIndex = 2;
+                    else if (intScore >= 10) studentBinIndex = 1;
+                    else studentBinIndex = 0;
+                }
+            }
+
+            if (distSchool) {
+                labels.forEach(k => { 
+                    dataSchool.push(distSchool[k] || 0); 
+                    dataClass.push(distClass ? (distClass[k] || 0) : 0);
+                });
+            }
+
+            const activeData = chartMode === 'class' ? dataClass : dataSchool;
+            let chartHtml = '<div class="text-xs text-gray-400">無資料</div>';
+
+            if (activeData && activeData.length > 0) {
+                const maxCount = Math.max(...activeData);
+                const numBins = activeData.length; 
+                
+                let barsHtml = '';
+                for(let i=0; i<numBins; i++) {
+                    const count = activeData[i] || 0;
+                    let pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                    if (pct < 10 && pct > 0) pct = 10;
+                    
+                    const isMyBin = (i === studentBinIndex);
+                    const bgColor = isMyBin ? (chartMode === 'class' ? '#c2516a' : '#5c6bc0') : (count > 0 ? '#cbd5e1' : '#f1f5f9');
+                    const height = count > 0 ? `${pct}%` : '2px';
+                    
+                    barsHtml += `
+                        <div class="flex-1 rounded-t-sm relative group flex items-end justify-center h-full" style="min-height:2px;">
+                            <div class="w-full rounded-t-sm transition-all" style="height: ${height}; background-color: ${bgColor}; min-height: 2px;"></div>
+                            <div class="absolute -top-5 text-[10px] whitespace-nowrap z-10 ${isMyBin ? 'block font-bold' : 'hidden group-hover:block text-gray-500'}" style="color: ${isMyBin ? bgColor : ''}">${count}</div>
+                        </div>
+                    `;
                 }
 
-                const bgColor = isMyBin ? (chartMode === 'class' ? '#c2516a' : '#5c6bc0') : (count > 0 ? '#cbd5e1' : '#f1f5f9');
-                const height = count > 0 ? `${pct}%` : '2px';
-                
-                barsHtml += `
-                    <div class="flex-1 rounded-t-sm relative group flex items-end justify-center h-full" style="min-height:2px;">
-                        <div class="w-full rounded-t-sm transition-all" style="height: ${height}; background-color: ${bgColor}; min-height: 2px;"></div>
-                        <div class="absolute -top-5 text-[10px] whitespace-nowrap z-10 ${isMyBin ? 'block font-bold' : 'hidden group-hover:block text-gray-500'}" style="color: ${isMyBin ? bgColor : ''}">${count}</div>
+                chartHtml = `
+                    <div class="flex items-end gap-[1px] h-8 pt-4 w-full max-w-[200px]">
+                        ${barsHtml}
                     </div>
                 `;
             }
 
-            chartHtml = `
-                <div class="flex items-end gap-[1px] h-8 pt-4 w-full max-w-[200px]">
-                    ${barsHtml}
-                </div>
+            html += `
+                <tr class="${rowClass}">
+                    <td class="${subjClass}">${title}</td>
+                    <td class="${scoreClass}">${score}</td>
+                    <td class="${avgClass}">${displayAvg}</td>
+                    <td class="p-3 align-middle">${chartHtml}</td>
+                </tr>
             `;
-        }
+        });
 
-        return `
-            <tr class="${rowClass}">
-                <td class="${subjClass}">${subj.subject}</td>
-                <td class="${scoreClass}">${score}</td>
-                <td class="${avgClass}">${avgScore}</td>
-                <td class="p-3 align-middle">${chartHtml}</td>
-            </tr>
-        `;
+        tbody.innerHTML = html;
     }
 
     function renderLifePoints() {
