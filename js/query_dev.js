@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const schoolAvg = formatScore(currentExamData.averages?.schoolAvg?.[subj]);
             
             let rowClass = isAvg ? 'bg-orange-50' : 'hover:bg-gray-50/80 transition-colors';
-            let subjClass = isAvg ? 'p-3 font-black text-gray-900 border-l-4 border-orange-400' : 'p-3 font-bold text-gray-700 border-l-4 border-transparent';
+            let subjClass = isAvg ? 'p-3 text-center font-black text-gray-900 border-l-4 border-orange-400' : 'p-3 text-center font-bold text-gray-700 border-l-4 border-transparent';
             
             const isRed = (typeof score === 'number' && score < 60) || (typeof currentExamData.scores[subj] === 'number' && currentExamData.scores[subj] < 60);
             let scoreClass = isAvg 
@@ -252,12 +252,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            if (distSchool) {
-                labels.forEach(k => { 
-                    dataSchool.push(distSchool[k] || 0); 
-                    dataClass.push(distClass ? (distClass[k] || 0) : 0);
-                });
-            }
+            labels.forEach(k => { 
+                dataSchool.push(distSchool ? (distSchool[k] || 0) : 0); 
+                dataClass.push(distClass ? (distClass[k] || 0) : 0);
+            });
 
             const activeData = chartMode === 'class' ? dataClass : dataSchool;
             let chartHtml = '<div class="text-xs text-gray-400">無資料</div>';
