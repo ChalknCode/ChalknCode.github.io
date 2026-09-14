@@ -713,9 +713,11 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const subjects = Array.from(subjectSet).filter(s => s !== '生活計點');
-        // 將段考名稱拆成兩行：「七上」和「第一次段考」，讓 Chart.js 顯示為上下兩行
+        // 將段考名稱拆成三行橫書：「七上」、「第一次」、「段考」
         const labels = exams.map(name => {
-            if (name.length > 2) {
+            if (name.includes('段考') && name.length >= 6) {
+                return [name.substring(0, 2), name.substring(2, name.indexOf('段考')), '段考'];
+            } else if (name.length > 2) {
                 return [name.substring(0, 2), name.substring(2)];
             }
             return name;
