@@ -99,16 +99,28 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('studentSeatNo').textContent = currentStudent.seatNo || '';
 
         const examSelector = document.getElementById('examSelector');
+        const dashExamSelector = document.getElementById('dashExamSelector');
         if (currentStudent.availableExams && currentStudent.availableExams.length > 0) {
             let options = '';
             currentStudent.availableExams.forEach(exam => {
                 options += `<option value="${exam}">${exam}</option>`;
             });
-            examSelector.innerHTML = options;
-            examSelector.onchange = (e) => {
-                const eid = e.target.value;
-                loadExamData(eid);
-            };
+            if (examSelector) {
+                examSelector.innerHTML = options;
+                examSelector.onchange = (e) => {
+                    const eid = e.target.value;
+                    if (dashExamSelector) dashExamSelector.value = eid;
+                    loadExamData(eid);
+                };
+            }
+            if (dashExamSelector) {
+                dashExamSelector.innerHTML = options;
+                dashExamSelector.onchange = (e) => {
+                    const eid = e.target.value;
+                    if (examSelector) examSelector.value = eid;
+                    loadExamData(eid);
+                };
+            }
             loadExamData(currentStudent.availableExams[0]);
         }
 
@@ -168,6 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         renderLifePoints();
+        renderDashLineChart();
     }
 
     async function loadExamData(examName) {
@@ -175,9 +188,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const content = document.getElementById('examContent');
         const loader = document.getElementById('examLoader');
+        const radarLoader = document.getElementById('dashRadarLoader');
+        const radarCanvas = document.getElementById('dashRadarChart');
         
         content.classList.add('dev-hidden');
         if(loader) loader.classList.remove('dev-hidden');
+        if(radarLoader) radarLoader.classList.remove('dev-hidden');
+        if(radarCanvas) radarCanvas.style.opacity = '0.3';
 
         try {
             const response = await fetch(CONFIG.API_URL, {
@@ -193,6 +210,8 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('段考讀取失敗:', err);
         } finally {
             if(loader) loader.classList.add('dev-hidden');
+            if(radarLoader) radarLoader.classList.add('dev-hidden');
+            if(radarCanvas) radarCanvas.style.opacity = '1';
             content.classList.remove('dev-hidden');
         }
     }
@@ -469,14 +488,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let radarChartInstance = null;
 
     function renderRadarChart() {
-        const section = document.getElementById('radarChartSection');
+        const canvas = document.getElementById('dashRadarChart');
+        if (!canvas) return;
+
         if (!currentExamData || !currentExamData.scores || !currentExamData.subjectOrder || currentExamData.subjectOrder.length === 0) {
-            section.classList.add('dev-hidden');
+            canvas.classList.add('dev-hidden');
             return;
         }
         
-        section.classList.remove('dev-hidden');
-        const ctx = document.getElementById('radarChartCanvas').getContext('2d');
+        canvas.classList.remove('dev-hidden');
+        const ctx = canvas.getContext('2d');
         if (radarChartInstance) {
             radarChartInstance.destroy();
         }
@@ -639,4 +660,111 @@ document.addEventListener('DOMContentLoaded', () => {
         
         document.getElementById('lifePointsList').innerHTML = html;
     }
+
+    let dashLineChartInstance = null;
+
+    function renderDashLineChart() {
+        const canvas = document.getElementById('dashLineChart');
+        if (!canvas) return;
+
+        if (dashLineChartInstance) {
+            dashLineChartInstance.destroy();
+        }
+
+        if (!currentStudent || !currentStudent.grades) return;
+
+        const exams = currentStudent.availableExams || [];
+        if (exams.length === 0) return;
+
+        // 我們只挑選主要科目（可過濾掉沒成績的或用常見的五科+總平均）
+        const subjectColors = {
+            '國文': '#c2516a',
+            '英語': '#5c6bc0',
+            '數學': '#0284c7',
+            '自然': '#16a34a',
+            '社會': '#ca8a04',
+            '總平均': '#ea580c'
+        };
+
+        const subjects = Object.keys(currentStudent.grades).filter(s => s !== '生活計點');
+        // 取出這幾次的段考作為 X 軸
+        const labels = exams; 
+        
+        const datasets = [];
+        const fallbackColors = ['#f43f5e', '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#64748b'];
+        let colorIdx = 0;
+
+        subjects.forEach(subj => {
+            const grades = currentStudent.grades[subj];
+            if (!grades || grades.length === 0) return;
+
+            const dataPoints = [];
+            let hasValidData = false;
+            
+            // 按照 exams 的順序去抓分數
+            exams.forEach(exName => {
+                const match = grades.find(g => g.examId === exName);
+                if (match && typeof match.score === 'number') {
+                    dataPoints.push(match.score);
+                    hasValidData = true;
+                } else {
+                    dataPoints.push(null);
+                }
+            });
+
+            if (hasValidData) {
+                const color = subjectColors[subj] || fallbackColors[colorIdx % fallbackColors.length];
+                colorIdx++;
+                datasets.push({
+                    label: subj,
+                    data: dataPoints,
+                    borderColor: color,
+                    backgroundColor: color,
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    spanGaps: true
+                });
+            }
+        });
+
+        const ctx = canvas.getContext('2d');
+        dashLineChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 100,
+                        title: { display: true, text: '分數' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 10
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                }
+            }
+        });
+    }
+
 });

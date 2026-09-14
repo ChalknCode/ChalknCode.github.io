@@ -152,6 +152,37 @@
               </div>
           </div>
       </div>
+      
+      <!-- 首頁圖表區 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <!-- 歷次成績折線圖 -->
+          <div class="dev-glass-card rounded-2xl p-6 flex flex-col shadow-sm">
+              <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <svg class="w-5 h-5 text-[#5c6bc0]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                  歷次段考成績趨勢
+              </h3>
+              <div class="flex-grow w-full relative" style="min-height: 250px;">
+                  <canvas id="dashLineChart"></canvas>
+              </div>
+          </div>
+          <!-- 單次雷達圖 -->
+          <div class="dev-glass-card rounded-2xl p-6 flex flex-col shadow-sm">
+              <div class="flex justify-between items-center mb-4">
+                  <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                      <svg class="w-5 h-5 text-[#c2516a]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+                      各科研力雷達圖
+                  </h3>
+                  <select id="dashExamSelector" class="px-2 py-1 text-xs border border-gray-300 rounded font-bold text-gray-700 bg-white/50 focus:outline-none"></select>
+              </div>
+              <div class="flex-grow w-full relative flex justify-center items-center" style="min-height: 250px;">
+                  <div id="dashRadarLoader" class="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10 dev-hidden rounded-xl">
+                      <div class="loader !border-blue-200 !border-t-blue-600 w-8 h-8 mb-2"></div>
+                      <div class="text-xs text-gray-500 font-bold">資料載入中...</div>
+                  </div>
+                  <canvas id="dashRadarChart"></canvas>
+              </div>
+          </div>
+      </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Left Column: Buttons -->
@@ -280,12 +311,7 @@
               </div>
           </div>
 
-          <!-- 個人雷達圖 (僅在有各科分數時顯示) -->
-          <div id="radarChartSection" class="dev-hidden bg-white/90 p-4 rounded-xl shadow-sm border border-gray-200 mb-6 flex justify-center items-center">
-              <div style="width: 100%; max-width: 400px; aspect-ratio: 1/1;">
-                  <canvas id="radarChartCanvas"></canvas>
-              </div>
-          </div>
+          <!-- 個人雷達圖已經移至首頁 -->
 
           <!-- 圖表切換 -->
           <div class="flex justify-end mb-2 gap-2 flex-wrap">
@@ -358,7 +384,7 @@
 
   </main>
 
-  <script src="js/config.js?v=26"></script>
-  <script src="js/query_dev.js?v=26"></script>
+  <script src="js/config.js?v=27"></script>
+  <script src="js/query_dev.js?v=27"></script>
 </body>
 </html>
