@@ -713,8 +713,8 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const subjects = Array.from(subjectSet).filter(s => s !== '生活計點');
-        // 將段考名稱拆解為陣列，讓 Chart.js 將其視為多行文字，呈現「直著寫」的效果
-        const labels = exams.map(name => name.split('')); 
+        // 將段考名稱中的「段考」去掉以縮短長度，再拆解為陣列，讓 Chart.js 呈現「直著寫」
+        const labels = exams.map(name => name.replace('段考', '').split('')); 
         
         const allDatasets = [];
         const fallbackColors = ['#f43f5e', '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#64748b'];
