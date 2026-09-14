@@ -286,9 +286,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const scoreNum = Number(currentExamData.scores[subj]);
 
-            // 班級分佈永遠用 10-bin；全校總平均用 18-bin
-            const labels10 = ["9-0", "19-10", "29-20", "39-30", "49-40", "59-50", "69-60", "79-70", "89-80", "100-90"];
-            const labels18 = ["14.9-0", "19.9-15", "24.9-20", "29.9-25", "34.9-30", "39.9-35", "44.9-40", "49.9-45", "54.9-50", "59.9-55", "64.9-60", "69.9-65", "74.9-70", "79.9-75", "84.9-80", "89.9-85", "94.9-90", "99.9-95.0"];
+            // 由高到低排列（左高右低）
+            const labels10 = ["100-90", "89-80", "79-70", "69-60", "59-50", "49-40", "39-30", "29-20", "19-10", "9-0"];
+            const labels18 = ["99.9-95.0", "94.9-90", "89.9-85", "84.9-80", "79.9-75", "74.9-70", "69.9-65", "64.9-60", "59.9-55", "54.9-50", "49.9-45", "44.9-40", "39.9-35", "34.9-30", "29.9-25", "24.9-20", "19.9-15", "14.9-0"];
 
             if (isAvg && chartMode === 'school') {
                 // 全校總平均：18-bin，支援區間/累計切換
@@ -299,29 +299,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 distClass = currentExamData.distribution ? currentExamData.distribution['personalAverage'] : {};
                 labels = labels18;
                 if (!isNaN(scoreNum)) {
-                    const limits = [15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100];
-                    for (let i = 0; i < limits.length; i++) {
-                        if (scoreNum < limits[i]) { studentBinIndex = i; break; }
-                    }
-                    if (studentBinIndex === -1) studentBinIndex = limits.length - 1;
+                    // 高到低：index 0 = 最高分
+                    if (scoreNum >= 95) studentBinIndex = 0;
+                    else if (scoreNum >= 90) studentBinIndex = 1;
+                    else if (scoreNum >= 85) studentBinIndex = 2;
+                    else if (scoreNum >= 80) studentBinIndex = 3;
+                    else if (scoreNum >= 75) studentBinIndex = 4;
+                    else if (scoreNum >= 70) studentBinIndex = 5;
+                    else if (scoreNum >= 65) studentBinIndex = 6;
+                    else if (scoreNum >= 60) studentBinIndex = 7;
+                    else if (scoreNum >= 55) studentBinIndex = 8;
+                    else if (scoreNum >= 50) studentBinIndex = 9;
+                    else if (scoreNum >= 45) studentBinIndex = 10;
+                    else if (scoreNum >= 40) studentBinIndex = 11;
+                    else if (scoreNum >= 35) studentBinIndex = 12;
+                    else if (scoreNum >= 30) studentBinIndex = 13;
+                    else if (scoreNum >= 25) studentBinIndex = 14;
+                    else if (scoreNum >= 20) studentBinIndex = 15;
+                    else if (scoreNum >= 15) studentBinIndex = 16;
+                    else studentBinIndex = 17;
                 }
             } else if (isAvg && chartMode === 'class') {
-                // 班級總平均：10-bin（API 的 distribution.personalAverage 是 10-bin）
+                // 班級總平均：10-bin
                 distSchool = {};
                 distClass = currentExamData.distribution ? currentExamData.distribution['personalAverage'] : {};
                 labels = labels10;
                 if (!isNaN(scoreNum)) {
                     const intScore = Math.floor(scoreNum);
-                    if (intScore >= 90) studentBinIndex = 9;
-                    else if (intScore >= 80) studentBinIndex = 8;
-                    else if (intScore >= 70) studentBinIndex = 7;
-                    else if (intScore >= 60) studentBinIndex = 6;
-                    else if (intScore >= 50) studentBinIndex = 5;
-                    else if (intScore >= 40) studentBinIndex = 4;
-                    else if (intScore >= 30) studentBinIndex = 3;
-                    else if (intScore >= 20) studentBinIndex = 2;
-                    else if (intScore >= 10) studentBinIndex = 1;
-                    else studentBinIndex = 0;
+                    // 高到低：index 0 = 最高分
+                    if (intScore >= 90) studentBinIndex = 0;
+                    else if (intScore >= 80) studentBinIndex = 1;
+                    else if (intScore >= 70) studentBinIndex = 2;
+                    else if (intScore >= 60) studentBinIndex = 3;
+                    else if (intScore >= 50) studentBinIndex = 4;
+                    else if (intScore >= 40) studentBinIndex = 5;
+                    else if (intScore >= 30) studentBinIndex = 6;
+                    else if (intScore >= 20) studentBinIndex = 7;
+                    else if (intScore >= 10) studentBinIndex = 8;
+                    else studentBinIndex = 9;
                 }
             } else {
                 distSchool = currentExamData.schoolDistribution ? currentExamData.schoolDistribution[subj] : {};
@@ -329,16 +344,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 labels = labels10;
                 if (!isNaN(scoreNum)) {
                     const intScore = Math.floor(scoreNum);
-                    if (intScore >= 90) studentBinIndex = 9;
-                    else if (intScore >= 80) studentBinIndex = 8;
-                    else if (intScore >= 70) studentBinIndex = 7;
-                    else if (intScore >= 60) studentBinIndex = 6;
-                    else if (intScore >= 50) studentBinIndex = 5;
-                    else if (intScore >= 40) studentBinIndex = 4;
-                    else if (intScore >= 30) studentBinIndex = 3;
-                    else if (intScore >= 20) studentBinIndex = 2;
-                    else if (intScore >= 10) studentBinIndex = 1;
-                    else studentBinIndex = 0;
+                    // 高到低：index 0 = 最高分
+                    if (intScore >= 90) studentBinIndex = 0;
+                    else if (intScore >= 80) studentBinIndex = 1;
+                    else if (intScore >= 70) studentBinIndex = 2;
+                    else if (intScore >= 60) studentBinIndex = 3;
+                    else if (intScore >= 50) studentBinIndex = 4;
+                    else if (intScore >= 40) studentBinIndex = 5;
+                    else if (intScore >= 30) studentBinIndex = 6;
+                    else if (intScore >= 20) studentBinIndex = 7;
+                    else if (intScore >= 10) studentBinIndex = 8;
+                    else studentBinIndex = 9;
                 }
             }
 
@@ -363,10 +379,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     let barsHtml = '';
                     const is18bin = (numBins === 18);
-                    const barW = is18bin ? '10px' : '20px';
+                    // 統一用細柱，10-bin 和 18-bin 都是 10px
+                    const barW = '10px';
                     const labelRot = is18bin ? 'rotate(-40deg)' : 'none';
                     const labelBot = is18bin ? '-22px' : '-16px';
-                    const pbottom = is18bin ? '28px' : '20px';
+                    // 足夠高度避免出現 scrollbar
+                    const areaH = is18bin ? '42px' : '40px';
+                    const topPad = '22px';
+                    const botPad = is18bin ? '28px' : '20px';
                     const barGap = is18bin ? '2px' : '5px';
 
                     for(let i=0; i<numBins; i++) {
@@ -375,16 +395,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (pct < 8 && pct > 0) pct = 8;
                         
                         const isMyBin = (i === studentBinIndex);
-                        const bgColor = isMyBin ? (chartMode === 'class' ? '#c2516a' : '#5c6bc0') : (count > 0 ? '#cbd5e1' : '#f1f5f9');
+                        // 自己的 bin 用強調色，其他的用中等深度灰藍色（不再太淡）
+                        const bgColor = isMyBin
+                            ? (chartMode === 'class' ? '#c2516a' : '#4f5dc9')
+                            : (count > 0 ? '#94a3b8' : '#e2e8f0');
                         const height = count > 0 ? `${pct}%` : '2px';
                         const labelText = labels[i] || '';
                         
                         barsHtml += `
                             <div style="width:${barW}; flex-shrink:0; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;">
                                 <div style="width:100%; border-radius:2px 2px 0 0; background-color:${bgColor}; height:${height}; min-height:2px; position:relative; transition:all 0.2s;">
-                                    ${count > 0 ? `<div style="position:absolute; top:-17px; left:50%; transform:translateX(-50%); font-size:9px; white-space:nowrap; font-weight:${isMyBin?'bold':'400'}; color:${isMyBin ? bgColor : '#9ca3af'};">${count}</div>` : ''}
+                                    ${count > 0 ? `<div style="position:absolute; top:-17px; left:50%; transform:translateX(-50%); font-size:8px; white-space:nowrap; font-weight:${isMyBin?'bold':'400'}; color:${isMyBin ? bgColor : '#64748b'};">${count}</div>` : ''}
                                 </div>
-                                <div style="position:absolute; bottom:${labelBot}; left:50%; transform:translateX(-50%) ${labelRot}; transform-origin:top center; font-size:7px; color:#9ca3af; white-space:nowrap;">${labelText}</div>
+                                <div style="position:absolute; bottom:${labelBot}; left:50%; transform:translateX(-50%) ${labelRot}; transform-origin:top center; font-size:7px; color:#94a3b8; white-space:nowrap;">${labelText}</div>
                             </div>
                         `;
                     }
@@ -393,7 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     chartHtml = `
                         <div style="display:flex; flex-direction:column; gap:0;">
                             ${totalLabel ? `<div style="font-size:9px; color:#9ca3af; text-align:right; margin-bottom:1px;">${totalLabel}</div>` : ''}
-                            <div style="display:flex; align-items:flex-end; gap:${barGap}; height:56px; padding-top:20px; padding-bottom:${pbottom}; border-bottom:1px solid #e5e7eb; overflow-x:auto;">
+                            <div style="display:flex; align-items:flex-end; gap:${barGap}; height:${areaH}; padding-top:${topPad}; padding-bottom:${botPad}; border-bottom:1px solid #e5e7eb; overflow:visible;">
                                 ${barsHtml}
                             </div>
                         </div>
