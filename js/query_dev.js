@@ -695,7 +695,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const subjectSet = new Set();
         results.forEach(res => {
             if (res && res.scores) {
-                Object.keys(res.scores).forEach(s => subjectSet.add(s));
+                Object.keys(res.scores).forEach(s => {
+                    const disp = s === 'personalAverage' ? '總平均' : s;
+                    subjectSet.add(disp);
+                });
             }
         });
 
@@ -712,7 +715,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const subjects = Array.from(subjectSet).filter(s => s !== '生活計點');
         const labels = exams; 
         
-        const datasets = [];
+        const allDatasets = [];
         const fallbackColors = ['#f43f5e', '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#64748b'];
         let colorIdx = 0;
 
@@ -721,8 +724,9 @@ document.addEventListener('DOMContentLoaded', () => {
             let hasValidData = false;
             
             results.forEach(res => {
-                if (res && res.scores && res.scores[subj] !== undefined && res.scores[subj] !== '') {
-                    const score = Number(res.scores[subj]);
+                const origSubj = subj === '總平均' ? 'personalAverage' : subj;
+                if (res && res.scores && res.scores[origSubj] !== undefined && res.scores[origSubj] !== '') {
+                    const score = Number(res.scores[origSubj]);
                     if (!isNaN(score)) {
                         dataPoints.push(score);
                         hasValidData = true;
@@ -737,7 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (hasValidData) {
                 const color = subjectColors[subj] || fallbackColors[colorIdx % fallbackColors.length];
                 colorIdx++;
-                datasets.push({
+                allDatasets.push({
                     label: subj,
                     data: dataPoints,
                     borderColor: color,
@@ -750,6 +754,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        const subjectSelector = document.getElementById('dashLineSubjectSelector');
+        if (subjectSelector) {
+            let optionsHtml = '<option value="all">全部科目</option>';
+            allDatasets.forEach(ds => {
+                optionsHtml += `<option value="${ds.label}">${ds.label}</option>`;
+            });
+            subjectSelector.innerHTML = optionsHtml;
+            
+            // 預設為全部，也可以改為預設第一科
+            subjectSelector.onchange = (e) => {
+                const val = e.target.value;
+                if (dashLineChartInstance) {
+                    if (val === 'all') {
+                        dashLineChartInstance.data.datasets = allDatasets;
+                        dashLineChartInstance.options.plugins.legend.display = true;
+                    } else {
+                        dashLineChartInstance.data.datasets = allDatasets.filter(d => d.label === val);
+                        dashLineChartInstance.options.plugins.legend.display = false;
+                    }
+                    dashLineChartInstance.update();
+                }
+            };
+        }
+
         if (dashLineChartInstance) {
             dashLineChartInstance.destroy();
         }
@@ -758,7 +786,7 @@ document.addEventListener('DOMContentLoaded', () => {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: datasets
+                datasets: allDatasets // 預設顯示全部
             },
             options: {
                 responsive: true,
@@ -772,6 +800,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 plugins: {
                     legend: {
+                        display: true,
                         position: 'top',
                         labels: {
                             usePointStyle: true,

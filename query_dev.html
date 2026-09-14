@@ -157,10 +157,13 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <!-- 歷次成績折線圖 -->
           <div class="dev-glass-card rounded-2xl p-6 flex flex-col shadow-sm">
-              <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <svg class="w-5 h-5 text-[#5c6bc0]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
-                  歷次段考成績趨勢
-              </h3>
+              <div class="flex justify-between items-center mb-4">
+                  <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                      <svg class="w-5 h-5 text-[#5c6bc0]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                      歷次段考成績趨勢
+                  </h3>
+                  <select id="dashLineSubjectSelector" class="px-2 py-1 text-xs border border-gray-300 rounded font-bold text-gray-700 bg-white/50 focus:outline-none"></select>
+              </div>
               <div class="flex-grow w-full relative flex justify-center items-center" style="min-height: 250px;">
                   <div id="dashLineLoader" class="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10 rounded-xl">
                       <div class="loader !border-blue-200 !border-t-blue-600 w-8 h-8 mb-2"></div>
@@ -388,7 +391,7 @@
 
   </main>
 
-  <script src="js/config.js?v=29"></script>
-  <script src="js/query_dev.js?v=29"></script>
+  <script src="js/config.js?v=30"></script>
+  <script src="js/query_dev.js?v=30"></script>
 </body>
 </html>
