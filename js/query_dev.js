@@ -122,14 +122,8 @@ document.addEventListener('DOMContentLoaded', () => {
             updateChartToggleUI();
             renderExamContent();
         };
-        document.getElementById('toggleSubInterval').onclick = () => {
-            schoolAvgSubmode = 'interval';
-            updateChartToggleUI();
-            renderExamContent();
-        };
-        document.getElementById('toggleSubCumulative').onclick = () => {
-            schoolAvgSubmode = 'cumulative';
-            updateChartToggleUI();
+        window.setSchoolSubmode = (mode) => {
+            schoolAvgSubmode = mode;
             renderExamContent();
         };
 
@@ -206,30 +200,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateChartToggleUI() {
         const btnC = document.getElementById('toggleChartClass');
         const btnS = document.getElementById('toggleChartSchool');
-        const subToggle = document.getElementById('schoolSubmodeToggle');
-        const btnInt = document.getElementById('toggleSubInterval');
-        const btnCum = document.getElementById('toggleSubCumulative');
         if (chartMode === 'class') {
             btnC.className = "px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800";
             btnS.className = "px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800 bg-transparent";
             document.getElementById('chartTypeLabel').textContent = '班級';
             document.getElementById('avgHeaderTitle').textContent = '班級平均';
-            if (subToggle) subToggle.classList.add('dev-hidden');
         } else {
             btnS.className = "px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800";
             btnC.className = "px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800 bg-transparent";
             document.getElementById('chartTypeLabel').textContent = '全校';
             document.getElementById('avgHeaderTitle').textContent = '學校平均';
-            if (subToggle) subToggle.classList.remove('dev-hidden');
-        }
-        if (btnInt && btnCum) {
-            if (schoolAvgSubmode === 'interval') {
-                btnInt.className = "px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800";
-                btnCum.className = "px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800 bg-transparent";
-            } else {
-                btnCum.className = "px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800";
-                btnInt.className = "px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800 bg-transparent";
-            }
         }
     }
 
@@ -436,8 +416,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     const totalLabel = totalCount > 0 ? `共 ${totalCount} 人` : '';
+                    let toggleHtml = '';
+                    if (isAvg && chartMode === 'school') {
+                        const isInt = schoolAvgSubmode === 'interval';
+                        toggleHtml = `
+                        <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
+                            <div class="inline-flex bg-white/50 rounded-md p-0.5 border border-gray-200">
+                                <button onclick="window.setSchoolSubmode('interval')" class="px-2 py-1 text-[10px] font-bold rounded ${isInt ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-800'}">區間</button>
+                                <button onclick="window.setSchoolSubmode('cumulative')" class="px-2 py-1 text-[10px] font-bold rounded ${!isInt ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-800'}">累計</button>
+                            </div>
+                        </div>`;
+                    }
                     chartHtml = `
-                        <div style="display:flex; flex-direction:column; gap:0; width:fit-content;">
+                        <div style="display:flex; flex-direction:column; gap:0; width:fit-content; margin: 0 auto;">
+                            ${toggleHtml}
                             ${totalLabel ? `<div style="font-size:9px; color:#9ca3af; text-align:right; margin-bottom:2px;">${totalLabel}</div>` : ''}
                             <div style="padding-top:18px; overflow:visible;">
                                 <div style="display:flex; align-items:flex-end; gap:${barGapPx}px; overflow:visible;">
@@ -469,7 +461,85 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         tbody.innerHTML = html;
+        
+        // 繪製雷達圖
+        renderRadarChart();
+    }
 
+    let radarChartInstance = null;
+
+    function renderRadarChart() {
+        const section = document.getElementById('radarChartSection');
+        if (!currentExamData || !currentExamData.scores || !currentExamData.subjectOrder || currentExamData.subjectOrder.length === 0) {
+            section.classList.add('dev-hidden');
+            return;
+        }
+        
+        section.classList.remove('dev-hidden');
+        const ctx = document.getElementById('radarChartCanvas').getContext('2d');
+        if (radarChartInstance) {
+            radarChartInstance.destroy();
+        }
+
+        const labels = currentExamData.subjectOrder;
+        const myScores = labels.map(subj => {
+            const s = Number(currentExamData.scores[subj]);
+            return isNaN(s) ? 0 : s;
+        });
+        
+        const classAvgs = labels.map(subj => {
+            const a = Number(currentExamData.averages?.classAvg?.[subj]);
+            return isNaN(a) ? 0 : a;
+        });
+
+        radarChartInstance = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '您的分數',
+                        data: myScores,
+                        backgroundColor: 'rgba(194, 81, 106, 0.2)', // #c2516a
+                        borderColor: 'rgba(194, 81, 106, 1)',
+                        pointBackgroundColor: 'rgba(194, 81, 106, 1)',
+                        borderWidth: 2,
+                        fill: true
+                    },
+                    {
+                        label: '班級平均',
+                        data: classAvgs,
+                        backgroundColor: 'rgba(156, 163, 175, 0.2)', // gray-400
+                        borderColor: 'rgba(156, 163, 175, 1)',
+                        pointBackgroundColor: 'rgba(156, 163, 175, 1)',
+                        borderWidth: 1,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        min: 0,
+                        max: 100,
+                        ticks: { stepSize: 20 },
+                        pointLabels: {
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
     }
 
     function renderLifePoints() {

@@ -10,6 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     :root {
@@ -278,13 +280,16 @@
               </div>
           </div>
 
+          <!-- 個人雷達圖 (僅在有各科分數時顯示) -->
+          <div id="radarChartSection" class="dev-hidden bg-white/90 p-4 rounded-xl shadow-sm border border-gray-200 mb-6 flex justify-center items-center">
+              <div style="width: 100%; max-width: 400px; aspect-ratio: 1/1;">
+                  <canvas id="radarChartCanvas"></canvas>
+              </div>
+          </div>
+
           <!-- 圖表切換 -->
           <div class="flex justify-end mb-2 gap-2 flex-wrap">
-              <!-- 區間/累計 切換 (只在全校分佈時顯示) -->
-              <div id="schoolSubmodeToggle" class="dev-hidden inline-flex bg-gray-100 rounded-lg p-1 border border-gray-200">
-                  <button id="toggleSubInterval" class="px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800">區間人數</button>
-                  <button id="toggleSubCumulative" class="px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800">累計人數</button>
-              </div>
+              <!-- 區間/累計 切換移至總平均欄位內 -->
               <div class="inline-flex bg-gray-100 rounded-lg p-1 border border-gray-200">
                   <button id="toggleChartClass" class="px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800">班級分佈</button>
                   <button id="toggleChartSchool" class="px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800">全校分佈</button>
@@ -353,7 +358,7 @@
 
   </main>
 
-  <script src="js/config.js?v=25"></script>
-  <script src="js/query_dev.js?v=25"></script>
+  <script src="js/config.js?v=26"></script>
+  <script src="js/query_dev.js?v=26"></script>
 </body>
 </html>
