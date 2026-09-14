@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     let currentStudent = null;
     let currentExamData = null;
+    let prevExamData = null;  // 上次段考資料，用於進退步比較
     let chartMode = 'class'; // 'class' or 'school'
     let schoolAvgSubmode = 'interval'; // 'interval' or 'cumulative' – only used when chartMode==='school' and isAvg
 
@@ -193,6 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.error) throw new Error(data.error);
 
+            prevExamData = currentExamData;  // 保留上次段考資料
             currentExamData = data;
             renderExamContent();
         } catch (err) {
@@ -378,46 +380,46 @@ document.addEventListener('DOMContentLoaded', () => {
                     chartHtml = '<div class="text-xs text-gray-400 py-2">無此分佈資料</div>';
                 } else {
                     let barsHtml = '';
+                    let labelsHtml = '';
                     const is18bin = (numBins === 18);
-                    // 統一用細柱，10-bin 和 18-bin 都是 10px
-                    const barW = '10px';
-                    const labelRot = is18bin ? 'rotate(-40deg)' : 'none';
-                    const labelBot = is18bin ? '-22px' : '-16px';
-                    // 足夠高度避免出現 scrollbar
-                    const areaH = is18bin ? '42px' : '40px';
-                    const topPad = '22px';
-                    const botPad = is18bin ? '28px' : '20px';
-                    const barGap = is18bin ? '2px' : '5px';
+                    const barW = 10; // px, 統一細柱
+                    const barGapPx = is18bin ? 2 : 4; // px
+                    const maxBarPx = 50; // 最高柱的像素高度
+                    const labelRot = is18bin ? -55 : -60; // 旋轉角度
 
-                    for(let i=0; i<numBins; i++) {
+                    for(let i = 0; i < numBins; i++) {
                         const count = activeData[i] || 0;
-                        let pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
-                        if (pct < 8 && pct > 0) pct = 8;
-                        
+                        const pixH = count > 0 ? Math.max(4, Math.round((count / maxCount) * maxBarPx)) : 2;
                         const isMyBin = (i === studentBinIndex);
-                        // 自己的 bin 用強調色，其他的用中等深度灰藍色（不再太淡）
                         const bgColor = isMyBin
                             ? (chartMode === 'class' ? '#c2516a' : '#4f5dc9')
                             : (count > 0 ? '#94a3b8' : '#e2e8f0');
-                        const height = count > 0 ? `${pct}%` : '2px';
+                        const fw = isMyBin ? 'bold' : '400';
+                        const numColor = isMyBin ? bgColor : '#64748b';
                         const labelText = labels[i] || '';
-                        
-                        barsHtml += `
-                            <div style="width:${barW}; flex-shrink:0; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;">
-                                <div style="width:100%; border-radius:2px 2px 0 0; background-color:${bgColor}; height:${height}; min-height:2px; position:relative; transition:all 0.2s;">
-                                    ${count > 0 ? `<div style="position:absolute; top:-17px; left:50%; transform:translateX(-50%); font-size:8px; white-space:nowrap; font-weight:${isMyBin?'bold':'400'}; color:${isMyBin ? bgColor : '#64748b'};">${count}</div>` : ''}
-                                </div>
-                                <div style="position:absolute; bottom:${labelBot}; left:50%; transform:translateX(-50%) ${labelRot}; transform-origin:top center; font-size:7px; color:#94a3b8; white-space:nowrap;">${labelText}</div>
+
+                        barsHtml += `<div style="width:${barW}px; flex-shrink:0; display:flex; align-items:flex-end; height:${maxBarPx}px; position:relative;">
+                            <div style="width:100%; height:${pixH}px; border-radius:2px 2px 0 0; background-color:${bgColor}; position:relative; transition:height 0.2s;">
+                                ${count > 0 ? `<div style="position:absolute; top:-15px; left:50%; transform:translateX(-50%); font-size:8px; white-space:nowrap; font-weight:${fw}; color:${numColor};">${count}</div>` : ''}
                             </div>
-                        `;
+                        </div>`;
+
+                        labelsHtml += `<div style="width:${barW}px; flex-shrink:0; height:28px; position:relative; overflow:visible;">
+                            <div style="position:absolute; top:3px; left:50%; transform-origin:top left; transform:translateX(-50%) rotate(${labelRot}deg); font-size:6.5px; color:#94a3b8; white-space:nowrap;">${labelText}</div>
+                        </div>`;
                     }
 
                     const totalLabel = totalCount > 0 ? `共 ${totalCount} 人` : '';
                     chartHtml = `
-                        <div style="display:flex; flex-direction:column; gap:0;">
-                            ${totalLabel ? `<div style="font-size:9px; color:#9ca3af; text-align:right; margin-bottom:1px;">${totalLabel}</div>` : ''}
-                            <div style="display:flex; align-items:flex-end; gap:${barGap}; height:${areaH}; padding-top:${topPad}; padding-bottom:${botPad}; border-bottom:1px solid #e5e7eb; overflow:visible;">
-                                ${barsHtml}
+                        <div style="display:flex; flex-direction:column; gap:0; width:fit-content;">
+                            ${totalLabel ? `<div style="font-size:9px; color:#9ca3af; text-align:right; margin-bottom:2px;">${totalLabel}</div>` : ''}
+                            <div style="padding-top:18px; overflow:visible;">
+                                <div style="display:flex; align-items:flex-end; gap:${barGapPx}px; overflow:visible;">
+                                    ${barsHtml}
+                                </div>
+                                <div style="display:flex; gap:${barGapPx}px; margin-top:2px; overflow:visible;">
+                                    ${labelsHtml}
+                                </div>
                             </div>
                         </div>
                     `;
@@ -436,6 +438,58 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         tbody.innerHTML = html;
+
+        // ====== 進退步比較 ======
+        const compContainer = document.getElementById('examCompareSection');
+        if (compContainer) {
+            if (prevExamData && prevExamData.scores) {
+                const subjects = currentExamData.subjectOrder || [];
+                let compHtml = `
+                    <div class="mt-4 rounded-xl overflow-hidden border border-gray-100">
+                        <div class="bg-gradient-to-r from-purple-50 to-indigo-50 px-4 py-2 border-b border-gray-100">
+                            <span class="text-xs font-bold text-purple-700">與上次段考比較</span>
+                        </div>
+                        <table class="w-full text-xs">
+                            <thead class="bg-gray-50 text-gray-500">
+                                <tr>
+                                    <th class="p-2 text-center font-semibold">科目</th>
+                                    <th class="p-2 text-center font-semibold">本次</th>
+                                    <th class="p-2 text-center font-semibold">上次</th>
+                                    <th class="p-2 text-center font-semibold">變化</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-50">
+                `;
+                [...subjects, 'personalAverage'].forEach(subj => {
+                    const curr = currentExamData.scores[subj];
+                    const prev = prevExamData.scores[subj];
+                    const title = subj === 'personalAverage' ? '總平均' : subj;
+                    const currNum = Number(curr);
+                    const prevNum = Number(prev);
+                    let changeHtml = '<span class="text-gray-400">-</span>';
+                    if (!isNaN(currNum) && !isNaN(prevNum)) {
+                        const diff = currNum - prevNum;
+                        const sign = diff > 0 ? '+' : '';
+                        const color = diff > 0 ? '#22c55e' : diff < 0 ? '#ef4444' : '#94a3b8';
+                        const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
+                        changeHtml = `<span style="color:${color}; font-weight:bold;">${arrow} ${sign}${diff.toFixed(1)}</span>`;
+                    }
+                    const isAvgRow = subj === 'personalAverage';
+                    const rowBg = isAvgRow ? 'background:#f8f7ff;' : '';
+                    compHtml += `<tr style="${rowBg}">
+                        <td class="p-2 text-center ${isAvgRow ? 'font-bold text-purple-700' : 'text-gray-700'}">${title}</td>
+                        <td class="p-2 text-center font-semibold text-gray-800">${isNaN(currNum) ? curr : currNum}</td>
+                        <td class="p-2 text-center text-gray-500">${isNaN(prevNum) ? prev : prevNum}</td>
+                        <td class="p-2 text-center">${changeHtml}</td>
+                    </tr>`;
+                });
+                compHtml += `</tbody></table></div>`;
+                compContainer.innerHTML = compHtml;
+                compContainer.classList.remove('dev-hidden');
+            } else {
+                compContainer.classList.add('dev-hidden');
+            }
+        }
     }
 
     function renderLifePoints() {
