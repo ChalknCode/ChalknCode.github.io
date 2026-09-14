@@ -294,9 +294,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!isNaN(currNum) && !isNaN(prevNum)) {
                     const diff = currNum - prevNum;
                     const sign = diff > 0 ? '+' : '';
-                    const color = diff > 0 ? '#22c55e' : diff < 0 ? '#ef4444' : '#94a3b8';
+                    const textColor = diff > 0 ? '#15803d' : diff < 0 ? '#b91c1c' : '#475569';
+                    const bgColor = diff > 0 ? '#dcfce7' : diff < 0 ? '#fee2e2' : '#f1f5f9';
                     const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
-                    diffHtml = `<span style="font-size:12px; color:${color}; font-weight:bold; margin-left:6px;">${arrow} ${sign}${diff.toFixed(1)}</span>`;
+                    diffHtml = `<span style="display:inline-flex; align-items:center; font-size:10px; color:${textColor}; background-color:${bgColor}; font-weight:800; margin-left:8px; padding:2px 6px; border-radius:999px; letter-spacing:0.5px;">${arrow} ${sign}${diff.toFixed(1)}</span>`;
                 }
             }
 
@@ -456,7 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <tr class="${rowClass}">
                     <td class="${subjClass}">${title}</td>
                     <td class="${scoreClass}">
-                        <div style="display:flex; flex-direction:row; align-items:baseline; justify-content:center;">
+                        <div style="display:flex; flex-direction:row; align-items:center; justify-content:center;">
                             <span>${score}</span>
                             ${diffHtml}
                         </div>
