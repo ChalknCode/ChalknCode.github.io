@@ -713,7 +713,8 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const subjects = Array.from(subjectSet).filter(s => s !== '生活計點');
-        const labels = exams; 
+        // 將段考名稱拆解為陣列，讓 Chart.js 將其視為多行文字，呈現「直著寫」的效果
+        const labels = exams.map(name => name.split('')); 
         
         const allDatasets = [];
         const fallbackColors = ['#f43f5e', '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#64748b'];
@@ -792,6 +793,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
+                    x: {
+                        ticks: {
+                            // 稍微縮小字體讓直向文字更緊密
+                            font: { size: 10 }
+                        }
+                    },
                     y: {
                         min: 0,
                         max: 100,
@@ -810,6 +817,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     tooltip: {
                         mode: 'index',
                         intersect: false,
+                        callbacks: {
+                            // 把陣列轉回原始字串，否則 tooltip 會顯示逗號分隔的陣列
+                            title: function(tooltipItems) {
+                                return tooltipItems[0].label.replace(/,/g, '');
+                            }
+                        }
                     }
                 },
                 interaction: {
