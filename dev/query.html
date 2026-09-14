@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>成績查詢 — 805 班級網站</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="images/logo.png" type="image/jpeg">
+  <style>
+    /* 避免 Tailwind 的 reset 影響班級網站的選單與 Header */
+    .site-header { box-sizing: content-box; }
+    .site-logo, .nav-link { text-decoration: none !important; }
+    /* 查詢系統專屬風格 */
+    .query-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 1rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    .query-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid #e2e8f0;
+        outline: none;
+        transition: all 0.2s;
+    }
+    .query-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+    .btn-submit {
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        background: var(--primary);
+        color: white;
+        font-weight: bold;
+        transition: all 0.2s;
+    }
+    .btn-submit:hover { background: #b0415a; }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+    
+    .tab-btn {
+        padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600;
+        color: #64748b; background: #f1f5f9; transition: all 0.2s; cursor: pointer;
+    }
+    .tab-btn.active { background: var(--primary); color: white; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    /* Loader */
+    .loader {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid var(--primary);
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        animation: spin 1s linear infinite;
+        display: inline-block;
+        vertical-align: middle;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+  <!-- 選單遮罩 -->
+  <div class="menu-overlay" id="menu-overlay"></div>
+  <!-- 手機側邊選單 -->
+  <nav class="mobile-menu" id="mobile-menu">
+    <div class="menu-title">✏️ 805 班級網站</div>
+    <a href="index.html" data-page="index.html"><span class="menu-icon">🏠</span> 首頁</a>
+    <a href="announcement.html" data-page="announcement.html"><span class="menu-icon">📢</span> 公告</a>
+    <a href="gallery.html" data-page="gallery.html"><span class="menu-icon">🖼</span> 相簿</a>
+    <a href="info.html" data-page="info.html"><span class="menu-icon">⭐</span> 常用資訊</a>
+    <a href="query.html" data-page="query.html"><span class="menu-icon">🔍</span> 成績查詢</a>
+  </nav>
+
+  <!-- 電腦版 Header -->
+  <header class="site-header">
+    <a class="site-logo" href="index.html"><img src="images/logo.png" alt="Logo" style="height:44px;width:auto;mix-blend-mode:multiply;"> 805 班級網站</a>
+    <nav class="desktop-nav">
+      <a class="nav-link" href="index.html" data-page="index.html">首頁</a>
+      <a class="nav-link" href="announcement.html" data-page="announcement.html">公告</a>
+      <a class="nav-link" href="gallery.html" data-page="gallery.html">相簿</a>
+      <a class="nav-link" href="info.html" data-page="info.html">常用資訊</a>
+      <a class="nav-link" href="query.html" data-page="query.html">成績查詢</a>
+    </nav>
+    <button class="burger-btn" id="burger" aria-label="選單">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+
+  <!-- 查詢系統主區域 -->
+  <main class="max-w-4xl mx-auto px-4 py-8 mb-16 relative z-10" style="min-height: calc(100vh - 200px);">
+    
+    <!-- 登入區塊 -->
+    <div id="loginSection" class="query-card max-w-md mx-auto p-8 mt-12">
+        <div class="text-center mb-6">
+            <div class="text-5xl mb-4">🔍</div>
+            <h1 class="text-2xl font-bold text-gray-800">學生查詢系統</h1>
+            <p class="text-sm text-gray-500 mt-2">請輸入您的資料以查看成績與計點</p>
+        </div>
+        
+        <form id="loginForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">班級座號</label>
+                <input type="text" id="seatNo" class="query-input" placeholder="例如：80501" required>
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">身分證字號</label>
+                <input type="password" id="idNumber" class="query-input" placeholder="首字母需大寫" required>
+            </div>
+            <button type="submit" id="loginBtn" class="btn-submit flex justify-center items-center gap-2 mt-4">
+                <span id="loginText">登入查詢</span>
+                <span id="loginLoader" class="loader hidden"></span>
+            </button>
+            <div id="loginError" class="text-red-500 text-sm font-bold text-center hidden mt-2"></div>
+        </form>
+    </div>
+
+    <!-- 儀表板區塊 (預設隱藏) -->
+    <div id="dashboardSection" class="hidden animate-fade-in">
+        <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800"><span id="studentName" class="text-red-800"></span> 同學，你好！</h2>
+                <p class="text-gray-500 text-sm mt-1">座號：<span id="studentSeatNo"></span> | 班級：<span id="studentClass"></span> | 學期：<span id="semesterName"></span></p>
+            </div>
+            <button id="logoutBtn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-lg transition text-sm">登出</button>
+        </div>
+
+        <!-- 頁籤導覽 -->
+        <div class="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide" id="tabsContainer">
+            <button class="tab-btn active whitespace-nowrap" data-target="tab-life">生活計點</button>
+            <button class="tab-btn whitespace-nowrap" data-target="tab-exam">段考成績</button>
+            <button class="tab-btn whitespace-nowrap" data-target="tab-subject">平時成績</button>
+            <button class="tab-btn whitespace-nowrap" data-target="tab-memo">備忘錄</button>
+        </div>
+
+        <!-- 生活計點 -->
+        <div id="tab-life" class="tab-content query-card p-6">
+            <h3 class="text-xl font-bold text-gray-800 border-b pb-2 mb-4">🛡️ 生活計點</h3>
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center bg-gray-50 p-4 rounded-xl mb-6 border border-gray-100 gap-4">
+                <div>
+                    <div class="text-gray-500 text-sm mb-1">初始分數：<span id="initialPoints" class="font-bold text-gray-700">100</span></div>
+                    <div class="text-gray-700 text-lg">目前總分：<span id="totalLifePoints" class="font-black text-red-600 text-3xl ml-1">-</span></div>
+                </div>
+                <div class="flex flex-wrap gap-3 text-center">
+                    <div class="bg-white p-3 min-w-[80px] rounded-lg shadow-sm border border-gray-100">
+                        <div class="text-xs text-gray-500 font-bold mb-1">班級排名</div>
+                        <div id="lpRank" class="text-xl font-black text-blue-600">-</div>
+                    </div>
+                    <div class="bg-white p-3 min-w-[80px] rounded-lg shadow-sm border border-gray-100">
+                        <div class="text-xs text-gray-500 font-bold mb-1">前一名分數</div>
+                        <div id="lpPrev" class="text-xl font-black text-gray-600">-</div>
+                    </div>
+                    <div class="bg-white p-3 min-w-[80px] rounded-lg shadow-sm border border-gray-100">
+                        <div class="text-xs text-gray-500 font-bold mb-1">後一名分數</div>
+                        <div id="lpNext" class="text-xl font-black text-gray-600">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="lifePointsList" class="space-y-4">
+                <!-- 由 JS 產生 -->
+            </div>
+        </div>
+
+        <!-- 段考成績 -->
+        <div id="tab-exam" class="tab-content query-card p-6">
+            <h3 class="text-xl font-bold text-gray-800 border-b pb-2 mb-4">🏆 段考成績</h3>
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-700 mb-1">選擇段考</label>
+                <select id="examSelect" class="query-input max-w-xs">
+                    <!-- 選項由 JS 產生 -->
+                </select>
+            </div>
+            
+            <div id="examLoader" class="hidden text-center py-8"><span class="loader"></span><p class="mt-2 text-gray-500 text-sm">讀取中...</p></div>
+            <div id="examContent" class="hidden">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-blue-50 p-4 rounded-lg text-center">
+                        <div class="text-xs text-blue-500 font-bold">總分</div>
+                        <div id="examTotal" class="text-xl font-black text-blue-700">-</div>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg text-center">
+                        <div class="text-xs text-green-500 font-bold">個人平均</div>
+                        <div id="examAvg" class="text-xl font-black text-green-700">-</div>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-lg text-center">
+                        <div class="text-xs text-purple-500 font-bold">班排</div>
+                        <div id="examClassRank" class="text-xl font-black text-purple-700">-</div>
+                    </div>
+                    <div class="bg-orange-50 p-4 rounded-lg text-center">
+                        <div class="text-xs text-orange-500 font-bold">校排區間</div>
+                        <div id="examSchoolRank" class="text-xl font-black text-orange-700">-</div>
+                    </div>
+                </div>
+                
+                <h4 class="font-bold text-gray-700 mb-3">各科成績一覽</h4>
+                <div class="overflow-x-auto bg-white rounded-xl shadow-sm border mb-8">
+                    <table class="w-full text-sm text-left border-collapse">
+                        <thead class="bg-gray-50 text-gray-600 border-b">
+                            <tr>
+                                <th class="p-3 font-bold">科目</th>
+                                <th class="p-3 text-center font-bold">分數</th>
+                                <th class="p-3 text-center font-bold">班平均</th>
+                                <th class="p-3 text-center font-bold">校平均</th>
+                                <th class="p-3 text-center font-bold">校排區間</th>
+                            </tr>
+                        </thead>
+                        <tbody id="examTableBody" class="divide-y">
+                            <!-- JS 產生 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4 class="font-bold text-gray-700 mb-3">各科成績分佈圖 (班級與全校)</h4>
+                <div id="examSubjectsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- JS 產生各科卡片與分佈圖 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 平時成績 -->
+        <div id="tab-subject" class="tab-content query-card p-6">
+            <h3 class="text-xl font-bold text-gray-800 border-b pb-2 mb-4">📝 平時成績</h3>
+            <div id="subjectContent" class="space-y-6">
+                <!-- 由 JS 產生 -->
+            </div>
+        </div>
+
+        <!-- 備忘錄 -->
+        <div id="tab-memo" class="tab-content query-card p-6">
+            <h3 class="text-xl font-bold text-gray-800 border-b pb-2 mb-4">📌 導師備忘錄</h3>
+            <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200 min-h-[100px] whitespace-pre-wrap text-gray-800" id="memoText">
+                目前沒有備忘錄。
+            </div>
+        </div>
+    </div>
+  </main>
+
+  <!-- 電腦版 Footer -->
+  <footer class="site-footer">© 2026 805 班級網站</footer>
+
+  <!-- 手機版底部導覽列 -->
+  <nav class="bottom-nav">
+    <a class="bnav-item" href="index.html" data-page="index.html"><span class="bnav-icon">🏠</span>首頁</a>
+    <a class="bnav-item" href="announcement.html" data-page="announcement.html"><span class="bnav-icon">📢</span>公告</a>
+    <a class="bnav-item" href="gallery.html" data-page="gallery.html"><span class="bnav-icon">🖼</span>相簿</a>
+    <a class="bnav-item" href="info.html" data-page="info.html"><span class="bnav-icon">⭐</span>常用</a>
+    <a class="bnav-item" href="query.html" data-page="query.html"><span class="bnav-icon">🔍</span>成績查詢</a>
+  </nav>
+
+  <script src="js/config.js?v=2"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/query.js?v=2"></script>
+</body>
+</html>
