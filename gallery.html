@@ -152,12 +152,18 @@
     <a class="bnav-item" href="query.html" data-page="query.html"><span class="bnav-icon">🔍</span>成績查詢</a>
   </nav>
 
-  <script src="js/config.js?v=6"></script>
-  <script src="js/sheets.js?v=6"></script>
-  <script src="js/nav.js"></script>
+  <script src="js/config.js?v=37"></script>
+  <script src="js/sheets.js?v=37"></script>
+  <script src="js/nav.js?v=37"></script>
   <script>
   document.addEventListener('DOMContentLoaded', async () => {
-    const data = await fetchSheetData(CONFIG.SHEETS.GALLERY);
+    // 避免快取舊的 config 導致 GALLERY undefined
+    const sheetName = (CONFIG.SHEETS && CONFIG.SHEETS.GALLERY) ? CONFIG.SHEETS.GALLERY : '相簿';
+    console.log("Fetching gallery from sheet:", sheetName);
+    
+    const data = await fetchSheetData(sheetName);
+    console.log("Gallery data loaded:", data);
+    
     const tabsEl = document.getElementById('cat-tabs');
     const contentEl = document.getElementById('gallery-content');
 
