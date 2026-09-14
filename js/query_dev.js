@@ -192,8 +192,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await response.json();
 
-            if (data.error) throw new Error(data.error);
-
             prevExamData = currentExamData;  // 保留上次段考資料
             currentExamData = data;
             renderExamContent();
@@ -245,7 +243,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderExamContent() {
         if (!currentExamData) return;
         
-        const sum = currentExamData.summary || {};
+        const tbody = document.getElementById('examTableBody');
+        let html = '';
+
+        if (currentExamData.status === 'error' || currentExamData.error) {
+            tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-500 font-bold">${currentExamData.message || currentExamData.error || '讀取資料失敗'}</td></tr>`;
+            return;
+        }
+
+        if (!currentExamData.scores) currentExamData.scores = {};
+        if (!currentExamData.summary) currentExamData.summary = {};
+
+        const sum = currentExamData.summary;
         document.getElementById('cardRank').className = 'text-lg md:text-3xl font-black text-gray-800 leading-none font-inter';
         document.getElementById('cardRank').textContent = sum.classRank || '-';
         document.getElementById('cardSchoolRank').className = 'text-lg md:text-3xl font-black text-gray-800 leading-none font-inter';
@@ -255,23 +264,21 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('cardTotal').className = 'text-lg md:text-3xl font-black text-gray-800 leading-none font-inter';
         document.getElementById('cardTotal').textContent = formatScore(sum.totalScore);
 
-        const tbody = document.getElementById('examTableBody');
-        let html = '';
-
         const subjectsToRender = ['personalAverage', ...(currentExamData.subjectOrder || [])];
 
         subjectsToRender.forEach((subj) => {
             const isAvg = subj === 'personalAverage';
             const title = isAvg ? '總平均' : subj;
             
-            const score = formatScore(currentExamData.scores[subj]);
+            const rawScore = isAvg ? sum.personalAverage : currentExamData.scores[subj];
+            const score = formatScore(rawScore);
             const classAvg = formatScore(currentExamData.averages?.classAvg?.[subj]);
             const schoolAvg = formatScore(currentExamData.averages?.schoolAvg?.[subj]);
             
             let rowClass = isAvg ? 'bg-orange-50' : 'hover:bg-gray-50/80 transition-colors';
             let subjClass = isAvg ? 'p-3 text-center font-black text-gray-900 border-l-4 border-orange-400' : 'p-3 text-center font-bold text-gray-700 border-l-4 border-transparent';
             
-            const isRed = (typeof score === 'number' && score < 60) || (typeof currentExamData.scores[subj] === 'number' && currentExamData.scores[subj] < 60);
+            const isRed = (typeof score === 'number' && score < 60) || (typeof rawScore === 'number' && rawScore < 60);
             let scoreClass = isAvg 
                 ? `p-3 text-center font-black ${isRed ? 'text-red-500' : 'text-[#c2516a]'} text-lg font-inter align-middle` 
                 : `p-3 text-center font-bold ${isRed ? 'text-red-500' : 'text-[#c2516a]'} font-inter align-middle`;
@@ -280,9 +287,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const displayAvg = chartMode === 'class' ? classAvg : schoolAvg;
 
             let diffHtml = '';
-            if (prevExamData && prevExamData.scores) {
-                const prev = prevExamData.scores[subj];
-                const currNum = Number(currentExamData.scores[subj]);
+            if (prevExamData && !prevExamData.error && prevExamData.status !== 'error') {
+                const prev = isAvg ? prevExamData.summary?.personalAverage : (prevExamData.scores && prevExamData.scores[subj]);
+                const currNum = Number(rawScore);
                 const prevNum = Number(prev);
                 if (!isNaN(currNum) && !isNaN(prevNum)) {
                     const diff = currNum - prevNum;
@@ -300,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let dataClass = [];
             let studentBinIndex = -1;
             
-            const scoreNum = Number(currentExamData.scores[subj]);
+            const scoreNum = Number(rawScore);
 
             // 由高到低排列（左高右低）
             const labels10 = ["100-90", "89-80", "79-70", "69-60", "59-50", "49-40", "39-30", "29-20", "19-10", "9-0"];
