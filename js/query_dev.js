@@ -363,10 +363,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     let barsHtml = '';
                     const is18bin = (numBins === 18);
-                    const barW = is18bin ? '9px' : '14px';
+                    const barW = is18bin ? '10px' : '20px';
                     const labelRot = is18bin ? 'rotate(-40deg)' : 'none';
                     const labelBot = is18bin ? '-22px' : '-16px';
                     const pbottom = is18bin ? '28px' : '20px';
+                    const barGap = is18bin ? '2px' : '5px';
 
                     for(let i=0; i<numBins; i++) {
                         const count = activeData[i] || 0;
@@ -392,7 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     chartHtml = `
                         <div style="display:flex; flex-direction:column; gap:0;">
                             ${totalLabel ? `<div style="font-size:9px; color:#9ca3af; text-align:right; margin-bottom:1px;">${totalLabel}</div>` : ''}
-                            <div style="display:flex; align-items:flex-end; gap:2px; height:56px; padding-top:20px; padding-bottom:${pbottom}; border-bottom:1px solid #e5e7eb; overflow-x:auto;">
+                            <div style="display:flex; align-items:flex-end; gap:${barGap}; height:56px; padding-top:20px; padding-bottom:${pbottom}; border-bottom:1px solid #e5e7eb; overflow-x:auto;">
                                 ${barsHtml}
                             </div>
                         </div>
@@ -406,7 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="${subjClass}">${title}</td>
                     <td class="${scoreClass}">${score}</td>
                     <td class="${avgClass}">${displayAvg}</td>
-                    <td class="p-3 align-middle">${chartHtml}</td>
+                    <td class="p-3 align-middle text-center">${chartHtml}</td>
                 </tr>
             `;
         });
