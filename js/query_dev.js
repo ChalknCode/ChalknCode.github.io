@@ -273,11 +273,25 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const isRed = (typeof score === 'number' && score < 60) || (typeof currentExamData.scores[subj] === 'number' && currentExamData.scores[subj] < 60);
             let scoreClass = isAvg 
-                ? `p-3 text-center font-black ${isRed ? 'text-red-500' : 'text-[#c2516a]'} text-lg font-inter` 
-                : `p-3 text-center font-bold ${isRed ? 'text-red-500' : 'text-[#c2516a]'}` + ' font-inter';
+                ? `p-3 text-center font-black ${isRed ? 'text-red-500' : 'text-[#c2516a]'} text-lg font-inter align-middle` 
+                : `p-3 text-center font-bold ${isRed ? 'text-red-500' : 'text-[#c2516a]'} font-inter align-middle`;
                 
-            let avgClass = 'p-3 text-center font-bold text-gray-600 font-inter';
+            let avgClass = 'p-3 text-center font-bold text-gray-600 font-inter align-middle';
             const displayAvg = chartMode === 'class' ? classAvg : schoolAvg;
+
+            let diffHtml = '';
+            if (prevExamData && prevExamData.scores) {
+                const prev = prevExamData.scores[subj];
+                const currNum = Number(currentExamData.scores[subj]);
+                const prevNum = Number(prev);
+                if (!isNaN(currNum) && !isNaN(prevNum)) {
+                    const diff = currNum - prevNum;
+                    const sign = diff > 0 ? '+' : '';
+                    const color = diff > 0 ? '#22c55e' : diff < 0 ? '#ef4444' : '#94a3b8';
+                    const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
+                    diffHtml = `<div style="font-size:10px; color:${color}; font-weight:bold; margin-top:2px;">${arrow} ${sign}${diff.toFixed(1)}</div>`;
+                }
+            }
 
             let distSchool = null;
             let distClass = null;
@@ -383,9 +397,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     let labelsHtml = '';
                     const is18bin = (numBins === 18);
                     const barW = 10; // px, 統一細柱
-                    const barGapPx = is18bin ? 2 : 4; // px
+                    const barGapPx = is18bin ? 2 : 12; // px
                     const maxBarPx = 50; // 最高柱的像素高度
-                    const labelRot = is18bin ? -55 : -60; // 旋轉角度
+                    
+                    const labelRot = is18bin ? -45 : 0; // 旋轉角度，10-bin不旋轉
+                    const labelTransform = is18bin 
+                        ? `transform-origin: top right; transform: translate(0, 0) rotate(${labelRot}deg); right: 50%;` 
+                        : `transform-origin: center top; transform: translateX(-50%); left: 50%;`;
 
                     for(let i = 0; i < numBins; i++) {
                         const count = activeData[i] || 0;
@@ -404,8 +422,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>`;
 
-                        labelsHtml += `<div style="width:${barW}px; flex-shrink:0; height:28px; position:relative; overflow:visible;">
-                            <div style="position:absolute; top:3px; left:50%; transform-origin:top left; transform:translateX(-50%) rotate(${labelRot}deg); font-size:6.5px; color:#94a3b8; white-space:nowrap;">${labelText}</div>
+                        labelsHtml += `<div style="width:${barW}px; flex-shrink:0; height:${is18bin ? '28px' : '15px'}; position:relative; overflow:visible;">
+                            <div style="position:absolute; top:3px; ${labelTransform} font-size:6.5px; color:#94a3b8; white-space:nowrap;">${labelText}</div>
                         </div>`;
                     }
 
@@ -430,7 +448,12 @@ document.addEventListener('DOMContentLoaded', () => {
             html += `
                 <tr class="${rowClass}">
                     <td class="${subjClass}">${title}</td>
-                    <td class="${scoreClass}">${score}</td>
+                    <td class="${scoreClass}">
+                        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                            <div>${score}</div>
+                            ${diffHtml}
+                        </div>
+                    </td>
                     <td class="${avgClass}">${displayAvg}</td>
                     <td class="p-3 align-middle text-center">${chartHtml}</td>
                 </tr>
@@ -439,57 +462,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         tbody.innerHTML = html;
 
-        // ====== 進退步比較 ======
-        const compContainer = document.getElementById('examCompareSection');
-        if (compContainer) {
-            if (prevExamData && prevExamData.scores) {
-                const subjects = currentExamData.subjectOrder || [];
-                let compHtml = `
-                    <div class="mt-4 rounded-xl overflow-hidden border border-gray-100">
-                        <div class="bg-gradient-to-r from-purple-50 to-indigo-50 px-4 py-2 border-b border-gray-100">
-                            <span class="text-xs font-bold text-purple-700">與上次段考比較</span>
-                        </div>
-                        <table class="w-full text-xs">
-                            <thead class="bg-gray-50 text-gray-500">
-                                <tr>
-                                    <th class="p-2 text-center font-semibold">科目</th>
-                                    <th class="p-2 text-center font-semibold">本次</th>
-                                    <th class="p-2 text-center font-semibold">上次</th>
-                                    <th class="p-2 text-center font-semibold">變化</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-50">
-                `;
-                [...subjects, 'personalAverage'].forEach(subj => {
-                    const curr = currentExamData.scores[subj];
-                    const prev = prevExamData.scores[subj];
-                    const title = subj === 'personalAverage' ? '總平均' : subj;
-                    const currNum = Number(curr);
-                    const prevNum = Number(prev);
-                    let changeHtml = '<span class="text-gray-400">-</span>';
-                    if (!isNaN(currNum) && !isNaN(prevNum)) {
-                        const diff = currNum - prevNum;
-                        const sign = diff > 0 ? '+' : '';
-                        const color = diff > 0 ? '#22c55e' : diff < 0 ? '#ef4444' : '#94a3b8';
-                        const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
-                        changeHtml = `<span style="color:${color}; font-weight:bold;">${arrow} ${sign}${diff.toFixed(1)}</span>`;
-                    }
-                    const isAvgRow = subj === 'personalAverage';
-                    const rowBg = isAvgRow ? 'background:#f8f7ff;' : '';
-                    compHtml += `<tr style="${rowBg}">
-                        <td class="p-2 text-center ${isAvgRow ? 'font-bold text-purple-700' : 'text-gray-700'}">${title}</td>
-                        <td class="p-2 text-center font-semibold text-gray-800">${isNaN(currNum) ? curr : currNum}</td>
-                        <td class="p-2 text-center text-gray-500">${isNaN(prevNum) ? prev : prevNum}</td>
-                        <td class="p-2 text-center">${changeHtml}</td>
-                    </tr>`;
-                });
-                compHtml += `</tbody></table></div>`;
-                compContainer.innerHTML = compHtml;
-                compContainer.classList.remove('dev-hidden');
-            } else {
-                compContainer.classList.add('dev-hidden');
-            }
-        }
     }
 
     function renderLifePoints() {
