@@ -296,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const sign = diff > 0 ? '+' : '';
                     const color = diff > 0 ? '#22c55e' : diff < 0 ? '#ef4444' : '#94a3b8';
                     const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
-                    diffHtml = `<div style="font-size:10px; color:${color}; font-weight:bold; margin-top:2px;">${arrow} ${sign}${diff.toFixed(1)}</div>`;
+                    diffHtml = `<span style="font-size:12px; color:${color}; font-weight:bold; margin-left:6px;">${arrow} ${sign}${diff.toFixed(1)}</span>`;
                 }
             }
 
@@ -404,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     let labelsHtml = '';
                     const is18bin = (numBins === 18);
                     const barW = 10; // px, 統一細柱
-                    const barGapPx = is18bin ? 2 : 12; // px
+                    const barGapPx = is18bin ? 6 : 12; // px, 加大 18-bin 的間距
                     const maxBarPx = 50; // 最高柱的像素高度
                     
                     const labelRot = is18bin ? -45 : 0; // 旋轉角度，10-bin不旋轉
@@ -418,14 +418,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         const isMyBin = (i === studentBinIndex);
                         const bgColor = isMyBin
                             ? (chartMode === 'class' ? '#c2516a' : '#4f5dc9')
-                            : (count > 0 ? '#94a3b8' : '#e2e8f0');
+                            : (count > 0 ? '#d4d4d8' : '#f4f4f5'); // 改用中性灰，避免藍色系混淆
                         const fw = isMyBin ? 'bold' : '400';
-                        const numColor = isMyBin ? bgColor : '#64748b';
+                        const numColor = isMyBin ? bgColor : '#a1a1aa'; // 數字也改用中性灰
                         const labelText = labels[i] || '';
 
                         barsHtml += `<div style="width:${barW}px; flex-shrink:0; display:flex; align-items:flex-end; height:${maxBarPx}px; position:relative;">
                             <div style="width:100%; height:${pixH}px; border-radius:2px 2px 0 0; background-color:${bgColor}; position:relative; transition:height 0.2s;">
-                                ${count > 0 ? `<div style="position:absolute; top:-15px; left:50%; transform:translateX(-50%); font-size:8px; white-space:nowrap; font-weight:${fw}; color:${numColor};">${count}</div>` : ''}
+                                ${count > 0 ? `<div style="position:absolute; top:-15px; left:50%; transform:translateX(-50%); font-size:7.5px; white-space:nowrap; font-weight:${fw}; color:${numColor};">${count}</div>` : ''}
                             </div>
                         </div>`;
 
@@ -456,8 +456,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <tr class="${rowClass}">
                     <td class="${subjClass}">${title}</td>
                     <td class="${scoreClass}">
-                        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                            <div>${score}</div>
+                        <div style="display:flex; flex-direction:row; align-items:baseline; justify-content:center;">
+                            <span>${score}</span>
                             ${diffHtml}
                         </div>
                     </td>
