@@ -799,6 +799,9 @@ document.addEventListener('DOMContentLoaded', () => {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: {
+                    padding: { left: 15 } // 讓出空間給自訂的直立 Y 軸標題
+                },
                 scales: {
                     x: {
                         ticks: {
@@ -809,7 +812,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     y: {
                         min: 0,
                         max: 100,
-                        title: { display: true, text: '分數' }
+                        title: { display: false }
                     }
                 },
                 plugins: {

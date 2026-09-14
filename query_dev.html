@@ -210,6 +210,10 @@
                       <select id="dashLineSubjectSelector" class="px-2 py-1 text-xs border border-gray-300 rounded font-bold text-gray-700 bg-white/50 focus:outline-none"></select>
                   </div>
                   <div class="flex-grow w-full relative flex justify-center items-center" style="min-height: 250px;">
+                      <!-- 直立的 Y 軸標題 -->
+                      <div class="absolute left-0 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center text-xs font-bold text-gray-500 z-10" style="writing-mode: vertical-rl; text-orientation: upright;">
+                          分數
+                      </div>
                       <div id="dashLineLoader" class="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10 rounded-xl">
                           <div class="loader !border-blue-200 !border-t-blue-600 w-8 h-8 mb-2"></div>
                           <div class="text-xs text-gray-500 font-bold">資料載入中...</div>
@@ -361,7 +365,7 @@
 
   </main>
 
-  <script src="js/config.js?v=35"></script>
-  <script src="js/query_dev.js?v=35"></script>
+  <script src="js/config.js?v=36"></script>
+  <script src="js/query_dev.js?v=36"></script>
 </body>
 </html>
