@@ -161,8 +161,12 @@
                   <svg class="w-5 h-5 text-[#5c6bc0]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
                   歷次段考成績趨勢
               </h3>
-              <div class="flex-grow w-full relative" style="min-height: 250px;">
-                  <canvas id="dashLineChart"></canvas>
+              <div class="flex-grow w-full relative flex justify-center items-center" style="min-height: 250px;">
+                  <div id="dashLineLoader" class="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10 rounded-xl">
+                      <div class="loader !border-blue-200 !border-t-blue-600 w-8 h-8 mb-2"></div>
+                      <div class="text-xs text-gray-500 font-bold">資料載入中...</div>
+                  </div>
+                  <canvas id="dashLineChart" style="opacity: 0.3;"></canvas>
               </div>
           </div>
           <!-- 單次雷達圖 -->
@@ -384,7 +388,7 @@
 
   </main>
 
-  <script src="js/config.js?v=27"></script>
-  <script src="js/query_dev.js?v=27"></script>
+  <script src="js/config.js?v=29"></script>
+  <script src="js/query_dev.js?v=29"></script>
 </body>
 </html>

@@ -663,18 +663,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let dashLineChartInstance = null;
 
-    function renderDashLineChart() {
+    async function renderDashLineChart() {
         const canvas = document.getElementById('dashLineChart');
         if (!canvas) return;
 
-        if (dashLineChartInstance) {
-            dashLineChartInstance.destroy();
-        }
+        if (!currentStudent || !currentStudent.availableExams || currentStudent.availableExams.length === 0) return;
 
-        if (!currentStudent || !currentStudent.grades) return;
+        const exams = currentStudent.availableExams;
+        
+        // 為了確保和雷達圖的分數來源完全一致，我們直接往後端拉取所有的段考成績
+        // 若已載入過 currentExamData，可以減少一次 request，但最穩的是全部平行拉取
+        const promises = exams.map(examName => {
+            return fetch(CONFIG.API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'getMajorExamData', examName: examName, seatNo: currentStudent.seatNo })
+            }).then(res => res.json()).catch(err => null);
+        });
 
-        const exams = currentStudent.availableExams || [];
-        if (exams.length === 0) return;
+        // 在畫面上可以先顯示個 loading
+        const ctx = canvas.getContext('2d');
+        const loader = document.getElementById('dashLineLoader');
+        if(loader) loader.classList.remove('dev-hidden');
+        canvas.style.opacity = '0.3';
+        
+        const results = await Promise.all(promises);
+        
+        if(loader) loader.classList.add('dev-hidden');
+        canvas.style.opacity = '1';
+
+        // 收集所有出現過的科目
+        const subjectSet = new Set();
+        results.forEach(res => {
+            if (res && res.scores) {
+                Object.keys(res.scores).forEach(s => subjectSet.add(s));
+            }
+        });
 
         // 我們只挑選主要科目（可過濾掉沒成績的或用常見的五科+總平均）
         const subjectColors = {
@@ -686,8 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
             '總平均': '#ea580c'
         };
 
-        const subjects = Object.keys(currentStudent.grades).filter(s => s !== '生活計點');
-        // 取出這幾次的段考作為 X 軸
+        const subjects = Array.from(subjectSet).filter(s => s !== '生活計點');
         const labels = exams; 
         
         const datasets = [];
@@ -695,18 +717,18 @@ document.addEventListener('DOMContentLoaded', () => {
         let colorIdx = 0;
 
         subjects.forEach(subj => {
-            const grades = currentStudent.grades[subj];
-            if (!grades || grades.length === 0) return;
-
             const dataPoints = [];
             let hasValidData = false;
             
-            // 按照 exams 的順序去抓分數
-            exams.forEach(exName => {
-                const match = grades.find(g => g.examId === exName);
-                if (match && typeof match.score === 'number') {
-                    dataPoints.push(match.score);
-                    hasValidData = true;
+            results.forEach(res => {
+                if (res && res.scores && res.scores[subj] !== undefined && res.scores[subj] !== '') {
+                    const score = Number(res.scores[subj]);
+                    if (!isNaN(score)) {
+                        dataPoints.push(score);
+                        hasValidData = true;
+                    } else {
+                        dataPoints.push(null);
+                    }
                 } else {
                     dataPoints.push(null);
                 }
@@ -728,7 +750,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        const ctx = canvas.getContext('2d');
+        if (dashLineChartInstance) {
+            dashLineChartInstance.destroy();
+        }
+
         dashLineChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
