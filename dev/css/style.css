@@ -414,3 +414,12 @@ body::after {
   .section { padding: 36px 40px; max-width: 1100px; margin: 0 auto; }
   .quick-links-bar { padding: 12px 40px; }
 }
+/* 新增 SVG Icon 樣式 */
+.icon {
+  width: 1.2em;
+  height: 1.2em;
+  display: inline-block;
+  vertical-align: text-bottom;
+}
+.bnav-icon .icon { width: 1.5em; height: 1.5em; }
+.empty-icon .icon { width: 2.5em; height: 2.5em; }
