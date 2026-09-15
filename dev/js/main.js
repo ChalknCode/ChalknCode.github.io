@@ -120,7 +120,7 @@ async function loadQuickLinks() {
   if (!bar) return;
   if (!data.length) { bar.style.display = 'none'; return; }
   bar.innerHTML = data.map(row => {
-    const icon = row['圖示'] || '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>';
+    const icon = window.replaceEmojiWithSVG ? window.replaceEmojiWithSVG(row['圖示']) : row['圖示'] || '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>';
     const url  = row['連結'] || '#';
     return `<a class="quick-link-item" href="${url}" target="_blank">${icon} ${row['名稱'] || ''}</a>`;
   }).join('');
