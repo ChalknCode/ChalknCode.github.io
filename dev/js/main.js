@@ -120,7 +120,7 @@ async function loadQuickLinks() {
   if (!bar) return;
   if (!data.length) { bar.style.display = 'none'; return; }
   bar.innerHTML = data.map(row => {
-    const icon = row['圖示'] || '🔗';
+    const icon = row['圖示'] || '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>';
     const url  = row['連結'] || '#';
     return `<a class="quick-link-item" href="${url}" target="_blank">${icon} ${row['名稱'] || ''}</a>`;
   }).join('');
@@ -132,7 +132,7 @@ async function loadRecentAnnouncements() {
   const container = document.getElementById('recent-announcements');
   if (!container) return;
   if (!data.length) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>目前沒有公告</p></div>';
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg></div><p>目前沒有公告</p></div>';
     return;
   }
   container.innerHTML = data.slice(0, 3).map(row => {
