@@ -1,3 +1,14 @@
+
+// 自動將 Google Drive 的分享連結轉換為圖片直連網址
+function convertDriveLink(url) {
+  if (!url) return url;
+  const match1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (match1) return `https://drive.google.com/thumbnail?id=${match1[1]}&sz=w800`;
+  const match2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (url.includes('drive.google.com') && match2) return `https://drive.google.com/thumbnail?id=${match2[1]}&sz=w800`;
+  return url;
+}
+
 // ======================================================
 //  首頁邏輯
 // ======================================================

@@ -178,6 +178,21 @@
     }
 
     // 建立巢狀結構 { l1: { l2: { l3: [albums] } } }
+    
+    // 自動將 Google Drive 的分享連結轉換為圖片直連網址
+    function convertDriveLink(url) {
+      if (!url) return url;
+      // 處理 https://drive.google.com/file/d/FILE_ID/view
+      const match1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+      if (match1) return `https://drive.google.com/thumbnail?id=${match1[1]}&sz=w800`;
+      
+      // 處理 https://drive.google.com/open?id=FILE_ID
+      const match2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (url.includes('drive.google.com') && match2) return `https://drive.google.com/thumbnail?id=${match2[1]}&sz=w800`;
+      
+      return url;
+    }
+
     const tree = {};
     data.forEach(row => {
       const l1   = String(row['層級1'] || '').trim();
@@ -185,7 +200,8 @@
       const l3   = String(row['層級3'] || '').trim();
       const name = String(row['相簿名稱'] || '').trim();
       const link = String(row['相簿連結'] || '').trim();
-      const cover= String(row['封面圖片'] || '').trim();
+      let cover = String(row['封面圖片'] || '').trim();
+      cover = convertDriveLink(cover);
       if (!l1 || !name) return;
       if (!tree[l1]) tree[l1] = {};
       const k2 = l2 || '__root__';
