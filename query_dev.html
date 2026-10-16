@@ -224,12 +224,18 @@
 
               <!-- 雷達圖 -->
               <div class="dev-glass-card rounded-2xl p-6 flex flex-col shadow-sm">
-                  <div class="flex justify-between items-center mb-4">
-                      <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                  <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
+                      <h3 class="font-bold text-gray-800 flex items-center gap-2 text-sm md:text-base">
                           <svg class="w-5 h-5 text-[#c2516a]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
                           各科能力雷達圖
                       </h3>
-                      <select id="dashExamSelector" class="px-2 py-1 text-xs border border-gray-300 rounded font-bold text-gray-700 bg-white/50 focus:outline-none"></select>
+                      <div class="flex items-center gap-2">
+                          <div class="inline-flex p-0.5 bg-gray-100/90 rounded-lg border border-gray-200">
+                              <button id="toggleRadarClass" type="button" class="px-2.5 py-1 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800 transition-all">班級平均</button>
+                              <button id="toggleRadarSchool" type="button" class="px-2.5 py-1 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800 bg-transparent transition-all">全校平均</button>
+                          </div>
+                          <select id="dashExamSelector" class="px-2 py-1 text-xs border border-gray-300 rounded font-bold text-gray-700 bg-white/50 focus:outline-none"></select>
+                      </div>
                   </div>
                   <div class="flex-grow w-full relative flex justify-center items-center" style="min-height: 250px;">
                       <div id="dashRadarLoader" class="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10 dev-hidden rounded-xl">
@@ -308,10 +314,11 @@
               <table class="w-full text-left border-collapse min-w-[600px]">
                   <thead class="bg-gray-50/80 text-gray-600 text-sm border-b border-gray-200">
                       <tr>
-                          <th class="p-3 font-bold w-1/5 text-center">科目</th>
-                          <th class="p-3 text-center font-bold w-1/5">您的分數</th>
-                          <th class="p-3 text-center font-bold w-1/5" id="avgHeaderTitle">班級平均</th>
-                          <th class="p-3 font-bold w-[35%] text-center">分佈落點 (<span id="chartTypeLabel">班級</span>)</th>
+                          <th class="p-3 font-bold w-[18%] text-center">科目</th>
+                          <th class="p-3 text-center font-bold w-[22%]">您的分數</th>
+                          <th class="p-3 text-center font-bold w-[14%]" id="rankHeaderTitle">各科班排</th>
+                          <th class="p-3 text-center font-bold w-[16%]" id="avgHeaderTitle">班級平均</th>
+                          <th class="p-3 font-bold text-center">分佈落點 (<span id="chartTypeLabel">班級</span>)</th>
                       </tr>
                   </thead>
                   <tbody id="examTableBody" class="divide-y divide-gray-100">
@@ -365,7 +372,7 @@
 
   </main>
 
-  <script src="js/config.js?v=36"></script>
-  <script src="js/query_dev.js?v=36"></script>
+  <script src="js/config.js?v=38"></script>
+  <script src="js/query_dev.js?v=38"></script>
 </body>
 </html>
