@@ -299,14 +299,14 @@ document.addEventListener('DOMContentLoaded', () => {
             btnC.className = "px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800";
             btnS.className = "px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800 bg-transparent";
             document.getElementById('chartTypeLabel').textContent = '班級';
-            if (avgHeader) avgHeader.innerHTML = '<span class="inline-block">班級</span><span class="inline-block">平均</span>';
-            if (rankHeader) rankHeader.innerHTML = '<span class="inline-block">各科</span><span class="inline-block">班排</span>';
+            if (avgHeader) avgHeader.innerHTML = '<div class="inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto"><span class="whitespace-nowrap">班級</span><span class="whitespace-nowrap">平均</span></div>';
+            if (rankHeader) rankHeader.innerHTML = '<div class="inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto"><span class="whitespace-nowrap">各科</span><span class="whitespace-nowrap">班排</span></div>';
         } else {
             btnS.className = "px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800";
             btnC.className = "px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800 bg-transparent";
             document.getElementById('chartTypeLabel').textContent = '全校';
-            if (avgHeader) avgHeader.innerHTML = '<span class="inline-block">學校</span><span class="inline-block">平均</span>';
-            if (rankHeader) rankHeader.innerHTML = '<span class="inline-block">校排</span><span class="inline-block">區間</span>';
+            if (avgHeader) avgHeader.innerHTML = '<div class="inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto"><span class="whitespace-nowrap">學校</span><span class="whitespace-nowrap">平均</span></div>';
+            if (rankHeader) rankHeader.innerHTML = '<div class="inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto"><span class="whitespace-nowrap">校排</span><span class="whitespace-nowrap">區間</span></div>';
         }
     }
 
