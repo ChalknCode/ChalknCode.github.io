@@ -294,18 +294,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnC = document.getElementById('toggleChartClass');
         const btnS = document.getElementById('toggleChartSchool');
         const rankHeader = document.getElementById('rankHeaderTitle');
+        const avgHeader = document.getElementById('avgHeaderTitle');
         if (chartMode === 'class') {
             btnC.className = "px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800";
             btnS.className = "px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800 bg-transparent";
             document.getElementById('chartTypeLabel').textContent = '班級';
-            document.getElementById('avgHeaderTitle').textContent = '班級平均';
-            if (rankHeader) rankHeader.textContent = '各科班排';
+            if (avgHeader) avgHeader.innerHTML = '<span class="inline-block">班級</span><span class="inline-block">平均</span>';
+            if (rankHeader) rankHeader.innerHTML = '<span class="inline-block">各科</span><span class="inline-block">班排</span>';
         } else {
             btnS.className = "px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800";
             btnC.className = "px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800 bg-transparent";
             document.getElementById('chartTypeLabel').textContent = '全校';
-            document.getElementById('avgHeaderTitle').textContent = '學校平均';
-            if (rankHeader) rankHeader.textContent = '校排區間';
+            if (avgHeader) avgHeader.innerHTML = '<span class="inline-block">學校</span><span class="inline-block">平均</span>';
+            if (rankHeader) rankHeader.innerHTML = '<span class="inline-block">校排</span><span class="inline-block">區間</span>';
         }
     }
 
@@ -352,7 +353,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const schoolAvg = formatScore(currentExamData.averages?.schoolAvg?.[subj]);
             
             let rowClass = isAvg ? 'bg-orange-50' : 'hover:bg-gray-50/80 transition-colors';
-            let subjClass = isAvg ? 'p-3 text-center font-black text-gray-900 border-l-4 border-orange-400' : 'p-3 text-center font-bold text-gray-700 border-l-4 border-transparent';
+            let subjClass = isAvg 
+                ? 'p-3 text-center font-black text-gray-900 border-l-4 border-orange-400 sticky-col bg-orange-50' 
+                : 'p-3 text-center font-bold text-gray-700 border-l-4 border-transparent sticky-col bg-white';
             
             const isRed = (typeof score === 'number' && score < 60) || (typeof rawScore === 'number' && rawScore < 60);
             let scoreClass = isAvg 
@@ -552,7 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     : (currentExamData.classRanks?.[subj] || currentExamData.classRankEstimates?.[subj]);
                 
                 if (rankVal !== undefined && rankVal !== null && rankVal !== '' && rankVal !== '-') {
-                    rankHtml = `<span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-50 text-[#c2516a] border border-rose-200">第 ${rankVal} 名</span>`;
+                    rankHtml = `<span class="font-bold text-gray-800 font-inter text-base md:text-lg">${rankVal}</span>`;
                 } else {
                     rankHtml = `<span class="text-gray-400 font-bold">-</span>`;
                 }
