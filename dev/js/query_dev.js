@@ -31,6 +31,39 @@ document.addEventListener('DOMContentLoaded', () => {
         return undefined;
     }
 
+    function getSubjectDisplayName(subj, examName) {
+        if (!subj) return '';
+        if (subj === 'personalAverage') return '總平均';
+
+        // 1. 優先檢查自訂設定 (CONFIG.SUBJECT_DISPLAY_MAP)
+        if (typeof CONFIG !== 'undefined' && CONFIG.SUBJECT_DISPLAY_MAP) {
+            for (const key in CONFIG.SUBJECT_DISPLAY_MAP) {
+                if (examName && examName.includes(key)) {
+                    if (CONFIG.SUBJECT_DISPLAY_MAP[key][subj]) {
+                        return CONFIG.SUBJECT_DISPLAY_MAP[key][subj];
+                    }
+                }
+            }
+        }
+
+        // 2. 若欄位名稱本身已帶括號（例如試算表直接寫「自然(理化)」），則維持原有名稱
+        if (subj.includes('(') || subj.includes('（')) return subj;
+
+        // 3. 預設自然科年級智慧規則
+        if (subj === '自然') {
+            const en = examName || '';
+            if (en.includes('七') || en.includes('7')) {
+                return '自然(生物)';
+            } else if (en.includes('八') || en.includes('8')) {
+                return '自然(理化)';
+            } else if (en.includes('九') || en.includes('9')) {
+                return '自然(理化/地科)';
+            }
+            return '自然';
+        }
+        return subj;
+    }
+
     window.navTo = function(viewId) {
         ['login', 'dashboard', 'exam', 'life'].forEach(id => {
             document.getElementById('view-' + id).classList.add('dev-hidden');
@@ -345,7 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         subjectsToRender.forEach((subj) => {
             const isAvg = subj === 'personalAverage';
-            const title = isAvg ? '總平均' : subj;
+            const title = isAvg ? '總平均' : getSubjectDisplayName(subj, currentExamData.sheetName);
             
             const rawScore = isAvg ? sum.personalAverage : currentExamData.scores[subj];
             const score = formatScore(rawScore);
@@ -605,15 +638,16 @@ document.addEventListener('DOMContentLoaded', () => {
             radarChartInstance.destroy();
         }
 
-        const labels = currentExamData.subjectOrder;
-        const myScores = labels.map(subj => {
+        const rawSubjs = currentExamData.subjectOrder || [];
+        const displayLabels = rawSubjs.map(subj => getSubjectDisplayName(subj, currentExamData.sheetName));
+        const myScores = rawSubjs.map(subj => {
             const s = Number(currentExamData.scores[subj]);
             return isNaN(s) ? 0 : s;
         });
         
         const isClass = radarMode === 'class';
         const compareLabel = isClass ? '班級平均' : '全校平均';
-        const compareAvgs = labels.map(subj => {
+        const compareAvgs = rawSubjs.map(subj => {
             const raw = isClass 
                 ? currentExamData.averages?.classAvg?.[subj]
                 : currentExamData.averages?.schoolAvg?.[subj];
@@ -628,7 +662,7 @@ document.addEventListener('DOMContentLoaded', () => {
         radarChartInstance = new Chart(ctx, {
             type: 'radar',
             data: {
-                labels: labels,
+                labels: displayLabels,
                 datasets: [
                     {
                         label: '您的分數',
@@ -953,6 +987,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             // 把陣列轉回原始字串，否則 tooltip 會顯示逗號分隔的陣列
                             title: function(tooltipItems) {
                                 return tooltipItems[0].label.replace(/,/g, '');
+                            },
+                            label: function(context) {
+                                const subj = context.dataset.label || '';
+                                const examName = exams[context.dataIndex] || '';
+                                const displaySubj = getSubjectDisplayName(subj, examName);
+                                const val = context.parsed.y;
+                                return (val !== null && !isNaN(val)) ? `${displaySubj}: ${val} 分` : `${displaySubj}: 無資料`;
                             }
                         }
                     }
