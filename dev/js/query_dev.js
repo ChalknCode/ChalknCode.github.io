@@ -111,6 +111,54 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // 取得預設顯示的段考名稱（優先順序：試算表「段考設定」勾選預設 > config.js 設定 > 最新一場段考）
+    function getPreferredDefaultExam(exams) {
+        if (!exams || exams.length === 0) return '';
+        if (currentStudent && currentStudent.defaultExam && exams.includes(currentStudent.defaultExam)) {
+            return currentStudent.defaultExam;
+        }
+        if (typeof CONFIG !== 'undefined' && CONFIG.DEFAULT_EXAM && exams.includes(CONFIG.DEFAULT_EXAM)) {
+            return CONFIG.DEFAULT_EXAM;
+        }
+        return exams[exams.length - 1];
+    }
+
+    // 畫面預覽模式切換 (電腦 / 平板 / 手機)
+    window.setDevicePreview = function(mode) {
+        document.body.classList.remove('preview-tablet', 'preview-mobile');
+        const statusBar = document.getElementById('deviceStatusBar');
+        const modeLabel = document.getElementById('deviceModeLabel');
+        const modes = ['desktop', 'tablet', 'mobile'];
+        modes.forEach(m => {
+            const btn = document.getElementById('prevBtn-' + m);
+            if (!btn) return;
+            if (m === mode) {
+                btn.className = "px-2.5 py-1 rounded-lg text-xs font-bold bg-[#c2516a] text-white shadow-sm transition-all flex items-center gap-1";
+            } else {
+                btn.className = "px-2.5 py-1 rounded-lg text-xs font-bold text-gray-600 hover:bg-white/80 transition-all flex items-center gap-1";
+            }
+        });
+
+        if (mode === 'tablet') {
+            document.body.classList.add('preview-tablet');
+            if (statusBar) statusBar.classList.remove('dev-hidden');
+            if (modeLabel) modeLabel.textContent = '📱 平板畫面預覽 (768px — 單欄順序：選單 ➔ 雷達圖 ➔ 歷屆 ➔ 備忘錄)';
+        } else if (mode === 'mobile') {
+            document.body.classList.add('preview-mobile');
+            if (statusBar) statusBar.classList.remove('dev-hidden');
+            if (modeLabel) modeLabel.textContent = '📲 手機畫面預覽 (390px — 單欄順序：選單 ➔ 雷達圖 ➔ 歷屆 ➔ 備忘錄)';
+        } else {
+            if (statusBar) statusBar.classList.add('dev-hidden');
+        }
+
+        // 觸發圖表重新計算尺寸
+        setTimeout(() => {
+            if (radarChartInstance) radarChartInstance.resize();
+            if (dashLineChartInstance) dashLineChartInstance.resize();
+            window.dispatchEvent(new Event('resize'));
+        }, 360);
+    };
+
     window.navTo = function(viewId) {
         ['login', 'dashboard', 'exam', 'life'].forEach(id => {
             document.getElementById('view-' + id).classList.add('dev-hidden');
@@ -154,6 +202,23 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (data.status === 'error' || data.error) {
                 throw new Error(data.message || data.error || '登入失敗，請檢查資料');
+            }
+
+            // 解析試算表「段考設定」中勾選「預設顯示」的段考（支援 '*' 前綴標記或 defaultExam 屬性）
+            if (Array.isArray(data.availableExams)) {
+                let starredExam = null;
+                data.availableExams = data.availableExams.map(ex => {
+                    const s = String(ex).trim();
+                    if (s.startsWith('*')) {
+                        const clean = s.substring(1).trim();
+                        starredExam = clean;
+                        return clean;
+                    }
+                    return s;
+                });
+                if (starredExam && !data.defaultExam) {
+                    data.defaultExam = starredExam;
+                }
             }
 
             currentStudent = data;
@@ -201,8 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('studentSeatNo').textContent = currentStudent.seatNo || '';
 
         if (currentStudent.availableExams && currentStudent.availableExams.length > 0) {
-            // 🌟 預設選取最新的段考（列表最後一項，例如八上第一次段考）
-            const defaultExam = currentStudent.availableExams[currentStudent.availableExams.length - 1];
+            const defaultExam = getPreferredDefaultExam(currentStudent.availableExams);
             updateExamDropdowns(currentStudent.availableExams, defaultExam);
             loadExamData(defaultExam);
         }
@@ -317,7 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (errMsg.includes('找不到您的成績資料') || errMsg.includes('找不到段考')) {
                     currentStudent.availableExams = (currentStudent.availableExams || []).filter(e => e !== examName);
                     if (currentStudent.availableExams.length > 0) {
-                        const nextExam = currentStudent.availableExams[currentStudent.availableExams.length - 1];
+                        const nextExam = getPreferredDefaultExam(currentStudent.availableExams);
                         updateExamDropdowns(currentStudent.availableExams, nextExam);
                         return loadExamData(nextExam);
                     }
@@ -373,14 +437,14 @@ document.addEventListener('DOMContentLoaded', () => {
             btnC.className = "px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800";
             btnS.className = "px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800 bg-transparent";
             document.getElementById('chartTypeLabel').textContent = '班級';
-            if (avgHeader) avgHeader.innerHTML = '<div class="inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto"><span class="whitespace-nowrap">班級</span><span class="whitespace-nowrap">平均</span></div>';
-            if (rankHeader) rankHeader.innerHTML = '<div class="inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto"><span class="whitespace-nowrap">各科</span><span class="whitespace-nowrap">班排</span></div>';
+            if (avgHeader) avgHeader.innerHTML = '<div class="th-wrap-2char inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto"><span class="whitespace-nowrap">班級</span><span class="whitespace-nowrap">平均</span></div>';
+            if (rankHeader) rankHeader.innerHTML = '<div class="th-wrap-2char inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto"><span class="whitespace-nowrap">各科</span><span class="whitespace-nowrap">班排</span></div>';
         } else {
             btnS.className = "px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800";
             btnC.className = "px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800 bg-transparent";
             document.getElementById('chartTypeLabel').textContent = '全校';
-            if (avgHeader) avgHeader.innerHTML = '<div class="inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto"><span class="whitespace-nowrap">學校</span><span class="whitespace-nowrap">平均</span></div>';
-            if (rankHeader) rankHeader.innerHTML = '<div class="inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto"><span class="whitespace-nowrap">校排</span><span class="whitespace-nowrap">區間</span></div>';
+            if (avgHeader) avgHeader.innerHTML = '<div class="th-wrap-2char inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto"><span class="whitespace-nowrap">學校</span><span class="whitespace-nowrap">平均</span></div>';
+            if (rankHeader) rankHeader.innerHTML = '<div class="th-wrap-2char inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto"><span class="whitespace-nowrap">校排</span><span class="whitespace-nowrap">區間</span></div>';
         }
     }
 
@@ -892,8 +956,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (validExams.length > 0 && validExams.length !== currentStudent.availableExams.length) {
             currentStudent.availableExams = validExams;
-            const currentSelected = document.getElementById('examSelector')?.value || validExams[validExams.length - 1];
-            const safeSelected = validExams.includes(currentSelected) ? currentSelected : validExams[validExams.length - 1];
+            const preferred = getPreferredDefaultExam(validExams);
+            const currentSelected = document.getElementById('examSelector')?.value || preferred;
+            const safeSelected = validExams.includes(currentSelected) ? currentSelected : preferred;
             updateExamDropdowns(validExams, safeSelected);
         }
 
