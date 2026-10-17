@@ -64,6 +64,53 @@ document.addEventListener('DOMContentLoaded', () => {
         return subj;
     }
 
+    function formatSubjectCellHtml(subj, examName) {
+        if (!subj || subj === 'personalAverage') {
+            return '<span class="whitespace-nowrap font-black text-gray-900">總平均</span>';
+        }
+        const displayName = getSubjectDisplayName(subj, examName);
+        // 檢查是否含有分科括號，例如「自然(理化)」、「自然（生物）」、「自然(理化/地科)」
+        const match = displayName.match(/^([^\(（]+)[\(（](.+?)[\)）]$/);
+        if (match) {
+            const mainName = match[1].trim();
+            const subName = match[2].trim();
+            return `<div class="inline-flex flex-col items-center justify-center leading-tight py-0.5">
+                <span class="whitespace-nowrap font-bold text-gray-800">${mainName}</span>
+                <span class="whitespace-nowrap text-[11px] font-semibold text-gray-500 tracking-tight">（${subName}）</span>
+            </div>`;
+        }
+        return `<span class="whitespace-nowrap font-bold text-gray-700">${displayName}</span>`;
+    }
+
+    function updateExamDropdowns(exams, selectedExam) {
+        const examSelector = document.getElementById('examSelector');
+        const dashExamSelector = document.getElementById('dashExamSelector');
+        if (!exams || exams.length === 0) return;
+        
+        let options = '';
+        exams.forEach(exam => {
+            options += `<option value="${exam}">${exam}</option>`;
+        });
+        if (examSelector) {
+            examSelector.innerHTML = options;
+            if (selectedExam) examSelector.value = selectedExam;
+            examSelector.onchange = (e) => {
+                const eid = e.target.value;
+                if (dashExamSelector) dashExamSelector.value = eid;
+                loadExamData(eid);
+            };
+        }
+        if (dashExamSelector) {
+            dashExamSelector.innerHTML = options;
+            if (selectedExam) dashExamSelector.value = selectedExam;
+            dashExamSelector.onchange = (e) => {
+                const eid = e.target.value;
+                if (examSelector) examSelector.value = eid;
+                loadExamData(eid);
+            };
+        }
+    }
+
     window.navTo = function(viewId) {
         ['login', 'dashboard', 'exam', 'life'].forEach(id => {
             document.getElementById('view-' + id).classList.add('dev-hidden');
@@ -153,30 +200,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('studentClass').textContent = currentStudent.className || '';
         document.getElementById('studentSeatNo').textContent = currentStudent.seatNo || '';
 
-        const examSelector = document.getElementById('examSelector');
-        const dashExamSelector = document.getElementById('dashExamSelector');
         if (currentStudent.availableExams && currentStudent.availableExams.length > 0) {
-            let options = '';
-            currentStudent.availableExams.forEach(exam => {
-                options += `<option value="${exam}">${exam}</option>`;
-            });
-            if (examSelector) {
-                examSelector.innerHTML = options;
-                examSelector.onchange = (e) => {
-                    const eid = e.target.value;
-                    if (dashExamSelector) dashExamSelector.value = eid;
-                    loadExamData(eid);
-                };
-            }
-            if (dashExamSelector) {
-                dashExamSelector.innerHTML = options;
-                dashExamSelector.onchange = (e) => {
-                    const eid = e.target.value;
-                    if (examSelector) examSelector.value = eid;
-                    loadExamData(eid);
-                };
-            }
-            loadExamData(currentStudent.availableExams[0]);
+            // 🌟 預設選取最新的段考（列表最後一項，例如八上第一次段考）
+            const defaultExam = currentStudent.availableExams[currentStudent.availableExams.length - 1];
+            updateExamDropdowns(currentStudent.availableExams, defaultExam);
+            loadExamData(defaultExam);
         }
 
         document.getElementById('toggleChartClass').onclick = () => {
@@ -280,6 +308,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 data = await response.json();
                 if (!data.error && data.status !== 'error') {
                     examCache[examName] = data;
+                }
+            }
+
+            // 🌟 轉學生防呆機制：若查無該學生於此段考之成績，自動排除該選項並換至有資料的段考
+            if (data && (data.error || data.status === 'error')) {
+                const errMsg = String(data.error || data.message || '');
+                if (errMsg.includes('找不到您的成績資料') || errMsg.includes('找不到段考')) {
+                    currentStudent.availableExams = (currentStudent.availableExams || []).filter(e => e !== examName);
+                    if (currentStudent.availableExams.length > 0) {
+                        const nextExam = currentStudent.availableExams[currentStudent.availableExams.length - 1];
+                        updateExamDropdowns(currentStudent.availableExams, nextExam);
+                        return loadExamData(nextExam);
+                    }
                 }
             }
 
@@ -387,8 +428,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let rowClass = isAvg ? 'bg-orange-50' : 'hover:bg-gray-50/80 transition-colors';
             let subjClass = isAvg 
-                ? 'p-3 text-center font-black text-gray-900 border-l-4 border-orange-400 sticky-col bg-orange-50' 
-                : 'p-3 text-center font-bold text-gray-700 border-l-4 border-transparent sticky-col bg-white';
+                ? 'px-2 py-3 text-center font-black text-gray-900 border-l-4 border-orange-400 sticky-col bg-orange-50 min-w-[76px]' 
+                : 'px-2 py-3 text-center font-bold text-gray-700 border-l-4 border-transparent sticky-col bg-white min-w-[76px]';
             
             const isRed = (typeof score === 'number' && score < 60) || (typeof rawScore === 'number' && rawScore < 60);
             let scoreClass = isAvg 
@@ -601,7 +642,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             html += `
                 <tr class="${rowClass}">
-                    <td class="${subjClass}">${title}</td>
+                    <td class="${subjClass}">${formatSubjectCellHtml(subj, currentExamData.sheetName)}</td>
                     <td class="${scoreClass}">
                         <div style="display:flex; flex-direction:row; align-items:center; justify-content:center;">
                             <span>${score}</span>
@@ -837,9 +878,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if(loader) loader.classList.add('dev-hidden');
         canvas.style.opacity = '1';
 
+        // 🌟 智慧過濾轉學生：剔除無成績的段考
+        const validExams = [];
+        const validResults = [];
+        exams.forEach((examName, i) => {
+            const res = results[i];
+            if (res && res.scores && !res.error && res.status !== 'error') {
+                validExams.push(examName);
+                validResults.push(res);
+                examCache[examName] = res;
+            }
+        });
+
+        if (validExams.length > 0 && validExams.length !== currentStudent.availableExams.length) {
+            currentStudent.availableExams = validExams;
+            const currentSelected = document.getElementById('examSelector')?.value || validExams[validExams.length - 1];
+            const safeSelected = validExams.includes(currentSelected) ? currentSelected : validExams[validExams.length - 1];
+            updateExamDropdowns(validExams, safeSelected);
+        }
+
         // 收集所有出現過的科目（自動整合自然科別名）
         const subjectSet = new Set();
-        results.forEach(res => {
+        validResults.forEach(res => {
             if (res && res.scores) {
                 Object.keys(res.scores).forEach(s => {
                     let disp = s === 'personalAverage' ? '總平均' : s;
@@ -863,7 +923,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const subjects = Array.from(subjectSet).filter(s => s !== '生活計點');
         // 將段考名稱拆成三行橫書：「七上」、「第一次」、「段考」
-        const labels = exams.map(name => {
+        const labels = validExams.map(name => {
             if (name.includes('段考') && name.length >= 6) {
                 return [name.substring(0, 2), name.substring(2, name.indexOf('段考')), '段考'];
             } else if (name.length > 2) {
@@ -880,7 +940,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const dataPoints = [];
             let hasValidData = false;
             
-            results.forEach(res => {
+            validResults.forEach(res => {
                 let score = NaN;
                 if (res && res.scores) {
                     if (subj === '總平均') {
@@ -990,7 +1050,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             },
                             label: function(context) {
                                 const subj = context.dataset.label || '';
-                                const examName = exams[context.dataIndex] || '';
+                                const examName = validExams[context.dataIndex] || '';
                                 const displaySubj = getSubjectDisplayName(subj, examName);
                                 const val = context.parsed.y;
                                 return (val !== null && !isNaN(val)) ? `${displaySubj}: ${val} 分` : `${displaySubj}: 無資料`;
