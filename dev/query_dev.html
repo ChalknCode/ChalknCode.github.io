@@ -74,117 +74,19 @@
     th.sticky-col {
       z-index: 20;
     }
-
-    /* =========================================
-       手機 / 平板 畫面預覽模式 (Device Preview)
-       ========================================= */
-    #deviceFrame {
-      transition: max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease, margin 0.3s ease, border 0.3s ease, border-radius 0.3s ease;
-    }
-    body.preview-tablet #deviceFrame {
-      max-width: 768px !important;
-      margin: 24px auto 40px auto !important;
-      border: 10px solid #334155;
-      border-radius: 36px;
-      box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.35);
-      background: linear-gradient(135deg, #fdf6e3 0%, #fce4ec 30%, #e3f2fd 70%, #e8f5e9 100%);
-      overflow-x: hidden;
-    }
-    body.preview-mobile #deviceFrame {
-      max-width: 390px !important;
-      margin: 24px auto 40px auto !important;
-      border: 10px solid #1e293b;
-      border-radius: 40px;
-      box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.4);
-      background: linear-gradient(135deg, #fdf6e3 0%, #fce4ec 30%, #e3f2fd 70%, #e8f5e9 100%);
-      overflow-x: hidden;
-    }
-    /* 平板與手機預覽時，強制使用窄版 (< lg) 單欄排序：選單(1) ➔ 雷達圖(2) ➔ 歷屆(3) ➔ 備忘錄(4) */
-    body.preview-tablet #dashboardMainGrid,
-    body.preview-mobile #dashboardMainGrid {
-      display: flex !important;
-      flex-direction: column !important;
-    }
-    body.preview-tablet #dashboardMainGrid > .col-wrap,
-    body.preview-mobile #dashboardMainGrid > .col-wrap {
-      display: contents !important;
-    }
-    body.preview-tablet .narrow-order-1,
-    body.preview-mobile .narrow-order-1 { order: 1 !important; }
-    body.preview-tablet .narrow-order-2,
-    body.preview-mobile .narrow-order-2 { order: 2 !important; }
-    body.preview-tablet .narrow-order-3,
-    body.preview-mobile .narrow-order-3 { order: 3 !important; }
-    body.preview-tablet .narrow-order-4,
-    body.preview-mobile .narrow-order-4 { order: 4 !important; }
-
-    /* 手機預覽 (390px) 專屬微調，模擬真實手機 (< md / < sm) 斷點 */
-    body.preview-mobile #studentInfoRow {
-      flex-direction: column !important;
-      align-items: flex-start !important;
-      gap: 0.75rem !important;
-    }
-    body.preview-mobile #studentInfoDivider {
-      display: none !important;
-    }
-    body.preview-mobile #examHeaderRow {
-      flex-direction: column !important;
-      align-items: flex-start !important;
-    }
-    body.preview-mobile #examDropdownWrap {
-      width: 100% !important;
-      max-width: 100% !important;
-    }
-    body.preview-mobile #examSummaryCards {
-      gap: 0.5rem !important;
-    }
-    body.preview-mobile #examSummaryCards > div {
-      padding: 0.5rem !important;
-    }
-    body.preview-mobile #cardRank,
-    body.preview-mobile #cardSchoolRank,
-    body.preview-mobile #cardAvg,
-    body.preview-mobile #cardTotal {
-      font-size: 1.125rem !important;
-    }
-    body.preview-mobile .th-wrap-2char {
-      max-width: 3.5em !important;
-    }
   </style>
 </head>
 <body class="antialiased pb-20 md:pb-10">
 
   <!-- 頂部導覽列 -->
   <header class="dev-glass-card sticky top-0 z-50 border-b border-white/50">
-    <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between gap-2">
-      <div class="flex items-center gap-3 min-w-0">
-        <img src="images/logo.png" alt="Logo" class="h-10 w-auto mix-blend-multiply object-contain shrink-0">
-        <h1 class="font-black text-gray-800 text-base sm:text-lg tracking-wide truncate">805 學生查詢系統 <span class="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full ml-1 align-top">Beta 測試區</span></h1>
-      </div>
-
-      <!-- 電腦端快速切換預覽：電腦 / 平板 / 手機 -->
-      <div class="hidden sm:inline-flex items-center bg-white/70 p-1 rounded-xl border border-gray-200/80 shadow-sm gap-1 shrink-0">
-        <span class="text-[11px] font-bold text-gray-400 px-1.5 hidden md:inline">預覽模式：</span>
-        <button type="button" onclick="window.setDevicePreview('desktop')" id="prevBtn-desktop" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#c2516a] text-white shadow-sm transition-all flex items-center gap-1">
-          <span>💻</span><span>電腦</span>
-        </button>
-        <button type="button" onclick="window.setDevicePreview('tablet')" id="prevBtn-tablet" class="px-2.5 py-1 rounded-lg text-xs font-bold text-gray-600 hover:bg-white/80 transition-all flex items-center gap-1">
-          <span>📱</span><span>平板</span>
-        </button>
-        <button type="button" onclick="window.setDevicePreview('mobile')" id="prevBtn-mobile" class="px-2.5 py-1 rounded-lg text-xs font-bold text-gray-600 hover:bg-white/80 transition-all flex items-center gap-1">
-          <span>📲</span><span>手機</span>
-        </button>
+    <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="images/logo.png" alt="Logo" class="h-10 w-auto mix-blend-multiply object-contain">
+        <h1 class="font-black text-gray-800 text-lg tracking-wide">805 學生查詢系統 <span class="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full ml-1 align-top">Beta 測試區</span></h1>
       </div>
     </div>
   </header>
-
-  <!-- 裝置外框容器 (預設全寬，切換平板/手機時顯示模擬外框) -->
-  <div id="deviceFrame">
-    <!-- 模擬器頂部狀態列 (僅在平板/手機預覽模式顯示) -->
-    <div id="deviceStatusBar" class="dev-hidden bg-slate-800 text-white text-[11px] font-bold px-4 py-1.5 flex items-center justify-between">
-      <span id="deviceModeLabel">📲 手機畫面預覽 (390px)</span>
-      <button type="button" onclick="window.setDevicePreview('desktop')" class="text-rose-300 hover:text-white underline text-[11px]">返回電腦全寬</button>
-    </div>
 
   <!-- 主要內容區 -->
   <main class="max-w-4xl mx-auto px-4 pt-6 pb-12">
@@ -408,19 +310,19 @@
           <div id="examSummaryCards" class="grid grid-cols-4 gap-2 md:gap-4 mb-6">
               <div class="bg-white/90 p-2 md:p-4 rounded-xl shadow-sm border-t-4 border-t-emerald-400 text-center flex flex-col justify-center">
                   <div class="text-[10px] md:text-xs text-gray-500 font-bold mb-1 whitespace-nowrap">班級排名</div>
-                  <div class="text-lg md:text-3xl font-black text-gray-800 leading-none" id="cardRank">-</div>
+                  <div class="text-base md:text-3xl font-black text-gray-800 leading-none" id="cardRank">-</div>
               </div>
               <div class="bg-white/90 p-2 md:p-4 rounded-xl shadow-sm border-t-4 border-t-orange-400 text-center flex flex-col justify-center">
                   <div class="text-[10px] md:text-xs text-gray-500 font-bold mb-1 whitespace-nowrap">校排(估)</div>
-                  <div class="text-lg md:text-3xl font-black text-gray-800 leading-none" id="cardSchoolRank">-</div>
+                  <div class="text-base md:text-3xl font-black text-gray-800 leading-none" id="cardSchoolRank">-</div>
               </div>
               <div class="bg-white/90 p-2 md:p-4 rounded-xl shadow-sm border-t-4 border-t-indigo-400 text-center flex flex-col justify-center">
                   <div class="text-[10px] md:text-xs text-gray-500 font-bold mb-1 whitespace-nowrap">總平均</div>
-                  <div class="text-lg md:text-3xl font-black text-gray-800 leading-none" id="cardAvg">-</div>
+                  <div class="text-base md:text-3xl font-black text-gray-800 leading-none" id="cardAvg">-</div>
               </div>
               <div class="bg-white/90 p-2 md:p-4 rounded-xl shadow-sm border-t-4 border-t-yellow-400 text-center flex flex-col justify-center">
                   <div class="text-[10px] md:text-xs text-gray-500 font-bold mb-1 whitespace-nowrap">總分</div>
-                  <div class="text-lg md:text-3xl font-black text-gray-800 leading-none" id="cardTotal">-</div>
+                  <div class="text-base md:text-3xl font-black text-gray-800 leading-none" id="cardTotal">-</div>
               </div>
           </div>
 
@@ -437,26 +339,26 @@
 
           <!-- 成績表 -->
           <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white/90 shadow-sm">
-              <table class="w-full text-left border-collapse min-w-[600px]">
-                  <thead class="bg-gray-50/80 text-gray-600 text-sm border-b border-gray-200">
+              <table class="w-full text-left border-collapse min-w-[520px] md:min-w-[600px]">
+                  <thead class="bg-gray-50/80 text-gray-600 text-xs md:text-sm border-b border-gray-200">
                       <tr>
-                          <th class="px-2 py-3 font-bold text-center sticky-col bg-gray-50/95 min-w-[76px] w-[16%]">科目</th>
-                          <th class="p-3 text-center font-bold min-w-[75px] w-[18%]">
-                              <div class="th-wrap-2char inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto">
+                          <th class="px-1.5 py-2.5 md:px-2 md:py-3 font-bold text-center sticky-col bg-gray-50/95 min-w-[64px] md:min-w-[76px] w-[16%]">科目</th>
+                          <th class="p-2 md:p-3 text-center font-bold min-w-[68px] md:min-w-[75px] w-[18%]">
+                              <div class="inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto">
                                   <span class="whitespace-nowrap">您的</span><span class="whitespace-nowrap">分數</span>
                               </div>
                           </th>
-                          <th class="p-3 text-center font-bold min-w-[75px] w-[18%]" id="rankHeaderTitle">
-                              <div class="th-wrap-2char inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto">
+                          <th class="p-2 md:p-3 text-center font-bold min-w-[68px] md:min-w-[75px] w-[18%]" id="rankHeaderTitle">
+                              <div class="inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto">
                                   <span class="whitespace-nowrap">各科</span><span class="whitespace-nowrap">班排</span>
                               </div>
                           </th>
-                          <th class="p-3 text-center font-bold min-w-[75px] w-[18%]" id="avgHeaderTitle">
-                              <div class="th-wrap-2char inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto">
+                          <th class="p-2 md:p-3 text-center font-bold min-w-[68px] md:min-w-[75px] w-[18%]" id="avgHeaderTitle">
+                              <div class="inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto">
                                   <span class="whitespace-nowrap">班級</span><span class="whitespace-nowrap">平均</span>
                               </div>
                           </th>
-                          <th class="p-3 font-bold text-center min-w-[140px] w-[30%]">
+                          <th class="p-2 md:p-3 font-bold text-center min-w-[130px] md:min-w-[140px] w-[30%]">
                               <div class="inline-flex flex-wrap justify-center items-center leading-tight mx-auto">
                                   <span class="whitespace-nowrap">分佈</span><span class="whitespace-nowrap">落點</span>&nbsp;(<span id="chartTypeLabel">班級</span>)
                               </div>
@@ -513,9 +415,8 @@
     </div>
 
   </main>
-  </div>
 
-  <script src="js/config.js?v=44"></script>
-  <script src="js/query_dev.js?v=44"></script>
+  <script src="js/config.js?v=45"></script>
+  <script src="js/query_dev.js?v=45"></script>
 </body>
 </html>

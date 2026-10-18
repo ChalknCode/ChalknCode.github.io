@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function formatSubjectCellHtml(subj, examName) {
         if (!subj || subj === 'personalAverage') {
-            return '<span class="whitespace-nowrap font-black text-gray-900">總平均</span>';
+            return '<span class="whitespace-nowrap font-black text-gray-900 text-xs md:text-base">總平均</span>';
         }
         const displayName = getSubjectDisplayName(subj, examName);
         // 檢查是否含有分科括號，例如「自然(理化)」、「自然（生物）」、「自然(理化/地科)」
@@ -75,11 +75,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const mainName = match[1].trim();
             const subName = match[2].trim();
             return `<div class="inline-flex flex-col items-center justify-center leading-tight py-0.5">
-                <span class="whitespace-nowrap font-bold text-gray-800">${mainName}</span>
-                <span class="whitespace-nowrap text-[11px] font-semibold text-gray-500 tracking-tight">（${subName}）</span>
+                <span class="whitespace-nowrap font-bold text-gray-800 text-xs md:text-base">${mainName}</span>
+                <span class="whitespace-nowrap text-[10px] md:text-[11px] font-semibold text-gray-500 tracking-tight">（${subName}）</span>
             </div>`;
         }
-        return `<span class="whitespace-nowrap font-bold text-gray-700">${displayName}</span>`;
+        return `<span class="whitespace-nowrap font-bold text-gray-700 text-xs md:text-base">${displayName}</span>`;
     }
 
     function updateExamDropdowns(exams, selectedExam) {
@@ -122,42 +122,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return exams[exams.length - 1];
     }
-
-    // 畫面預覽模式切換 (電腦 / 平板 / 手機)
-    window.setDevicePreview = function(mode) {
-        document.body.classList.remove('preview-tablet', 'preview-mobile');
-        const statusBar = document.getElementById('deviceStatusBar');
-        const modeLabel = document.getElementById('deviceModeLabel');
-        const modes = ['desktop', 'tablet', 'mobile'];
-        modes.forEach(m => {
-            const btn = document.getElementById('prevBtn-' + m);
-            if (!btn) return;
-            if (m === mode) {
-                btn.className = "px-2.5 py-1 rounded-lg text-xs font-bold bg-[#c2516a] text-white shadow-sm transition-all flex items-center gap-1";
-            } else {
-                btn.className = "px-2.5 py-1 rounded-lg text-xs font-bold text-gray-600 hover:bg-white/80 transition-all flex items-center gap-1";
-            }
-        });
-
-        if (mode === 'tablet') {
-            document.body.classList.add('preview-tablet');
-            if (statusBar) statusBar.classList.remove('dev-hidden');
-            if (modeLabel) modeLabel.textContent = '📱 平板畫面預覽 (768px — 單欄順序：選單 ➔ 雷達圖 ➔ 歷屆 ➔ 備忘錄)';
-        } else if (mode === 'mobile') {
-            document.body.classList.add('preview-mobile');
-            if (statusBar) statusBar.classList.remove('dev-hidden');
-            if (modeLabel) modeLabel.textContent = '📲 手機畫面預覽 (390px — 單欄順序：選單 ➔ 雷達圖 ➔ 歷屆 ➔ 備忘錄)';
-        } else {
-            if (statusBar) statusBar.classList.add('dev-hidden');
-        }
-
-        // 觸發圖表重新計算尺寸
-        setTimeout(() => {
-            if (radarChartInstance) radarChartInstance.resize();
-            if (dashLineChartInstance) dashLineChartInstance.resize();
-            window.dispatchEvent(new Event('resize'));
-        }, 360);
-    };
 
     window.navTo = function(viewId) {
         ['login', 'dashboard', 'exam', 'life'].forEach(id => {
@@ -470,13 +434,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!currentExamData.summary) currentExamData.summary = {};
 
         const sum = currentExamData.summary;
-        document.getElementById('cardRank').className = 'text-lg md:text-3xl font-black text-gray-800 leading-none font-inter';
+        document.getElementById('cardRank').className = 'text-base md:text-3xl font-black text-gray-800 leading-none font-inter';
         document.getElementById('cardRank').textContent = sum.classRank || '-';
-        document.getElementById('cardSchoolRank').className = 'text-lg md:text-3xl font-black text-gray-800 leading-none font-inter';
+        document.getElementById('cardSchoolRank').className = 'text-base md:text-3xl font-black text-gray-800 leading-none font-inter';
         document.getElementById('cardSchoolRank').textContent = sum.schoolRankInterval || '-';
-        document.getElementById('cardAvg').className = 'text-lg md:text-3xl font-black text-gray-800 leading-none font-inter';
+        document.getElementById('cardAvg').className = 'text-base md:text-3xl font-black text-gray-800 leading-none font-inter';
         document.getElementById('cardAvg').textContent = formatScore(sum.personalAverage);
-        document.getElementById('cardTotal').className = 'text-lg md:text-3xl font-black text-gray-800 leading-none font-inter';
+        document.getElementById('cardTotal').className = 'text-base md:text-3xl font-black text-gray-800 leading-none font-inter';
         document.getElementById('cardTotal').textContent = formatScore(sum.totalScore);
 
         const subjectsToRender = ['personalAverage', ...(currentExamData.subjectOrder || [])];
@@ -488,19 +452,31 @@ document.addEventListener('DOMContentLoaded', () => {
             const rawScore = isAvg ? sum.personalAverage : currentExamData.scores[subj];
             const score = formatScore(rawScore);
             const classAvg = formatScore(currentExamData.averages?.classAvg?.[subj]);
-            const schoolAvg = formatScore(currentExamData.averages?.schoolAvg?.[subj]);
+
+            // 🌟 總平均的「學校平均」：直接由各科校平均加總除以科目數（例如除以 5）算出
+            let rawSchoolAvg = currentExamData.averages?.schoolAvg?.[subj];
+            if (isAvg) {
+                const subjs = currentExamData.subjectOrder || [];
+                const validSchoolAvgs = subjs
+                    .map(s => Number(currentExamData.averages?.schoolAvg?.[s]))
+                    .filter(n => !isNaN(n) && n > 0);
+                if (validSchoolAvgs.length > 0) {
+                    rawSchoolAvg = validSchoolAvgs.reduce((a, b) => a + b, 0) / validSchoolAvgs.length;
+                }
+            }
+            const schoolAvg = formatScore(rawSchoolAvg);
             
             let rowClass = isAvg ? 'bg-orange-50' : 'hover:bg-gray-50/80 transition-colors';
             let subjClass = isAvg 
-                ? 'px-2 py-3 text-center font-black text-gray-900 border-l-4 border-orange-400 sticky-col bg-orange-50 min-w-[76px]' 
-                : 'px-2 py-3 text-center font-bold text-gray-700 border-l-4 border-transparent sticky-col bg-white min-w-[76px]';
+                ? 'px-1.5 py-2 md:px-2 md:py-3 text-center font-black text-gray-900 border-l-4 border-orange-400 sticky-col bg-orange-50 min-w-[64px] md:min-w-[76px]' 
+                : 'px-1.5 py-2 md:px-2 md:py-3 text-center font-bold text-gray-700 border-l-4 border-transparent sticky-col bg-white min-w-[64px] md:min-w-[76px]';
             
             const isRed = (typeof score === 'number' && score < 60) || (typeof rawScore === 'number' && rawScore < 60);
             let scoreClass = isAvg 
-                ? `p-3 text-center font-black ${isRed ? 'text-red-500' : 'text-[#c2516a]'} text-lg font-inter align-middle` 
-                : `p-3 text-center font-bold ${isRed ? 'text-red-500' : 'text-[#c2516a]'} font-inter align-middle`;
+                ? `p-2 md:p-3 text-center font-black ${isRed ? 'text-red-500' : 'text-[#c2516a]'} text-sm md:text-lg font-inter align-middle` 
+                : `p-2 md:p-3 text-center font-bold ${isRed ? 'text-red-500' : 'text-[#c2516a]'} text-xs md:text-base font-inter align-middle`;
                 
-            let avgClass = 'p-3 text-center font-bold text-gray-600 font-inter align-middle';
+            let avgClass = 'p-2 md:p-3 text-center font-bold text-gray-600 text-xs md:text-base font-inter align-middle';
             const displayAvg = chartMode === 'class' ? classAvg : schoolAvg;
 
             let diffHtml = '';
@@ -513,11 +489,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     const absDiff = Math.abs(diff);
                     const diffStr = Number.isInteger(absDiff) ? absDiff : absDiff.toFixed(1);
                     if (diff > 0) {
-                        diffHtml = `<span class="inline-flex items-center text-xs font-black text-emerald-600 ml-1.5 select-none" title="比前次段考進步 ${diffStr} 分">↑${diffStr}</span>`;
+                        diffHtml = `<span class="inline-flex items-center text-[10px] md:text-xs font-black text-emerald-600 ml-1 md:ml-1.5 select-none" title="比前次段考進步 ${diffStr} 分">↑${diffStr}</span>`;
                     } else if (diff < 0) {
-                        diffHtml = `<span class="inline-flex items-center text-xs font-black text-red-600 ml-1.5 select-none" title="比前次段考退步 ${diffStr} 分">↓${diffStr}</span>`;
+                        diffHtml = `<span class="inline-flex items-center text-[10px] md:text-xs font-black text-red-600 ml-1 md:ml-1.5 select-none" title="比前次段考退步 ${diffStr} 分">↓${diffStr}</span>`;
                     } else {
-                        diffHtml = `<span class="inline-flex items-center text-xs font-semibold text-gray-400 ml-1.5 select-none" title="與前次段考持平">→0</span>`;
+                        diffHtml = `<span class="inline-flex items-center text-[10px] md:text-xs font-semibold text-gray-400 ml-1 md:ml-1.5 select-none" title="與前次段考持平">→0</span>`;
                     }
                 }
             }
@@ -693,15 +669,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     : (currentExamData.classRanks?.[subj] || currentExamData.classRankEstimates?.[subj]);
                 
                 if (rankVal !== undefined && rankVal !== null && rankVal !== '' && rankVal !== '-') {
-                    rankHtml = `<span class="font-bold text-gray-800 font-inter text-base md:text-lg">${rankVal}</span>`;
+                    rankHtml = `<span class="font-bold text-gray-800 font-inter text-xs md:text-lg">${rankVal}</span>`;
                 } else {
-                    rankHtml = `<span class="text-gray-400 font-bold">-</span>`;
+                    rankHtml = `<span class="text-gray-400 font-bold text-xs md:text-base">-</span>`;
                 }
             } else {
                 const sRankVal = isAvg 
                     ? (currentExamData.summary?.schoolRankInterval || '-')
                     : (currentExamData.schoolRankEstimates?.[subj] || '-');
-                rankHtml = `<span class="text-xs font-bold text-gray-600 font-inter">${sRankVal}</span>`;
+                rankHtml = `<span class="text-[11px] md:text-xs font-bold text-gray-600 font-inter">${sRankVal}</span>`;
             }
 
             html += `
@@ -713,9 +689,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${diffHtml}
                         </div>
                     </td>
-                    <td class="p-3 text-center align-middle">${rankHtml}</td>
+                    <td class="p-2 md:p-3 text-center align-middle">${rankHtml}</td>
                     <td class="${avgClass}">${displayAvg}</td>
-                    <td class="p-3 align-middle text-center">${chartHtml}</td>
+                    <td class="p-2 md:p-3 align-middle text-center">${chartHtml}</td>
                 </tr>
             `;
         });
