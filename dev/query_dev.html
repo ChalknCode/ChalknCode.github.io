@@ -307,7 +307,7 @@
 
         <div id="examContent">
           <!-- 4 卡片並排 -->
-          <div id="examSummaryCards" class="grid grid-cols-4 gap-2 md:gap-4 mb-6">
+          <div id="examSummaryCards" class="grid grid-cols-4 gap-2 md:gap-4 mb-4">
               <div class="bg-white/90 p-2 md:p-4 rounded-xl shadow-sm border-t-4 border-t-emerald-400 text-center flex flex-col justify-center">
                   <div class="text-[10px] md:text-xs text-gray-500 font-bold mb-1 whitespace-nowrap">班級排名</div>
                   <div class="text-base md:text-3xl font-black text-gray-800 leading-none" id="cardRank">-</div>
@@ -325,6 +325,9 @@
                   <div class="text-base md:text-3xl font-black text-gray-800 leading-none" id="cardTotal">-</div>
               </div>
           </div>
+
+          <!-- 段考前後名次提示條 (第一名自動隱藏前一名、最後一名自動隱藏後一名) -->
+          <div id="examNeighborBar" class="dev-hidden mb-5"></div>
 
           <!-- 個人雷達圖已經移至首頁 -->
 
@@ -386,19 +389,19 @@
       </button>
       
       <div class="dev-glass-card rounded-2xl p-0 overflow-hidden">
-          <div class="bg-gradient-to-r from-[#f0fdf4] to-white/50 border-l-[6px] border-emerald-500 p-6 flex flex-row items-center gap-6 shadow-sm border-b border-gray-100">
-              <div>
+          <div class="bg-gradient-to-r from-[#f0fdf4] to-white/50 border-l-[6px] border-emerald-500 p-5 md:p-6 flex flex-row items-center gap-5 md:gap-6 shadow-sm border-b border-gray-100">
+              <div class="shrink-0">
                   <div class="text-emerald-800 text-sm font-bold mb-1">總積分</div>
                   <div class="text-4xl md:text-5xl font-black text-emerald-600 font-inter"><span id="totalLifePoints">0</span></div>
                   <div class="text-[10px] text-gray-500 mt-1">(初：<span id="initialPoints">0</span>)</div>
               </div>
-              <div class="w-px h-12 bg-emerald-200"></div>
-              <div class="flex flex-col justify-center">
+              <div class="w-px h-14 bg-emerald-200 shrink-0"></div>
+              <div class="flex flex-col justify-center min-w-0">
                   <div class="text-emerald-800 text-sm font-bold mb-1">班級排名</div>
-                  <div class="flex items-end gap-3 mb-1">
-                      <div class="text-3xl md:text-4xl font-black text-gray-800 font-inter"><span id="lpRank">-</span></div>
+                  <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                      <div class="text-3xl md:text-4xl font-black text-gray-800 font-inter leading-none shrink-0"><span id="lpRank">-</span></div>
+                      <div id="lpNeighborBadges" class="flex flex-wrap items-center gap-1.5"></div>
                   </div>
-
               </div>
           </div>
 
@@ -416,7 +419,7 @@
 
   </main>
 
-  <script src="js/config.js?v=45"></script>
-  <script src="js/query_dev.js?v=45"></script>
+  <script src="js/config.js?v=46"></script>
+  <script src="js/query_dev.js?v=46"></script>
 </body>
 </html>

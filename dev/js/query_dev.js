@@ -443,6 +443,58 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('cardTotal').className = 'text-base md:text-3xl font-black text-gray-800 leading-none font-inter';
         document.getElementById('cardTotal').textContent = formatScore(sum.totalScore);
 
+        // 🌟 段考前後名次提示條（第一名不顯示前一名，最後一名不顯示後一名）
+        const neighborBar = document.getElementById('examNeighborBar');
+        if (neighborBar) {
+            const rankNum = Number(sum.classRank);
+            const totalStudNum = Number(sum.totalStudents);
+            const hasPrev = rankNum !== 1 && sum.prevTotalScore !== undefined && sum.prevTotalScore !== '-' && sum.prevTotalScore !== '';
+            const hasNext = (!totalStudNum || isNaN(rankNum) || rankNum < totalStudNum) && sum.nextTotalScore !== undefined && sum.nextTotalScore !== '-' && sum.nextTotalScore !== '';
+
+            if (hasPrev || hasNext) {
+                let pillsHtml = '';
+                if (hasPrev) {
+                    const pTotal = formatScore(sum.prevTotalScore);
+                    const pAvg = formatScore(sum.prevAverage);
+                    pillsHtml += `
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50/90 border border-rose-200/70 text-xs md:text-sm text-gray-700 shadow-sm">
+                            <span class="text-[#c2516a] font-black text-xs whitespace-nowrap">▲ 前一名</span>
+                            <span class="text-gray-300">|</span>
+                            <span class="whitespace-nowrap">總分 <strong class="font-inter font-black text-gray-900">${pTotal}</strong></span>
+                            <span class="text-gray-500 text-[11px] md:text-xs whitespace-nowrap">（平均 <strong class="font-inter font-bold text-gray-700">${pAvg}</strong>）</span>
+                        </div>
+                    `;
+                }
+                if (hasNext) {
+                    const nTotal = formatScore(sum.nextTotalScore);
+                    const nAvg = formatScore(sum.nextAverage);
+                    pillsHtml += `
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50/90 border border-indigo-200/70 text-xs md:text-sm text-gray-700 shadow-sm">
+                            <span class="text-[#5c6bc0] font-black text-xs whitespace-nowrap">▼ 後一名</span>
+                            <span class="text-gray-300">|</span>
+                            <span class="whitespace-nowrap">總分 <strong class="font-inter font-black text-gray-900">${nTotal}</strong></span>
+                            <span class="text-gray-500 text-[11px] md:text-xs whitespace-nowrap">（平均 <strong class="font-inter font-bold text-gray-700">${nAvg}</strong>）</span>
+                        </div>
+                    `;
+                }
+                neighborBar.innerHTML = `
+                    <div class="bg-white/75 border border-gray-200/80 rounded-2xl px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 shadow-sm">
+                        <div class="flex items-center gap-1.5 text-xs font-bold text-gray-500">
+                            <svg class="w-4 h-4 text-[#c2516a] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                            <span>班排前後名次參考</span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            ${pillsHtml}
+                        </div>
+                    </div>
+                `;
+                neighborBar.classList.remove('dev-hidden');
+            } else {
+                neighborBar.innerHTML = '';
+                neighborBar.classList.add('dev-hidden');
+            }
+        }
+
         const subjectsToRender = ['personalAverage', ...(currentExamData.subjectOrder || [])];
 
         subjectsToRender.forEach((subj) => {
@@ -800,12 +852,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const lpRank = currentStudent.rank || '-';
         const totalStudents = currentStudent.totalStudents || '-';
         document.getElementById('lpRank').textContent = `${lpRank} / ${totalStudents}`;
-        const lpPrev = currentStudent.prevScore || '-';
-        const lpNext = currentStudent.nextScore || '-';
-        const prevEl = document.getElementById('lpPrev');
-        const nextEl = document.getElementById('lpNext');
-        if(prevEl) prevEl.textContent = lpPrev;
-        if(nextEl) nextEl.textContent = lpNext;
+        const lpPrev = currentStudent.prevScore;
+        const lpNext = currentStudent.nextScore;
+        const lpBadgesEl = document.getElementById('lpNeighborBadges');
+        if (lpBadgesEl) {
+            const rankNum = Number(lpRank);
+            const totalNum = Number(totalStudents);
+            const showPrev = rankNum !== 1 && lpPrev !== undefined && lpPrev !== null && lpPrev !== '' && lpPrev !== '-';
+            const showNext = (!totalNum || isNaN(rankNum) || rankNum < totalNum) && lpNext !== undefined && lpNext !== null && lpNext !== '' && lpNext !== '-';
+            let badgesHtml = '';
+            if (showPrev) {
+                badgesHtml += `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100/80 text-emerald-800 border border-emerald-200/70 whitespace-nowrap"><span class="text-emerald-600 text-[10px]">▲</span>前一名：<strong class="font-inter font-black">${lpPrev}</strong> 分</span>`;
+            }
+            if (showNext) {
+                badgesHtml += `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200/70 whitespace-nowrap"><span class="text-amber-500 text-[10px]">▼</span>後一名：<strong class="font-inter font-black">${lpNext}</strong> 分</span>`;
+            }
+            lpBadgesEl.innerHTML = badgesHtml;
+        }
 
         let html = '';
         const sortedWeeks = Object.keys(lpData).sort((a,b) => b - a);
