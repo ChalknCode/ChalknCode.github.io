@@ -460,8 +460,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50/90 border border-rose-200/70 text-xs md:text-sm text-gray-700 shadow-sm">
                             <span class="text-[#c2516a] font-black text-xs whitespace-nowrap">▲ 前一名</span>
                             <span class="text-gray-300">|</span>
-                            <span class="whitespace-nowrap">總分 <strong class="font-inter font-black text-gray-900">${pTotal}</strong></span>
-                            <span class="text-gray-500 text-[11px] md:text-xs whitespace-nowrap">（平均 <strong class="font-inter font-bold text-gray-700">${pAvg}</strong>）</span>
+                            <span class="whitespace-nowrap">平均 <strong class="font-inter font-black text-gray-900">${pAvg}</strong></span>
+                            <span class="text-gray-500 text-[11px] md:text-xs whitespace-nowrap">（總分 <strong class="font-inter font-bold text-gray-700">${pTotal}</strong>）</span>
                         </div>
                     `;
                 }
@@ -472,8 +472,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50/90 border border-indigo-200/70 text-xs md:text-sm text-gray-700 shadow-sm">
                             <span class="text-[#5c6bc0] font-black text-xs whitespace-nowrap">▼ 後一名</span>
                             <span class="text-gray-300">|</span>
-                            <span class="whitespace-nowrap">總分 <strong class="font-inter font-black text-gray-900">${nTotal}</strong></span>
-                            <span class="text-gray-500 text-[11px] md:text-xs whitespace-nowrap">（平均 <strong class="font-inter font-bold text-gray-700">${nAvg}</strong>）</span>
+                            <span class="whitespace-nowrap">平均 <strong class="font-inter font-black text-gray-900">${nAvg}</strong></span>
+                            <span class="text-gray-500 text-[11px] md:text-xs whitespace-nowrap">（總分 <strong class="font-inter font-bold text-gray-700">${nTotal}</strong>）</span>
                         </div>
                     `;
                 }
