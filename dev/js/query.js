@@ -11,19 +11,46 @@ document.addEventListener('DOMContentLoaded', () => {
     let radarMode = 'class'; // 'class' or 'school'
     const examCache = {};
 
+    function parseRawScore(val) {
+        if (val === undefined || val === null || val === '') {
+            return { isValid: false, num: NaN, isSpecial: false };
+        }
+        if (typeof val === 'number' && !isNaN(val)) {
+            return { isValid: true, num: val, isSpecial: false };
+        }
+        const str = String(val).trim();
+        if (/^[*＊]/.test(str) || /[*＊]$/.test(str)) {
+            const clean = str.replace(/[*＊]/g, '').trim();
+            const n = Number(clean);
+            if (clean !== '' && !isNaN(n)) {
+                return { isValid: true, num: n, isSpecial: true };
+            }
+        }
+        const n = Number(str);
+        if (str !== '' && !isNaN(n)) {
+            return { isValid: true, num: n, isSpecial: false };
+        }
+        return { isValid: false, num: NaN, isSpecial: false };
+    }
+
     function getSubjectScore(dataObj, subj) {
         if (!dataObj) return undefined;
-        if (subj === 'personalAverage') return dataObj.summary?.personalAverage;
+        if (subj === 'personalAverage') {
+            const p = parseRawScore(dataObj.summary?.personalAverage);
+            return p.isValid ? p.num : dataObj.summary?.personalAverage;
+        }
         if (dataObj.scores) {
             if (dataObj.scores[subj] !== undefined && dataObj.scores[subj] !== '') {
-                return dataObj.scores[subj];
+                const p = parseRawScore(dataObj.scores[subj]);
+                return p.isValid ? p.num : dataObj.scores[subj];
             }
             // 自然科別名智慧比對 (自然 / 自然（理化） / 自然（生物） / 理化 / 生物)
             if (subj.includes('自然') || subj === '理化' || subj === '生物') {
                 const candidates = ['自然', '自然（理化）', '自然（生物）', '理化', '生物'];
                 for (const c of candidates) {
                     if (dataObj.scores[c] !== undefined && dataObj.scores[c] !== '') {
-                        return dataObj.scores[c];
+                        const p = parseRawScore(dataObj.scores[c]);
+                        return p.isValid ? p.num : dataObj.scores[c];
                     }
                 }
             }
@@ -414,8 +441,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function formatScore(val) {
         if (val === undefined || val === null || val === '') return '-';
-        const num = Number(val);
-        if (!isNaN(num)) return Math.round(num * 100) / 100;
+        const parsed = parseRawScore(val);
+        if (parsed.isValid) return Math.round(parsed.num * 100) / 100;
         return val;
     }
 
@@ -434,22 +461,50 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!currentExamData.summary) currentExamData.summary = {};
 
         const sum = currentExamData.summary;
-        document.getElementById('cardRank').className = 'text-base md:text-3xl font-black text-gray-800 leading-none font-inter';
-        document.getElementById('cardRank').textContent = sum.classRank || '-';
-        document.getElementById('cardSchoolRank').className = 'text-base md:text-3xl font-black text-gray-800 leading-none font-inter';
-        document.getElementById('cardSchoolRank').textContent = sum.schoolRankInterval || '-';
+        const rawRankStr = String(sum.classRank || '').trim();
+        const hasAnySpecialSubj = Boolean(
+            (currentExamData.specialSubjects && Object.keys(currentExamData.specialSubjects).length > 0) ||
+            (currentExamData.subjectOrder || []).some(s => parseRawScore(currentExamData.scores?.[s]).isSpecial)
+        );
+        const isUnrankedOverall = rawRankStr.includes('不列') || hasAnySpecialSubj;
+
+        // 若該生有帶 * 號科目，前端同步保底計算五科總分與個人平均
+        if (hasAnySpecialSubj && currentExamData.subjectOrder) {
+            const validNums = currentExamData.subjectOrder
+                .map(s => parseRawScore(currentExamData.scores?.[s]))
+                .filter(p => p.isValid && !isNaN(p.num))
+                .map(p => p.num);
+            if (validNums.length > 0) {
+                const totalAll = validNums.reduce((a, b) => a + b, 0);
+                sum.totalScore = Math.round(totalAll * 100) / 100;
+                sum.personalAverage = Math.round((totalAll / validNums.length) * 100) / 100;
+                currentExamData.scores['personalAverage'] = sum.personalAverage;
+            }
+        }
+
+        if (isUnrankedOverall) {
+            document.getElementById('cardRank').className = 'text-xs md:text-xl font-black text-gray-500 leading-tight';
+            document.getElementById('cardRank').textContent = '不列排名';
+            document.getElementById('cardSchoolRank').className = 'text-xs md:text-xl font-black text-gray-500 leading-tight';
+            document.getElementById('cardSchoolRank').textContent = '不列排名';
+        } else {
+            document.getElementById('cardRank').className = 'text-base md:text-3xl font-black text-gray-800 leading-none font-inter';
+            document.getElementById('cardRank').textContent = sum.classRank || '-';
+            document.getElementById('cardSchoolRank').className = 'text-base md:text-3xl font-black text-gray-800 leading-none font-inter';
+            document.getElementById('cardSchoolRank').textContent = sum.schoolRankInterval || '-';
+        }
         document.getElementById('cardAvg').className = 'text-base md:text-3xl font-black text-gray-800 leading-none font-inter';
         document.getElementById('cardAvg').textContent = formatScore(sum.personalAverage);
         document.getElementById('cardTotal').className = 'text-base md:text-3xl font-black text-gray-800 leading-none font-inter';
         document.getElementById('cardTotal').textContent = formatScore(sum.totalScore);
 
-        // 🌟 段考前後名次提示條（第一名不顯示前一名，最後一名不顯示後一名）
+        // 🌟 段考前後名次提示條（第一名不顯示前一名，最後一名不顯示後一名，不列排名者不顯示）
         const neighborBar = document.getElementById('examNeighborBar');
         if (neighborBar) {
             const rankNum = Number(sum.classRank);
             const totalStudNum = Number(sum.totalStudents);
-            const hasPrev = rankNum !== 1 && sum.prevTotalScore !== undefined && sum.prevTotalScore !== '-' && sum.prevTotalScore !== '';
-            const hasNext = (!totalStudNum || isNaN(rankNum) || rankNum < totalStudNum) && sum.nextTotalScore !== undefined && sum.nextTotalScore !== '-' && sum.nextTotalScore !== '';
+            const hasPrev = !isUnrankedOverall && rankNum !== 1 && sum.prevTotalScore !== undefined && sum.prevTotalScore !== '-' && sum.prevTotalScore !== '';
+            const hasNext = !isUnrankedOverall && (!totalStudNum || isNaN(rankNum) || rankNum < totalStudNum) && sum.nextTotalScore !== undefined && sum.nextTotalScore !== '-' && sum.nextTotalScore !== '';
 
             if (hasPrev || hasNext) {
                 let pillsHtml = '';
@@ -502,6 +557,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const title = isAvg ? '總平均' : getSubjectDisplayName(subj, currentExamData.sheetName);
             
             const rawScore = isAvg ? sum.personalAverage : currentExamData.scores[subj];
+            const parsedSubjScore = parseRawScore(rawScore);
+            const isSpecialSubj = isAvg
+                ? isUnrankedOverall
+                : Boolean(
+                    currentExamData.specialSubjects?.[subj] ||
+                    parsedSubjScore.isSpecial ||
+                    String(currentExamData.classRanks?.[subj] || '').includes('不列')
+                );
             const score = formatScore(rawScore);
             const classAvg = formatScore(currentExamData.averages?.classAvg?.[subj]);
 
@@ -523,7 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? 'px-1.5 py-2 md:px-2 md:py-3 text-center font-black text-gray-900 border-l-4 border-orange-400 sticky-col bg-orange-50 min-w-[64px] md:min-w-[76px]' 
                 : 'px-1.5 py-2 md:px-2 md:py-3 text-center font-bold text-gray-700 border-l-4 border-transparent sticky-col bg-white min-w-[64px] md:min-w-[76px]';
             
-            const isRed = (typeof score === 'number' && score < 60) || (typeof rawScore === 'number' && rawScore < 60);
+            const isRed = (typeof score === 'number' && score < 60) || (parsedSubjScore.isValid && parsedSubjScore.num < 60);
             let scoreClass = isAvg 
                 ? `p-2 md:p-3 text-center font-black ${isRed ? 'text-red-500' : 'text-[#c2516a]'} text-sm md:text-lg font-inter align-middle` 
                 : `p-2 md:p-3 text-center font-bold ${isRed ? 'text-red-500' : 'text-[#c2516a]'} text-xs md:text-base font-inter align-middle`;
@@ -534,7 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let diffHtml = '';
             if (prevExamData && !prevExamData.error && prevExamData.status !== 'error') {
                 const prev = getSubjectScore(prevExamData, subj);
-                const currNum = Number(rawScore);
+                const currNum = parsedSubjScore.isValid ? parsedSubjScore.num : Number(rawScore);
                 const prevNum = Number(prev);
                 if (!isNaN(currNum) && !isNaN(prevNum)) {
                     const diff = Math.round((currNum - prevNum) * 10) / 10;
@@ -557,7 +620,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let dataClass = [];
             let studentBinIndex = -1;
             
-            const scoreNum = Number(rawScore);
+            const scoreNum = parsedSubjScore.isValid ? parsedSubjScore.num : Number(rawScore);
 
             // 由高到低排列（左高右低）
             const labels10 = ["100-90", "89-80", "79-70", "69-60", "59-50", "49-40", "39-30", "29-20", "19-10", "9-0"];
@@ -629,6 +692,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     else if (intScore >= 10) studentBinIndex = 8;
                     else studentBinIndex = 9;
                 }
+            }
+
+            // 若該科為不同考卷或總排不列排名，不在一般考卷分佈圖中標示落點高光
+            if (isSpecialSubj) {
+                studentBinIndex = -1;
             }
 
             labels.forEach(k => { 
@@ -715,13 +783,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
             let rankHtml = '';
-            if (chartMode === 'class') {
+            if (isSpecialSubj) {
+                rankHtml = `<span class="inline-block px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-500 font-bold text-[10px] md:text-xs whitespace-nowrap">不列排名</span>`;
+            } else if (chartMode === 'class') {
                 const rankVal = isAvg 
                     ? (currentExamData.summary?.classRank || currentExamData.classRanks?.['personalAverage'])
                     : (currentExamData.classRanks?.[subj] || currentExamData.classRankEstimates?.[subj]);
                 
                 if (rankVal !== undefined && rankVal !== null && rankVal !== '' && rankVal !== '-') {
-                    rankHtml = `<span class="font-bold text-gray-800 font-inter text-xs md:text-lg">${rankVal}</span>`;
+                    if (String(rankVal).includes('不列')) {
+                        rankHtml = `<span class="inline-block px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-500 font-bold text-[10px] md:text-xs whitespace-nowrap">不列排名</span>`;
+                    } else {
+                        rankHtml = `<span class="font-bold text-gray-800 font-inter text-xs md:text-lg">${rankVal}</span>`;
+                    }
                 } else {
                     rankHtml = `<span class="text-gray-400 font-bold text-xs md:text-base">-</span>`;
                 }
@@ -729,7 +803,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const sRankVal = isAvg 
                     ? (currentExamData.summary?.schoolRankInterval || '-')
                     : (currentExamData.schoolRankEstimates?.[subj] || '-');
-                rankHtml = `<span class="text-[11px] md:text-xs font-bold text-gray-600 font-inter">${sRankVal}</span>`;
+                if (String(sRankVal).includes('不列')) {
+                    rankHtml = `<span class="inline-block px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-500 font-bold text-[10px] md:text-xs whitespace-nowrap">不列排名</span>`;
+                } else {
+                    rankHtml = `<span class="text-[11px] md:text-xs font-bold text-gray-600 font-inter">${sRankVal}</span>`;
+                }
             }
 
             html += `
@@ -774,8 +852,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const rawSubjs = currentExamData.subjectOrder || [];
         const displayLabels = rawSubjs.map(subj => getSubjectDisplayName(subj, currentExamData.sheetName));
         const myScores = rawSubjs.map(subj => {
-            const s = Number(currentExamData.scores[subj]);
-            return isNaN(s) ? 0 : s;
+            const p = parseRawScore(currentExamData.scores[subj]);
+            return p.isValid ? p.num : 0;
         });
         
         const isClass = radarMode === 'class';
@@ -1048,13 +1126,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 let score = NaN;
                 if (res && res.scores) {
                     if (subj === '總平均') {
-                        const v = res.scores['personalAverage'];
-                        if (v !== undefined && v !== '') score = Number(v);
+                        const p = parseRawScore(res.scores['personalAverage']);
+                        if (p.isValid) score = p.num;
                     } else if (subj === '自然') {
                         const sVal = getSubjectScore(res, '自然');
-                        if (sVal !== undefined && sVal !== '') score = Number(sVal);
+                        const p = parseRawScore(sVal);
+                        if (p.isValid) score = p.num;
                     } else if (res.scores[subj] !== undefined && res.scores[subj] !== '') {
-                        score = Number(res.scores[subj]);
+                        const p = parseRawScore(res.scores[subj]);
+                        if (p.isValid) score = p.num;
                     }
                 }
 
