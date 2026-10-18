@@ -1,128 +1,845 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // === DOM Elements ===
-    const loginSection = document.getElementById('loginSection');
-    const dashboardSection = document.getElementById('dashboardSection');
     const loginForm = document.getElementById('loginForm');
-    const loginBtn = document.getElementById('loginBtn');
-    const loginText = document.getElementById('loginText');
-    const loginLoader = document.getElementById('loginLoader');
     const loginError = document.getElementById('loginError');
-    const logoutBtn = document.getElementById('logoutBtn');
-
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
-
-    // === State ===
+    const loginBtn = document.getElementById('loginBtn');
+    
     let currentStudent = null;
     let currentExamData = null;
-    let examChartInstances = [];
+    let prevExamData = null;  // 上次段考資料，用於進退步比較
+    let chartMode = 'class'; // 'class' or 'school'
+    let schoolAvgSubmode = 'interval'; // 'interval' or 'cumulative' – only used when chartMode==='school' and isAvg
+    let radarMode = 'class'; // 'class' or 'school'
+    const examCache = {};
 
-    // === Login Logic ===
+    function getSubjectScore(dataObj, subj) {
+        if (!dataObj) return undefined;
+        if (subj === 'personalAverage') return dataObj.summary?.personalAverage;
+        if (dataObj.scores) {
+            if (dataObj.scores[subj] !== undefined && dataObj.scores[subj] !== '') {
+                return dataObj.scores[subj];
+            }
+            // 自然科別名智慧比對 (自然 / 自然（理化） / 自然（生物） / 理化 / 生物)
+            if (subj.includes('自然') || subj === '理化' || subj === '生物') {
+                const candidates = ['自然', '自然（理化）', '自然（生物）', '理化', '生物'];
+                for (const c of candidates) {
+                    if (dataObj.scores[c] !== undefined && dataObj.scores[c] !== '') {
+                        return dataObj.scores[c];
+                    }
+                }
+            }
+        }
+        return undefined;
+    }
+
+    function getSubjectDisplayName(subj, examName) {
+        if (!subj) return '';
+        if (subj === 'personalAverage') return '總平均';
+
+        // 1. 優先檢查自訂設定 (CONFIG.SUBJECT_DISPLAY_MAP)
+        if (typeof CONFIG !== 'undefined' && CONFIG.SUBJECT_DISPLAY_MAP) {
+            for (const key in CONFIG.SUBJECT_DISPLAY_MAP) {
+                if (examName && examName.includes(key)) {
+                    if (CONFIG.SUBJECT_DISPLAY_MAP[key][subj]) {
+                        return CONFIG.SUBJECT_DISPLAY_MAP[key][subj];
+                    }
+                }
+            }
+        }
+
+        // 2. 若欄位名稱本身已帶括號（例如試算表直接寫「自然(理化)」），則維持原有名稱
+        if (subj.includes('(') || subj.includes('（')) return subj;
+
+        // 3. 預設自然科年級智慧規則
+        if (subj === '自然') {
+            const en = examName || '';
+            if (en.includes('七') || en.includes('7')) {
+                return '自然(生物)';
+            } else if (en.includes('八') || en.includes('8')) {
+                return '自然(理化)';
+            } else if (en.includes('九') || en.includes('9')) {
+                return '自然(理化/地科)';
+            }
+            return '自然';
+        }
+        return subj;
+    }
+
+    function formatSubjectCellHtml(subj, examName) {
+        if (!subj || subj === 'personalAverage') {
+            return '<span class="whitespace-nowrap font-black text-gray-900 text-xs md:text-base">總平均</span>';
+        }
+        const displayName = getSubjectDisplayName(subj, examName);
+        // 檢查是否含有分科括號，例如「自然(理化)」、「自然（生物）」、「自然(理化/地科)」
+        const match = displayName.match(/^([^\(（]+)[\(（](.+?)[\)）]$/);
+        if (match) {
+            const mainName = match[1].trim();
+            const subName = match[2].trim();
+            return `<div class="inline-flex flex-col items-center justify-center leading-tight py-0.5">
+                <span class="whitespace-nowrap font-bold text-gray-800 text-xs md:text-base">${mainName}</span>
+                <span class="whitespace-nowrap text-[10px] md:text-[11px] font-semibold text-gray-500 tracking-tight">（${subName}）</span>
+            </div>`;
+        }
+        return `<span class="whitespace-nowrap font-bold text-gray-700 text-xs md:text-base">${displayName}</span>`;
+    }
+
+    function updateExamDropdowns(exams, selectedExam) {
+        const examSelector = document.getElementById('examSelector');
+        const dashExamSelector = document.getElementById('dashExamSelector');
+        if (!exams || exams.length === 0) return;
+        
+        let options = '';
+        exams.forEach(exam => {
+            options += `<option value="${exam}">${exam}</option>`;
+        });
+        if (examSelector) {
+            examSelector.innerHTML = options;
+            if (selectedExam) examSelector.value = selectedExam;
+            examSelector.onchange = (e) => {
+                const eid = e.target.value;
+                if (dashExamSelector) dashExamSelector.value = eid;
+                loadExamData(eid);
+            };
+        }
+        if (dashExamSelector) {
+            dashExamSelector.innerHTML = options;
+            if (selectedExam) dashExamSelector.value = selectedExam;
+            dashExamSelector.onchange = (e) => {
+                const eid = e.target.value;
+                if (examSelector) examSelector.value = eid;
+                loadExamData(eid);
+            };
+        }
+    }
+
+    // 取得預設顯示的段考名稱（優先順序：試算表「段考設定」勾選預設 > config.js 設定 > 最新一場段考）
+    function getPreferredDefaultExam(exams) {
+        if (!exams || exams.length === 0) return '';
+        if (currentStudent && currentStudent.defaultExam && exams.includes(currentStudent.defaultExam)) {
+            return currentStudent.defaultExam;
+        }
+        if (typeof CONFIG !== 'undefined' && CONFIG.DEFAULT_EXAM && exams.includes(CONFIG.DEFAULT_EXAM)) {
+            return CONFIG.DEFAULT_EXAM;
+        }
+        return exams[exams.length - 1];
+    }
+
+    window.navTo = function(viewId) {
+        ['login', 'dashboard', 'exam', 'life'].forEach(id => {
+            document.getElementById('view-' + id).classList.add('dev-hidden');
+        });
+        document.getElementById('view-' + viewId).classList.remove('dev-hidden');
+    };
+
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const rawSeatNo = document.getElementById('seatNo').value.trim();
         const idNumber = document.getElementById('idNumber').value.trim();
-
+        
         if (!rawSeatNo || !idNumber) return;
 
-        // 處理班級座號：例如將 "80501" 轉為 "1" 或 "01" (預設轉為數字字串 "1")
         let seatNo = rawSeatNo;
         if (rawSeatNo.length >= 4 && rawSeatNo.startsWith('805')) {
             seatNo = parseInt(rawSeatNo.replace('805', ''), 10).toString(); 
-            // 若試算表存的是純文字 "01"，此處可能需要改為 seatNo = rawSeatNo.replace('805', '');
         } else if (!isNaN(rawSeatNo)) {
             seatNo = parseInt(rawSeatNo, 10).toString();
         }
-
-        // UI Loading
+        
+        // Login Animation
+        const btnText = document.getElementById('btnText');
+        const btnLoader = document.getElementById('btnLoader');
         loginBtn.disabled = true;
-        loginText.textContent = "驗證中...";
-        loginLoader.classList.remove('hidden');
-        loginError.classList.add('hidden');
+        btnText.textContent = '登入中...';
+        btnLoader.classList.remove('dev-hidden');
+        loginError.classList.add('dev-hidden');
 
         try {
             const response = await fetch(CONFIG.API_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action: 'getStudentData', seatNo, idNumber })
+                body: JSON.stringify({
+                    action: 'getStudentData',
+                    seatNo: seatNo,
+                    idNumber: idNumber
+                })
             });
-            const data = await response.json();
 
-            if (data.status === 'error') {
-                throw new Error(data.message || '登入失敗');
+            const data = await response.json();
+            
+            if (data.status === 'error' || data.error) {
+                throw new Error(data.message || data.error || '登入失敗，請檢查資料');
             }
 
-            // Success
+            // 解析試算表「段考設定」中勾選「預設顯示」的段考（支援 '*' 前綴標記或 defaultExam 屬性）
+            if (Array.isArray(data.availableExams)) {
+                let starredExam = null;
+                data.availableExams = data.availableExams.map(ex => {
+                    const s = String(ex).trim();
+                    if (s.startsWith('*')) {
+                        const clean = s.substring(1).trim();
+                        starredExam = clean;
+                        return clean;
+                    }
+                    return s;
+                });
+                if (starredExam && !data.defaultExam) {
+                    data.defaultExam = starredExam;
+                }
+            }
+
             currentStudent = data;
-            currentStudent.idNumber = idNumber; // for subsequent requests if needed
+            _savedIdNumber = idNumber; // 儲存供備忘錄使用
             
-            // 根據學期設定控制頁籤顯示
-            const btnLife = document.querySelector('.tab-btn[data-target="tab-life"]');
-            const btnExam = document.querySelector('.tab-btn[data-target="tab-exam"]');
-            const btnSubject = document.querySelector('.tab-btn[data-target="tab-subject"]');
-            
-            if (btnLife) btnLife.style.display = currentStudent.showLifePoints === false ? 'none' : '';
-            if (btnExam) btnExam.style.display = (currentStudent.showMajorExam === false || !currentStudent.availableExams || currentStudent.availableExams.length === 0) ? 'none' : '';
-            if (btnSubject) btnSubject.style.display = currentStudent.showSubjects === false ? 'none' : '';
+            const btnLife = document.getElementById('btn-life');
+            const btnExam = document.getElementById('btn-exam');
+            if (btnLife) btnLife.style.display = currentStudent.showLifePoints === false ? 'none' : 'flex';
+            if (btnExam) btnExam.style.display = (currentStudent.showMajorExam === false || !currentStudent.availableExams || currentStudent.availableExams.length === 0) ? 'none' : 'flex';
 
             renderDashboard();
-            
-            // 自動切換到第一個可見的頁籤
-            const visibleTabs = Array.from(document.querySelectorAll('.tab-btn')).filter(btn => btn.style.display !== 'none');
-            if (visibleTabs.length > 0) {
-                visibleTabs[0].click();
-            }
-
-            loginSection.classList.add('hidden');
-            dashboardSection.classList.remove('hidden');
+            navTo('dashboard');
             
         } catch (err) {
             loginError.textContent = err.message;
-            loginError.classList.remove('hidden');
+            loginError.classList.remove('dev-hidden');
         } finally {
             loginBtn.disabled = false;
-            loginText.textContent = "登入查詢";
-            loginLoader.classList.add('hidden');
+            btnText.textContent = '登入查詢';
+            btnLoader.classList.add('dev-hidden');
         }
     });
 
-    logoutBtn.addEventListener('click', () => {
-        currentStudent = null;
-        document.getElementById('seatNo').value = '';
-        document.getElementById('idNumber').value = '';
-        dashboardSection.classList.add('hidden');
-        loginSection.classList.remove('hidden');
-    });
-
-    // === Tabs ===
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            tabBtns.forEach(b => b.classList.remove('active'));
-            tabContents.forEach(c => c.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById(btn.dataset.target).classList.add('active');
+    const togglePassword = document.getElementById('togglePassword');
+    if(togglePassword) {
+        togglePassword.addEventListener('click', function () {
+            const pwdInput = document.getElementById('idNumber');
+            const type = pwdInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            pwdInput.setAttribute('type', type);
+            const svg = document.getElementById('eyeIcon');
+            if (type === 'password') {
+                svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />';
+            } else {
+                svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />';
+            }
         });
-    });
+    }
 
-    // === Render Dashboard ===
+    // 儲存登入的身分證號碼供備忘錄使用
+    let _savedIdNumber = '';
+
     function renderDashboard() {
-        // Basic Info
-        document.getElementById('studentName').textContent = currentStudent.name;
-        document.getElementById('studentSeatNo').textContent = currentStudent.seatNo;
-        document.getElementById('studentClass').textContent = currentStudent.className;
-        document.getElementById('semesterName').textContent = currentStudent.semesterName || '';
+        document.getElementById('studentName').textContent = currentStudent.name || '';
+        document.getElementById('studentClass').textContent = currentStudent.className || '';
+        document.getElementById('studentSeatNo').textContent = currentStudent.seatNo || '';
 
-        // Memo
-        const memoText = document.getElementById('memoText');
-        memoText.textContent = currentStudent.memo ? currentStudent.memo : '目前沒有備忘錄。';
+        if (currentStudent.availableExams && currentStudent.availableExams.length > 0) {
+            const defaultExam = getPreferredDefaultExam(currentStudent.availableExams);
+            updateExamDropdowns(currentStudent.availableExams, defaultExam);
+            loadExamData(defaultExam);
+        }
 
-        // Life Points
+        document.getElementById('toggleChartClass').onclick = () => {
+            chartMode = 'class';
+            updateChartToggleUI();
+            renderExamContent();
+        };
+        document.getElementById('toggleChartSchool').onclick = () => {
+            chartMode = 'school';
+            updateChartToggleUI();
+            renderExamContent();
+        };
+        window.setSchoolSubmode = (mode) => {
+            schoolAvgSubmode = mode;
+            renderExamContent();
+        };
+
+        const btnRadarClass = document.getElementById('toggleRadarClass');
+        const btnRadarSchool = document.getElementById('toggleRadarSchool');
+        if (btnRadarClass && btnRadarSchool) {
+            btnRadarClass.onclick = () => {
+                if (radarMode === 'class') return;
+                radarMode = 'class';
+                btnRadarClass.className = "px-2.5 py-1 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800 transition-all";
+                btnRadarSchool.className = "px-2.5 py-1 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800 bg-transparent transition-all";
+                renderRadarChart();
+            };
+            btnRadarSchool.onclick = () => {
+                if (radarMode === 'school') return;
+                radarMode = 'school';
+                btnRadarSchool.className = "px-2.5 py-1 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800 transition-all";
+                btnRadarClass.className = "px-2.5 py-1 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800 bg-transparent transition-all";
+                renderRadarChart();
+            };
+        }
+
+        // 顯示備忘錄
+        const memoInput = document.getElementById('memoInput');
+        if (memoInput) {
+            memoInput.value = currentStudent.memo || '';
+        }
+
+        // 綁定備忘錄儲存按鈕
+        const saveMemoBtn = document.getElementById('saveMemoBtn');
+        if (saveMemoBtn && !saveMemoBtn._bound) {
+            saveMemoBtn._bound = true;
+            saveMemoBtn.addEventListener('click', async () => {
+                const btn = document.getElementById('saveMemoBtn');
+                const text = document.getElementById('memoBtnText');
+                btn.disabled = true;
+                if (text) text.textContent = '儲存中...';
+                try {
+                    const response = await fetch(CONFIG.API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'saveMemo',
+                            seatNo: currentStudent.seatNo,
+                            idNumber: _savedIdNumber,
+                            memoText: document.getElementById('memoInput').value
+                        })
+                    });
+                    const res = await response.json();
+                    if (res.status === 'success') {
+                        if (text) text.textContent = '✓ 已儲存';
+                        setTimeout(() => { if (text) text.textContent = '儲存備忘錄'; btn.disabled = false; }, 2000);
+                    } else {
+                        alert('儲存失敗：' + res.message);
+                        if (text) text.textContent = '儲存備忘錄'; btn.disabled = false;
+                    }
+                } catch (e) {
+                    alert('儲存失敗，請檢查網路');
+                    if (text) text.textContent = '儲存備忘錄'; btn.disabled = false;
+                }
+            });
+        }
+
         renderLifePoints();
+        renderDashLineChart();
+    }
 
-        // Subjects (Minor Exams)
-        renderSubjects();
+    async function loadExamData(examName) {
+        if (!examName) return;
+        
+        const content = document.getElementById('examContent');
+        const loader = document.getElementById('examLoader');
+        const radarLoader = document.getElementById('dashRadarLoader');
+        const radarCanvas = document.getElementById('dashRadarChart');
+        
+        content.classList.add('dev-hidden');
+        if(loader) loader.classList.remove('dev-hidden');
+        if(radarLoader) radarLoader.classList.remove('dev-hidden');
+        if(radarCanvas) radarCanvas.style.opacity = '0.3';
 
-        // Major Exams
-        renderExamSelect();
+        try {
+            let data = examCache[examName];
+            if (!data) {
+                const response = await fetch(CONFIG.API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'getMajorExamData', examName, seatNo: currentStudent.seatNo })
+                });
+                data = await response.json();
+                if (!data.error && data.status !== 'error') {
+                    examCache[examName] = data;
+                }
+            }
+
+            // 🌟 轉學生防呆機制：若查無該學生於此段考之成績，自動排除該選項並換至有資料的段考
+            if (data && (data.error || data.status === 'error')) {
+                const errMsg = String(data.error || data.message || '');
+                if (errMsg.includes('找不到您的成績資料') || errMsg.includes('找不到段考')) {
+                    currentStudent.availableExams = (currentStudent.availableExams || []).filter(e => e !== examName);
+                    if (currentStudent.availableExams.length > 0) {
+                        const nextExam = getPreferredDefaultExam(currentStudent.availableExams);
+                        updateExamDropdowns(currentStudent.availableExams, nextExam);
+                        return loadExamData(nextExam);
+                    }
+                }
+            }
+
+            currentExamData = data;
+
+            // 自動查找前一次段考（根據時間軸排序的上一場）
+            const exams = currentStudent.availableExams || [];
+            const currIdx = exams.indexOf(examName);
+            if (currIdx > 0) {
+                const prevExamName = exams[currIdx - 1];
+                if (examCache[prevExamName]) {
+                    prevExamData = examCache[prevExamName];
+                } else {
+                    prevExamData = null;
+                    // 背景預先載入前一次段考，載入完成後自動重繪表格以帶出進退步
+                    fetch(CONFIG.API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'getMajorExamData', examName: prevExamName, seatNo: currentStudent.seatNo })
+                    }).then(r => r.json()).then(pData => {
+                        if (pData && !pData.error && pData.status !== 'error') {
+                            examCache[prevExamName] = pData;
+                            if (currentExamData && currentExamData.sheetName === examName) {
+                                prevExamData = pData;
+                                renderExamContent();
+                            }
+                        }
+                    }).catch(console.error);
+                }
+            } else {
+                prevExamData = null;
+            }
+
+            renderExamContent();
+        } catch (err) {
+            console.error('段考讀取失敗:', err);
+        } finally {
+            if(loader) loader.classList.add('dev-hidden');
+            if(radarLoader) radarLoader.classList.add('dev-hidden');
+            if(radarCanvas) radarCanvas.style.opacity = '1';
+            content.classList.remove('dev-hidden');
+        }
+    }
+
+    function updateChartToggleUI() {
+        const btnC = document.getElementById('toggleChartClass');
+        const btnS = document.getElementById('toggleChartSchool');
+        const rankHeader = document.getElementById('rankHeaderTitle');
+        const avgHeader = document.getElementById('avgHeaderTitle');
+        if (chartMode === 'class') {
+            btnC.className = "px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800";
+            btnS.className = "px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800 bg-transparent";
+            document.getElementById('chartTypeLabel').textContent = '班級';
+            if (avgHeader) avgHeader.innerHTML = '<div class="th-wrap-2char inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto"><span class="whitespace-nowrap">班級</span><span class="whitespace-nowrap">平均</span></div>';
+            if (rankHeader) rankHeader.innerHTML = '<div class="th-wrap-2char inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto"><span class="whitespace-nowrap">各科</span><span class="whitespace-nowrap">班排</span></div>';
+        } else {
+            btnS.className = "px-3 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-gray-800";
+            btnC.className = "px-3 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-800 bg-transparent";
+            document.getElementById('chartTypeLabel').textContent = '全校';
+            if (avgHeader) avgHeader.innerHTML = '<div class="th-wrap-2char inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto"><span class="whitespace-nowrap">學校</span><span class="whitespace-nowrap">平均</span></div>';
+            if (rankHeader) rankHeader.innerHTML = '<div class="th-wrap-2char inline-flex flex-wrap justify-center items-center leading-tight max-w-[3.5em] md:max-w-none mx-auto"><span class="whitespace-nowrap">校排</span><span class="whitespace-nowrap">區間</span></div>';
+        }
+    }
+
+    function formatScore(val) {
+        if (val === undefined || val === null || val === '') return '-';
+        const num = Number(val);
+        if (!isNaN(num)) return Math.round(num * 100) / 100;
+        return val;
+    }
+
+    function renderExamContent() {
+        if (!currentExamData) return;
+        
+        const tbody = document.getElementById('examTableBody');
+        let html = '';
+
+        if (currentExamData.status === 'error' || currentExamData.error) {
+            tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500 font-bold">${currentExamData.message || currentExamData.error || '讀取資料失敗'}</td></tr>`;
+            return;
+        }
+
+        if (!currentExamData.scores) currentExamData.scores = {};
+        if (!currentExamData.summary) currentExamData.summary = {};
+
+        const sum = currentExamData.summary;
+        document.getElementById('cardRank').className = 'text-base md:text-3xl font-black text-gray-800 leading-none font-inter';
+        document.getElementById('cardRank').textContent = sum.classRank || '-';
+        document.getElementById('cardSchoolRank').className = 'text-base md:text-3xl font-black text-gray-800 leading-none font-inter';
+        document.getElementById('cardSchoolRank').textContent = sum.schoolRankInterval || '-';
+        document.getElementById('cardAvg').className = 'text-base md:text-3xl font-black text-gray-800 leading-none font-inter';
+        document.getElementById('cardAvg').textContent = formatScore(sum.personalAverage);
+        document.getElementById('cardTotal').className = 'text-base md:text-3xl font-black text-gray-800 leading-none font-inter';
+        document.getElementById('cardTotal').textContent = formatScore(sum.totalScore);
+
+        // 🌟 段考前後名次提示條（第一名不顯示前一名，最後一名不顯示後一名）
+        const neighborBar = document.getElementById('examNeighborBar');
+        if (neighborBar) {
+            const rankNum = Number(sum.classRank);
+            const totalStudNum = Number(sum.totalStudents);
+            const hasPrev = rankNum !== 1 && sum.prevTotalScore !== undefined && sum.prevTotalScore !== '-' && sum.prevTotalScore !== '';
+            const hasNext = (!totalStudNum || isNaN(rankNum) || rankNum < totalStudNum) && sum.nextTotalScore !== undefined && sum.nextTotalScore !== '-' && sum.nextTotalScore !== '';
+
+            if (hasPrev || hasNext) {
+                let pillsHtml = '';
+                if (hasPrev) {
+                    const pTotal = formatScore(sum.prevTotalScore);
+                    const pAvg = formatScore(sum.prevAverage);
+                    pillsHtml += `
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50/90 border border-rose-200/70 text-xs md:text-sm text-gray-700 shadow-sm">
+                            <span class="text-[#c2516a] font-black text-xs whitespace-nowrap">▲ 前一名</span>
+                            <span class="text-gray-300">|</span>
+                            <span class="whitespace-nowrap">平均 <strong class="font-inter font-black text-gray-900">${pAvg}</strong></span>
+                            <span class="text-gray-500 text-[11px] md:text-xs whitespace-nowrap">（總分 <strong class="font-inter font-bold text-gray-700">${pTotal}</strong>）</span>
+                        </div>
+                    `;
+                }
+                if (hasNext) {
+                    const nTotal = formatScore(sum.nextTotalScore);
+                    const nAvg = formatScore(sum.nextAverage);
+                    pillsHtml += `
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50/90 border border-indigo-200/70 text-xs md:text-sm text-gray-700 shadow-sm">
+                            <span class="text-[#5c6bc0] font-black text-xs whitespace-nowrap">▼ 後一名</span>
+                            <span class="text-gray-300">|</span>
+                            <span class="whitespace-nowrap">平均 <strong class="font-inter font-black text-gray-900">${nAvg}</strong></span>
+                            <span class="text-gray-500 text-[11px] md:text-xs whitespace-nowrap">（總分 <strong class="font-inter font-bold text-gray-700">${nTotal}</strong>）</span>
+                        </div>
+                    `;
+                }
+                neighborBar.innerHTML = `
+                    <div class="bg-white/75 border border-gray-200/80 rounded-2xl px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 shadow-sm">
+                        <div class="flex items-center gap-1.5 text-xs font-bold text-gray-500">
+                            <svg class="w-4 h-4 text-[#c2516a] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                            <span>班排前後名次參考</span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            ${pillsHtml}
+                        </div>
+                    </div>
+                `;
+                neighborBar.classList.remove('dev-hidden');
+            } else {
+                neighborBar.innerHTML = '';
+                neighborBar.classList.add('dev-hidden');
+            }
+        }
+
+        const subjectsToRender = ['personalAverage', ...(currentExamData.subjectOrder || [])];
+
+        subjectsToRender.forEach((subj) => {
+            const isAvg = subj === 'personalAverage';
+            const title = isAvg ? '總平均' : getSubjectDisplayName(subj, currentExamData.sheetName);
+            
+            const rawScore = isAvg ? sum.personalAverage : currentExamData.scores[subj];
+            const score = formatScore(rawScore);
+            const classAvg = formatScore(currentExamData.averages?.classAvg?.[subj]);
+
+            // 🌟 總平均的「學校平均」：直接由各科校平均加總除以科目數（例如除以 5）算出
+            let rawSchoolAvg = currentExamData.averages?.schoolAvg?.[subj];
+            if (isAvg) {
+                const subjs = currentExamData.subjectOrder || [];
+                const validSchoolAvgs = subjs
+                    .map(s => Number(currentExamData.averages?.schoolAvg?.[s]))
+                    .filter(n => !isNaN(n) && n > 0);
+                if (validSchoolAvgs.length > 0) {
+                    rawSchoolAvg = validSchoolAvgs.reduce((a, b) => a + b, 0) / validSchoolAvgs.length;
+                }
+            }
+            const schoolAvg = formatScore(rawSchoolAvg);
+            
+            let rowClass = isAvg ? 'bg-orange-50' : 'hover:bg-gray-50/80 transition-colors';
+            let subjClass = isAvg 
+                ? 'px-1.5 py-2 md:px-2 md:py-3 text-center font-black text-gray-900 border-l-4 border-orange-400 sticky-col bg-orange-50 min-w-[64px] md:min-w-[76px]' 
+                : 'px-1.5 py-2 md:px-2 md:py-3 text-center font-bold text-gray-700 border-l-4 border-transparent sticky-col bg-white min-w-[64px] md:min-w-[76px]';
+            
+            const isRed = (typeof score === 'number' && score < 60) || (typeof rawScore === 'number' && rawScore < 60);
+            let scoreClass = isAvg 
+                ? `p-2 md:p-3 text-center font-black ${isRed ? 'text-red-500' : 'text-[#c2516a]'} text-sm md:text-lg font-inter align-middle` 
+                : `p-2 md:p-3 text-center font-bold ${isRed ? 'text-red-500' : 'text-[#c2516a]'} text-xs md:text-base font-inter align-middle`;
+                
+            let avgClass = 'p-2 md:p-3 text-center font-bold text-gray-600 text-xs md:text-base font-inter align-middle';
+            const displayAvg = chartMode === 'class' ? classAvg : schoolAvg;
+
+            let diffHtml = '';
+            if (prevExamData && !prevExamData.error && prevExamData.status !== 'error') {
+                const prev = getSubjectScore(prevExamData, subj);
+                const currNum = Number(rawScore);
+                const prevNum = Number(prev);
+                if (!isNaN(currNum) && !isNaN(prevNum)) {
+                    const diff = Math.round((currNum - prevNum) * 10) / 10;
+                    const absDiff = Math.abs(diff);
+                    const diffStr = Number.isInteger(absDiff) ? absDiff : absDiff.toFixed(1);
+                    if (diff > 0) {
+                        diffHtml = `<span class="inline-flex items-center text-[10px] md:text-xs font-black text-emerald-600 ml-1 md:ml-1.5 select-none" title="比前次段考進步 ${diffStr} 分">↑${diffStr}</span>`;
+                    } else if (diff < 0) {
+                        diffHtml = `<span class="inline-flex items-center text-[10px] md:text-xs font-black text-red-600 ml-1 md:ml-1.5 select-none" title="比前次段考退步 ${diffStr} 分">↓${diffStr}</span>`;
+                    } else {
+                        diffHtml = `<span class="inline-flex items-center text-[10px] md:text-xs font-semibold text-gray-400 ml-1 md:ml-1.5 select-none" title="與前次段考持平">→0</span>`;
+                    }
+                }
+            }
+
+            let distSchool = null;
+            let distClass = null;
+            let labels = [];
+            let dataSchool = [];
+            let dataClass = [];
+            let studentBinIndex = -1;
+            
+            const scoreNum = Number(rawScore);
+
+            // 由高到低排列（左高右低）
+            const labels10 = ["100-90", "89-80", "79-70", "69-60", "59-50", "49-40", "39-30", "29-20", "19-10", "9-0"];
+            const labels18 = ["99.9-95.0", "94.9-90", "89.9-85", "84.9-80", "79.9-75", "74.9-70", "69.9-65", "64.9-60", "59.9-55", "54.9-50", "49.9-45", "44.9-40", "39.9-35", "34.9-30", "29.9-25", "24.9-20", "19.9-15", "14.9-0"];
+
+            if (isAvg && chartMode === 'school') {
+                // 全校總平均：18-bin，支援區間/累計切換
+                const avgData = currentExamData.schoolDistributionAvg || {};
+                distSchool = schoolAvgSubmode === 'cumulative'
+                    ? (avgData.cumulative || avgData.interval || {})
+                    : (avgData.interval || {});
+                distClass = currentExamData.distribution ? currentExamData.distribution['personalAverage'] : {};
+                labels = labels18;
+                if (!isNaN(scoreNum)) {
+                    // 高到低：index 0 = 最高分
+                    if (scoreNum >= 95) studentBinIndex = 0;
+                    else if (scoreNum >= 90) studentBinIndex = 1;
+                    else if (scoreNum >= 85) studentBinIndex = 2;
+                    else if (scoreNum >= 80) studentBinIndex = 3;
+                    else if (scoreNum >= 75) studentBinIndex = 4;
+                    else if (scoreNum >= 70) studentBinIndex = 5;
+                    else if (scoreNum >= 65) studentBinIndex = 6;
+                    else if (scoreNum >= 60) studentBinIndex = 7;
+                    else if (scoreNum >= 55) studentBinIndex = 8;
+                    else if (scoreNum >= 50) studentBinIndex = 9;
+                    else if (scoreNum >= 45) studentBinIndex = 10;
+                    else if (scoreNum >= 40) studentBinIndex = 11;
+                    else if (scoreNum >= 35) studentBinIndex = 12;
+                    else if (scoreNum >= 30) studentBinIndex = 13;
+                    else if (scoreNum >= 25) studentBinIndex = 14;
+                    else if (scoreNum >= 20) studentBinIndex = 15;
+                    else if (scoreNum >= 15) studentBinIndex = 16;
+                    else studentBinIndex = 17;
+                }
+            } else if (isAvg && chartMode === 'class') {
+                // 班級總平均：10-bin
+                distSchool = {};
+                distClass = currentExamData.distribution ? currentExamData.distribution['personalAverage'] : {};
+                labels = labels10;
+                if (!isNaN(scoreNum)) {
+                    const intScore = Math.floor(scoreNum);
+                    // 高到低：index 0 = 最高分
+                    if (intScore >= 90) studentBinIndex = 0;
+                    else if (intScore >= 80) studentBinIndex = 1;
+                    else if (intScore >= 70) studentBinIndex = 2;
+                    else if (intScore >= 60) studentBinIndex = 3;
+                    else if (intScore >= 50) studentBinIndex = 4;
+                    else if (intScore >= 40) studentBinIndex = 5;
+                    else if (intScore >= 30) studentBinIndex = 6;
+                    else if (intScore >= 20) studentBinIndex = 7;
+                    else if (intScore >= 10) studentBinIndex = 8;
+                    else studentBinIndex = 9;
+                }
+            } else {
+                distSchool = currentExamData.schoolDistribution ? currentExamData.schoolDistribution[subj] : {};
+                distClass = currentExamData.distribution ? currentExamData.distribution[subj] : {};
+                labels = labels10;
+                if (!isNaN(scoreNum)) {
+                    const intScore = Math.floor(scoreNum);
+                    // 高到低：index 0 = 最高分
+                    if (intScore >= 90) studentBinIndex = 0;
+                    else if (intScore >= 80) studentBinIndex = 1;
+                    else if (intScore >= 70) studentBinIndex = 2;
+                    else if (intScore >= 60) studentBinIndex = 3;
+                    else if (intScore >= 50) studentBinIndex = 4;
+                    else if (intScore >= 40) studentBinIndex = 5;
+                    else if (intScore >= 30) studentBinIndex = 6;
+                    else if (intScore >= 20) studentBinIndex = 7;
+                    else if (intScore >= 10) studentBinIndex = 8;
+                    else studentBinIndex = 9;
+                }
+            }
+
+            labels.forEach(k => { 
+                dataSchool.push(distSchool ? (distSchool[k] || 0) : 0); 
+                dataClass.push(distClass ? (distClass[k] || 0) : 0);
+            });
+
+            const activeData = chartMode === 'class' ? dataClass : dataSchool;
+            let chartHtml = '<div class="text-xs text-gray-400">無資料</div>';
+
+            
+            if (activeData && activeData.length > 0) {
+                const maxCount = Math.max(...activeData);
+                const numBins = activeData.length;
+                const totalCount = chartMode === 'class'
+                    ? (distClass ? (distClass.total || activeData.reduce((a,b)=>a+b,0)) : 0)
+                    : (distSchool ? (distSchool.total || activeData.reduce((a,b)=>a+b,0)) : 0);
+                
+                if (maxCount === 0) {
+                    chartHtml = '<div class="text-xs text-gray-400 py-2">無此分佈資料</div>';
+                } else {
+                    let barsHtml = '';
+                    let labelsHtml = '';
+                    const is18bin = (numBins === 18);
+                    const barW = 10; // px, 統一細柱
+                    const barGapPx = is18bin ? 6 : 12; // px, 加大 18-bin 的間距
+                    const maxBarPx = 50; // 最高柱的像素高度
+                    
+                    const labelRot = is18bin ? -45 : 0; // 旋轉角度，10-bin不旋轉
+                    const labelTransform = is18bin 
+                        ? `transform-origin: top right; transform: translate(0, 0) rotate(${labelRot}deg); right: 50%;` 
+                        : `transform-origin: center top; transform: translateX(-50%); left: 50%;`;
+
+                    for(let i = 0; i < numBins; i++) {
+                        const count = activeData[i] || 0;
+                        const pixH = count > 0 ? Math.max(4, Math.round((count / maxCount) * maxBarPx)) : 2;
+                        const isMyBin = (i === studentBinIndex);
+                        const bgColor = isMyBin
+                            ? (chartMode === 'class' ? '#c2516a' : '#4f5dc9')
+                            : (count > 0 ? '#d4d4d8' : '#f4f4f5'); // 改用中性灰，避免藍色系混淆
+                        const fw = isMyBin ? 'bold' : '400';
+                        const numColor = isMyBin ? bgColor : '#a1a1aa'; // 數字也改用中性灰
+                        const labelText = labels[i] || '';
+
+                        barsHtml += `<div style="width:${barW}px; flex-shrink:0; display:flex; align-items:flex-end; height:${maxBarPx}px; position:relative;">
+                            <div style="width:100%; height:${pixH}px; border-radius:2px 2px 0 0; background-color:${bgColor}; position:relative; transition:height 0.2s;">
+                                ${count > 0 ? `<div style="position:absolute; top:-15px; left:50%; transform:translateX(-50%); font-size:7.5px; white-space:nowrap; font-weight:${fw}; color:${numColor};">${count}</div>` : ''}
+                            </div>
+                        </div>`;
+
+                        labelsHtml += `<div style="width:${barW}px; flex-shrink:0; height:${is18bin ? '28px' : '15px'}; position:relative; overflow:visible;">
+                            <div style="position:absolute; top:3px; ${labelTransform} font-size:6.5px; color:#94a3b8; white-space:nowrap;">${labelText}</div>
+                        </div>`;
+                    }
+
+                    const totalLabel = totalCount > 0 ? `共 ${totalCount} 人` : '';
+                    let toggleHtml = '';
+                    if (isAvg && chartMode === 'school') {
+                        const isInt = schoolAvgSubmode === 'interval';
+                        toggleHtml = `
+                        <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
+                            <div class="inline-flex bg-white/50 rounded-md p-0.5 border border-gray-200">
+                                <button onclick="window.setSchoolSubmode('interval')" class="px-2 py-1 text-[10px] font-bold rounded ${isInt ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-800'}">區間</button>
+                                <button onclick="window.setSchoolSubmode('cumulative')" class="px-2 py-1 text-[10px] font-bold rounded ${!isInt ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-800'}">累計</button>
+                            </div>
+                        </div>`;
+                    }
+                    chartHtml = `
+                        <div style="display:flex; flex-direction:column; gap:0; width:fit-content; margin: 0 auto;">
+                            ${toggleHtml}
+                            ${totalLabel ? `<div style="font-size:9px; color:#9ca3af; text-align:right; margin-bottom:2px;">${totalLabel}</div>` : ''}
+                            <div style="padding-top:18px; overflow:visible;">
+                                <div style="display:flex; align-items:flex-end; gap:${barGapPx}px; overflow:visible;">
+                                    ${barsHtml}
+                                </div>
+                                <div style="display:flex; gap:${barGapPx}px; margin-top:2px; overflow:visible;">
+                                    ${labelsHtml}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+
+            let rankHtml = '';
+            if (chartMode === 'class') {
+                const rankVal = isAvg 
+                    ? (currentExamData.summary?.classRank || currentExamData.classRanks?.['personalAverage'])
+                    : (currentExamData.classRanks?.[subj] || currentExamData.classRankEstimates?.[subj]);
+                
+                if (rankVal !== undefined && rankVal !== null && rankVal !== '' && rankVal !== '-') {
+                    rankHtml = `<span class="font-bold text-gray-800 font-inter text-xs md:text-lg">${rankVal}</span>`;
+                } else {
+                    rankHtml = `<span class="text-gray-400 font-bold text-xs md:text-base">-</span>`;
+                }
+            } else {
+                const sRankVal = isAvg 
+                    ? (currentExamData.summary?.schoolRankInterval || '-')
+                    : (currentExamData.schoolRankEstimates?.[subj] || '-');
+                rankHtml = `<span class="text-[11px] md:text-xs font-bold text-gray-600 font-inter">${sRankVal}</span>`;
+            }
+
+            html += `
+                <tr class="${rowClass}">
+                    <td class="${subjClass}">${formatSubjectCellHtml(subj, currentExamData.sheetName)}</td>
+                    <td class="${scoreClass}">
+                        <div style="display:flex; flex-direction:row; align-items:center; justify-content:center;">
+                            <span>${score}</span>
+                            ${diffHtml}
+                        </div>
+                    </td>
+                    <td class="p-2 md:p-3 text-center align-middle">${rankHtml}</td>
+                    <td class="${avgClass}">${displayAvg}</td>
+                    <td class="p-2 md:p-3 align-middle text-center">${chartHtml}</td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+        
+        // 繪製雷達圖
+        renderRadarChart();
+    }
+
+    let radarChartInstance = null;
+
+    function renderRadarChart() {
+        const canvas = document.getElementById('dashRadarChart');
+        if (!canvas) return;
+
+        if (!currentExamData || !currentExamData.scores || !currentExamData.subjectOrder || currentExamData.subjectOrder.length === 0) {
+            canvas.classList.add('dev-hidden');
+            return;
+        }
+        
+        canvas.classList.remove('dev-hidden');
+        const ctx = canvas.getContext('2d');
+        if (radarChartInstance) {
+            radarChartInstance.destroy();
+        }
+
+        const rawSubjs = currentExamData.subjectOrder || [];
+        const displayLabels = rawSubjs.map(subj => getSubjectDisplayName(subj, currentExamData.sheetName));
+        const myScores = rawSubjs.map(subj => {
+            const s = Number(currentExamData.scores[subj]);
+            return isNaN(s) ? 0 : s;
+        });
+        
+        const isClass = radarMode === 'class';
+        const compareLabel = isClass ? '班級平均' : '全校平均';
+        const compareAvgs = rawSubjs.map(subj => {
+            const raw = isClass 
+                ? currentExamData.averages?.classAvg?.[subj]
+                : currentExamData.averages?.schoolAvg?.[subj];
+            const a = Number(raw);
+            return isNaN(a) ? 0 : a;
+        });
+
+        const compareBg = isClass ? 'rgba(156, 163, 175, 0.2)' : 'rgba(92, 107, 192, 0.2)';
+        const compareBorder = isClass ? 'rgba(156, 163, 175, 1)' : 'rgba(92, 107, 192, 1)';
+        const comparePoint = isClass ? 'rgba(156, 163, 175, 1)' : 'rgba(92, 107, 192, 1)';
+
+        radarChartInstance = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: displayLabels,
+                datasets: [
+                    {
+                        label: '您的分數',
+                        data: myScores,
+                        backgroundColor: 'rgba(194, 81, 106, 0.2)', // #c2516a
+                        borderColor: 'rgba(194, 81, 106, 1)',
+                        pointBackgroundColor: 'rgba(194, 81, 106, 1)',
+                        borderWidth: 2,
+                        fill: true
+                    },
+                    {
+                        label: compareLabel,
+                        data: compareAvgs,
+                        backgroundColor: compareBg,
+                        borderColor: compareBorder,
+                        pointBackgroundColor: comparePoint,
+                        borderWidth: 1.5,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        min: 0,
+                        max: 100,
+                        ticks: { stepSize: 20 },
+                        pointLabels: {
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
     }
 
     function renderLifePoints() {
@@ -131,314 +848,327 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const lpData = currentStudent.grades['生活計點'] || {};
         let total = initPts;
-        let html = '';
+        
+        const lpRank = currentStudent.rank || '-';
+        const totalStudents = currentStudent.totalStudents || '-';
+        document.getElementById('lpRank').textContent = `${lpRank} / ${totalStudents}`;
+        const lpPrev = currentStudent.prevScore;
+        const lpNext = currentStudent.nextScore;
+        const lpBadgesEl = document.getElementById('lpNeighborBadges');
+        if (lpBadgesEl) {
+            const rankNum = Number(lpRank);
+            const totalNum = Number(totalStudents);
+            const showPrev = rankNum !== 1 && lpPrev !== undefined && lpPrev !== null && lpPrev !== '' && lpPrev !== '-';
+            const showNext = (!totalNum || isNaN(rankNum) || rankNum < totalNum) && lpNext !== undefined && lpNext !== null && lpNext !== '' && lpNext !== '-';
+            let badgesHtml = '';
+            if (showPrev) {
+                badgesHtml += `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100/80 text-emerald-800 border border-emerald-200/70 whitespace-nowrap"><span class="text-emerald-600 text-[10px]">▲</span>前一名：<strong class="font-inter font-black">${lpPrev}</strong> 分</span>`;
+            }
+            if (showNext) {
+                badgesHtml += `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200/70 whitespace-nowrap"><span class="text-amber-500 text-[10px]">▼</span>後一名：<strong class="font-inter font-black">${lpNext}</strong> 分</span>`;
+            }
+            lpBadgesEl.innerHTML = badgesHtml;
+        }
 
-        Object.keys(lpData).sort((a,b)=>b-a).forEach(week => {
+        let html = '';
+        const sortedWeeks = Object.keys(lpData).sort((a,b) => b - a);
+
+        sortedWeeks.forEach((week, idx) => {
             const weekData = lpData[week];
-            html += `<div class="bg-white border rounded-lg overflow-hidden mb-4 shadow-sm">
-                        <div class="bg-gray-100 px-4 py-2 font-bold text-gray-700 text-sm">第 ${week} 週 (${weekData.range})</div>
-                        <div class="divide-y">`;
             
+            const dailyGroups = {};
             weekData.records.forEach(rec => {
                 total += rec.points;
-                const ptsClass = rec.points > 0 ? 'text-green-600' : (rec.points < 0 ? 'text-red-600' : 'text-gray-500');
-                const ptsSign = rec.points > 0 ? '+' : '';
-                html += `
-                    <div class="p-3 flex justify-between items-center text-sm">
-                        <div>
-                            <div class="font-bold text-gray-800">${rec.date} <span class="ml-2">${rec.reason}</span></div>
-                            <div class="text-xs text-gray-500 mt-1">${rec.remarks || ''}</div>
-                        </div>
-                        <div class="font-bold font-mono ${ptsClass}">${ptsSign}${rec.points}</div>
+                if(!dailyGroups[rec.date]) dailyGroups[rec.date] = [];
+                dailyGroups[rec.date].push(rec);
+            });
+
+            const sortedDates = Object.keys(dailyGroups).sort((a,b) => new Date(b) - new Date(a));
+            
+            let dailyHtml = '';
+            sortedDates.forEach(dateStr => {
+                dailyHtml += `
+                    <div class="pl-4 pr-3 py-1 mt-3 font-bold text-[#5c6bc0] text-xs flex items-center border-l-2 border-[#5c6bc0] bg-indigo-50/20">
+                        <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        ${dateStr}
                     </div>
+                    <div class="ml-4 mr-2">
+                        <table class="w-full text-left text-sm mt-1">
+                            <tbody class="divide-y divide-gray-100">
                 `;
+                dailyGroups[dateStr].forEach(rec => {
+                    const ptsClass = rec.points > 0 ? 'text-green-600 bg-green-50' : (rec.points < 0 ? 'text-red-600 bg-red-50' : 'text-gray-500 bg-gray-50');
+                    const ptsSign = rec.points > 0 ? '+' : '';
+                    dailyHtml += `
+                                <tr class="hover:bg-gray-50/50 transition-colors">
+                                    <td class="py-2.5 px-2 text-gray-600 w-full">
+                                        <div class="flex items-center">
+                                            <span class="w-1.5 h-1.5 rounded-full ${rec.points > 0 ? 'bg-green-400' : (rec.points < 0 ? 'bg-red-400' : 'bg-gray-400')} mr-2"></span>
+                                            ${rec.reason}
+                                            ${rec.remarks ? `<span class="text-[10px] text-gray-400 font-normal ml-2 bg-gray-100 px-1.5 py-0.5 rounded">${rec.remarks}</span>` : ''}
+                                        </div>
+                                    </td>
+                                    <td class="py-2.5 pr-2 pl-4 text-right">
+                                        <span class="inline-block px-2 py-0.5 rounded font-black text-xs ${ptsClass}">${ptsSign}${rec.points}</span>
+                                    </td>
+                                </tr>
+                    `;
+                });
+                dailyHtml += `</tbody></table></div>`;
             });
-            html += `</div></div>`;
-        });
-        
-        if (html === '') {
-            html = '<div class="text-gray-500 text-center py-4">目前沒有生活計點紀錄</div>';
-        }
-        
-        document.getElementById('lifePointsList').innerHTML = html;
-        document.getElementById('totalLifePoints').textContent = total;
 
-        // 處理排名與前後分數 (若後端有回傳)
-        const summary = currentStudent.lifePointsSummary;
-        document.getElementById('lpRank').textContent = summary && summary.rank ? summary.rank : '需更新後端';
-        document.getElementById('lpPrev').textContent = summary && summary.prevScore !== undefined ? summary.prevScore : '需更新後端';
-        document.getElementById('lpNext').textContent = summary && summary.nextScore !== undefined ? summary.nextScore : '需更新後端';
-    }
+            // 只有第一筆 (最新的一週) 才展開，其餘加上 dev-hidden 隱藏
+            const isHidden = idx === 0 ? '' : 'dev-hidden';
+            const iconRotate = idx === 0 ? 'rotate-180' : '';
 
-    function renderSubjects() {
-        const container = document.getElementById('subjectContent');
-        let html = '';
-        
-        currentStudent.subjectOrder.forEach(subj => {
-            const grades = currentStudent.grades[subj];
-            if (!grades || grades.length === 0) return;
-
-            html += `<div class="bg-white border rounded-lg shadow-sm">
-                        <div class="bg-slate-100 px-4 py-3 font-bold text-slate-700 border-b">${subj}</div>
-                        <div class="divide-y divide-gray-50">`;
-            
-            grades.forEach(g => {
-                html += `
-                    <div class="p-3 flex justify-between items-center text-sm hover:bg-gray-50 cursor-pointer" onclick="openSubjectDist('${g.examId}', '${subj}', '${g.type}', '${g.score}')">
-                        <div>
-                            <span class="text-gray-500 w-24 inline-block">${g.date}</span>
-                            <span class="font-medium text-gray-700">${g.type}</span>
+            html += `
+                <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm mb-4">
+                    <div class="bg-gradient-to-r from-gray-50 to-white px-5 py-3.5 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition-colors border-b border-gray-100" onclick="this.nextElementSibling.classList.toggle('dev-hidden'); this.querySelector('.arrow-icon').classList.toggle('rotate-180')">
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                            <span class="font-black text-gray-700 tracking-wide">第 ${week} 週</span>
+                            <span class="text-xs text-gray-400 ml-3 font-medium">(${weekData.range})</span>
                         </div>
-                        <div class="font-bold font-mono ${g.score < 60 ? 'text-red-500' : 'text-gray-800'}">${g.score}</div>
+                        <svg class="arrow-icon w-4 h-4 text-gray-400 transform transition-transform ${iconRotate}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </div>
-                `;
-            });
-            html += `</div></div>`;
-        });
-
-        if (html === '') html = '<div class="text-center text-gray-500 py-8">尚無平時成績</div>';
-        container.innerHTML = html;
-    }
-
-    // === Major Exam Logic ===
-    const examSelect = document.getElementById('examSelect');
-    const examChartSelect = document.getElementById('examChartSelect');
-
-    function renderExamSelect() {
-        if (!currentStudent.availableExams || currentStudent.availableExams.length === 0) {
-            examSelect.innerHTML = '<option value="">無段考資料</option>';
-            examSelect.disabled = true;
-            return;
-        }
-        
-        examSelect.disabled = false;
-        examSelect.innerHTML = currentStudent.availableExams.map(ex => `<option value="${ex}">${ex}</option>`).join('');
-        loadExamData(currentStudent.availableExams[0]);
-    }
-
-    examSelect.addEventListener('change', (e) => {
-        loadExamData(e.target.value);
-    });
-
-    async function loadExamData(examName) {
-        if (!examName) return;
-        
-        document.getElementById('examContent').classList.add('hidden');
-        document.getElementById('examLoader').classList.remove('hidden');
-
-        try {
-            const response = await fetch(CONFIG.API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'getMajorExamData', examName, seatNo: currentStudent.seatNo })
-            });
-            const data = await response.json();
-
-            if (data.error) throw new Error(data.error);
-
-            currentExamData = data;
-            renderExamContent();
-        } catch (err) {
-            alert('無法讀取段考資料: ' + err.message);
-        } finally {
-            document.getElementById('examLoader').classList.add('hidden');
-        }
-    }
-
-    function formatScore(val) {
-        if (val === undefined || val === null || val === '' || val === 'N/A' || val === 'NaN') {
-            return '-';
-        }
-        const num = Number(val);
-        if (!isNaN(num)) {
-            return Math.round(num * 100) / 100;
-        }
-        return val;
-    }
-
-    function renderExamContent() {
-        document.getElementById('examContent').classList.remove('hidden');
-        
-        const sum = currentExamData.summary;
-        document.getElementById('examTotal').textContent = formatScore(sum.totalScore);
-        document.getElementById('examAvg').textContent = formatScore(sum.personalAverage);
-        document.getElementById('examClassRank').textContent = sum.classRank || '-';
-        document.getElementById('examSchoolRank').textContent = sum.schoolRankInterval || '-';
-
-        const tbody = document.getElementById('examTableBody');
-        const container = document.getElementById('examSubjectsContainer');
-        tbody.innerHTML = '';
-        container.innerHTML = '';
-        
-        examChartInstances.forEach(c => c.destroy());
-        examChartInstances = [];
-
-        const subjectsToRender = ['personalAverage', ...currentExamData.subjectOrder];
-
-        subjectsToRender.forEach((subj, index) => {
-            const isAvg = subj === 'personalAverage';
-            const title = isAvg ? '總平均' : subj;
-            const score = formatScore(currentExamData.scores[subj]);
-            const classAvg = formatScore(currentExamData.averages.classAvg[subj]);
-            const schoolAvg = formatScore(currentExamData.averages.schoolAvg[subj]);
-            
-            let schoolRank = currentExamData.schoolRankEstimates[subj] || '-';
-            if (schoolRank === 'N/A' || schoolRank === 'NaN') schoolRank = '-';
-            
-            const isRed = (typeof score === 'number' && score < 60);
-
-            // 填入總表
-            tbody.innerHTML += `
-                <tr class="hover:bg-gray-50 transition">
-                    <td class="p-3 font-bold text-gray-700">${title}</td>
-                    <td class="p-3 text-center font-black font-mono ${isRed ? 'text-red-500' : 'text-gray-800'}">${score}</td>
-                    <td class="p-3 text-center text-gray-500 font-mono">${classAvg}</td>
-                    <td class="p-3 text-center text-gray-500 font-mono">${schoolAvg}</td>
-                    <td class="p-3 text-center text-gray-500 font-mono">${schoolRank}</td>
-                </tr>
-            `;
-            
-            // 生成精簡版圖表卡片
-            const cardHtml = `
-                <div class="border rounded-xl p-4 bg-white shadow-sm hover:shadow-md transition flex flex-col">
-                    <div class="flex justify-between items-center border-b pb-2 mb-3">
-                        <h4 class="text-lg font-bold text-gray-800">${title}</h4>
-                        <div class="text-2xl font-black ${isRed ? 'text-red-500' : 'text-gray-800'}">${score}</div>
-                    </div>
-                    <div class="flex justify-between text-xs text-gray-500 mb-2 px-1">
-                        <span>班平: <b class="text-gray-700">${classAvg}</b></span>
-                        <span>校平: <b class="text-gray-700">${schoolAvg}</b></span>
-                    </div>
-                    <div class="relative w-full flex-grow" style="min-height: 160px;">
-                        <canvas id="examChart-${index}"></canvas>
+                    <div class="pb-3 ${isHidden}">
+                        ${dailyHtml}
                     </div>
                 </div>
             `;
-            container.insertAdjacentHTML('beforeend', cardHtml);
+        });
+        
+        document.getElementById('totalLifePoints').textContent = total;
+        if (sortedWeeks.length > 0) {
+            const wInfo = document.getElementById('weekInfo');
+            if (wInfo) wInfo.textContent = '(第 ' + sortedWeeks[0] + ' 週)';
+        } 
+
+        if (html === '') {
+            html = '<div class="text-gray-500 text-center py-4 bg-white rounded-xl border border-dashed border-gray-200">目前沒有生活計點紀錄</div>';
+        }
+        
+        document.getElementById('lifePointsList').innerHTML = html;
+    }
+
+    let dashLineChartInstance = null;
+
+    async function renderDashLineChart() {
+        const canvas = document.getElementById('dashLineChart');
+        if (!canvas) return;
+
+        if (!currentStudent || !currentStudent.availableExams || currentStudent.availableExams.length === 0) return;
+
+        const exams = currentStudent.availableExams;
+        
+        // 為了確保和雷達圖的分數來源完全一致，我們直接往後端拉取所有的段考成績
+        // 若已載入過 currentExamData，可以減少一次 request，但最穩的是全部平行拉取
+        const promises = exams.map(examName => {
+            return fetch(CONFIG.API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'getMajorExamData', examName: examName, seatNo: currentStudent.seatNo })
+            }).then(res => res.json()).catch(err => null);
         });
 
-        subjectsToRender.forEach((subj, index) => {
-            const isAvg = subj === 'personalAverage';
-            const score = currentExamData.scores[subj];
-            
-            let distSchool = null;
-            let distClass = null;
-            let labels = [];
-            let dataSchool = [];
-            let dataClass = [];
-            let studentBinIndex = -1;
-            
-            const scoreNum = Number(score);
+        // 在畫面上可以先顯示個 loading
+        const ctx = canvas.getContext('2d');
+        const loader = document.getElementById('dashLineLoader');
+        if(loader) loader.classList.remove('dev-hidden');
+        canvas.style.opacity = '0.3';
+        
+        const results = await Promise.all(promises);
+        
+        if(loader) loader.classList.add('dev-hidden');
+        canvas.style.opacity = '1';
 
-            if (isAvg) {
-                distSchool = currentExamData.schoolDistributionAvg.interval;
-                distClass = currentExamData.classDistributionAvg ? currentExamData.classDistributionAvg.interval : {};
-                labels = ["14.9-0", "19.9-15", "24.9-20", "29.9-25", "34.9-30", "39.9-35", "44.9-40", "49.9-45", "54.9-50", "59.9-55", "64.9-60", "69.9-65", "74.9-70", "79.9-75", "84.9-80", "89.9-85", "94.9-90", "99.9-95.0"];
-                
-                if (!isNaN(scoreNum)) {
-                    const limits = [15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
-                    for (let i = 0; i < limits.length; i++) {
-                        if (scoreNum < limits[i]) {
-                            studentBinIndex = i;
-                            break;
-                        }
-                    }
-                    if (studentBinIndex === -1) studentBinIndex = limits.length - 1;
-                }
-            } else {
-                distSchool = currentExamData.schoolDistribution[subj];
-                distClass = currentExamData.classDistribution ? currentExamData.classDistribution[subj] : {};
-                labels = ["9-0", "19-10", "29-20", "39-30", "49-40", "59-50", "69-60", "79-70", "89-80", "100-90"];
-                
-                if (!isNaN(scoreNum)) {
-                    const intScore = Math.floor(scoreNum);
-                    if (intScore >= 90) studentBinIndex = 9;
-                    else if (intScore >= 80) studentBinIndex = 8;
-                    else if (intScore >= 70) studentBinIndex = 7;
-                    else if (intScore >= 60) studentBinIndex = 6;
-                    else if (intScore >= 50) studentBinIndex = 5;
-                    else if (intScore >= 40) studentBinIndex = 4;
-                    else if (intScore >= 30) studentBinIndex = 3;
-                    else if (intScore >= 20) studentBinIndex = 2;
-                    else if (intScore >= 10) studentBinIndex = 1;
-                    else studentBinIndex = 0;
-                }
+        // 🌟 智慧過濾轉學生：剔除無成績的段考
+        const validExams = [];
+        const validResults = [];
+        exams.forEach((examName, i) => {
+            const res = results[i];
+            if (res && res.scores && !res.error && res.status !== 'error') {
+                validExams.push(examName);
+                validResults.push(res);
+                examCache[examName] = res;
             }
+        });
 
-            if (distSchool) {
-                labels.forEach(k => { 
-                    dataSchool.push(distSchool[k] || 0); 
-                    dataClass.push(distClass ? (distClass[k] || 0) : 0);
+        if (validExams.length > 0 && validExams.length !== currentStudent.availableExams.length) {
+            currentStudent.availableExams = validExams;
+            const preferred = getPreferredDefaultExam(validExams);
+            const currentSelected = document.getElementById('examSelector')?.value || preferred;
+            const safeSelected = validExams.includes(currentSelected) ? currentSelected : preferred;
+            updateExamDropdowns(validExams, safeSelected);
+        }
+
+        // 收集所有出現過的科目（自動整合自然科別名）
+        const subjectSet = new Set();
+        validResults.forEach(res => {
+            if (res && res.scores) {
+                Object.keys(res.scores).forEach(s => {
+                    let disp = s === 'personalAverage' ? '總平均' : s;
+                    if (disp.includes('自然') || disp === '理化' || disp === '生物') {
+                        disp = '自然';
+                    }
+                    subjectSet.add(disp);
                 });
             }
+        });
 
-            // 班級使用藍色系 (#5c6bc0)
-            const classBg = dataClass.map((_, i) => i === studentBinIndex ? 'rgba(92, 107, 192, 0.9)' : 'rgba(92, 107, 192, 0.25)');
-            const classBorder = dataClass.map((_, i) => i === studentBinIndex ? 'rgba(92, 107, 192, 1)' : 'rgba(92, 107, 192, 0.5)');
+        // 我們只挑選主要科目（可過濾掉沒成績的或用常見的五科+總平均）
+        const subjectColors = {
+            '國文': '#c2516a',
+            '英語': '#5c6bc0',
+            '數學': '#0284c7',
+            '自然': '#16a34a',
+            '社會': '#ca8a04',
+            '總平均': '#ea580c'
+        };
+
+        const subjects = Array.from(subjectSet).filter(s => s !== '生活計點');
+        // 將段考名稱拆成三行橫書：「七上」、「第一次」、「段考」
+        const labels = validExams.map(name => {
+            if (name.includes('段考') && name.length >= 6) {
+                return [name.substring(0, 2), name.substring(2, name.indexOf('段考')), '段考'];
+            } else if (name.length > 2) {
+                return [name.substring(0, 2), name.substring(2)];
+            }
+            return name;
+        });
+        
+        const allDatasets = [];
+        const fallbackColors = ['#f43f5e', '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#64748b'];
+        let colorIdx = 0;
+
+        subjects.forEach(subj => {
+            const dataPoints = [];
+            let hasValidData = false;
             
-            // 全校使用粉色系 (#c2516a)
-            const schoolBg = dataSchool.map((_, i) => i === studentBinIndex ? 'rgba(194, 81, 106, 0.9)' : 'rgba(194, 81, 106, 0.25)');
-            const schoolBorder = dataSchool.map((_, i) => i === studentBinIndex ? 'rgba(194, 81, 106, 1)' : 'rgba(194, 81, 106, 0.5)');
+            validResults.forEach(res => {
+                let score = NaN;
+                if (res && res.scores) {
+                    if (subj === '總平均') {
+                        const v = res.scores['personalAverage'];
+                        if (v !== undefined && v !== '') score = Number(v);
+                    } else if (subj === '自然') {
+                        const sVal = getSubjectScore(res, '自然');
+                        if (sVal !== undefined && sVal !== '') score = Number(sVal);
+                    } else if (res.scores[subj] !== undefined && res.scores[subj] !== '') {
+                        score = Number(res.scores[subj]);
+                    }
+                }
 
-            const ctx = document.getElementById(`examChart-${index}`).getContext('2d');
-            const chart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: '班級人數',
-                            data: dataClass,
-                            backgroundColor: classBg,
-                            borderColor: classBorder,
-                            borderWidth: 1,
-                            borderRadius: 2,
-                            barPercentage: 0.9,
-                            categoryPercentage: 0.8
-                        },
-                        {
-                            label: '全校人數',
-                            data: dataSchool,
-                            backgroundColor: schoolBg,
-                            borderColor: schoolBorder,
-                            borderWidth: 1,
-                            borderRadius: 2,
-                            barPercentage: 0.9,
-                            categoryPercentage: 0.8
-                        }
-                    ]
+                if (!isNaN(score)) {
+                    dataPoints.push(score);
+                    hasValidData = true;
+                } else {
+                    dataPoints.push(null);
+                }
+            });
+
+            if (hasValidData) {
+                const color = subjectColors[subj] || fallbackColors[colorIdx % fallbackColors.length];
+                colorIdx++;
+                allDatasets.push({
+                    label: subj,
+                    data: dataPoints,
+                    borderColor: color,
+                    backgroundColor: color,
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    spanGaps: true
+                });
+            }
+        });
+
+        const subjectSelector = document.getElementById('dashLineSubjectSelector');
+        if (subjectSelector) {
+            let optionsHtml = '<option value="all">全部科目</option>';
+            allDatasets.forEach(ds => {
+                optionsHtml += `<option value="${ds.label}">${ds.label}</option>`;
+            });
+            subjectSelector.innerHTML = optionsHtml;
+            
+            // 預設為全部，也可以改為預設第一科
+            subjectSelector.onchange = (e) => {
+                const val = e.target.value;
+                if (dashLineChartInstance) {
+                    if (val === 'all') {
+                        dashLineChartInstance.data.datasets = allDatasets;
+                        dashLineChartInstance.options.plugins.legend.display = true;
+                    } else {
+                        dashLineChartInstance.data.datasets = allDatasets.filter(d => d.label === val);
+                        dashLineChartInstance.options.plugins.legend.display = false;
+                    }
+                    dashLineChartInstance.update();
+                }
+            };
+        }
+
+        if (dashLineChartInstance) {
+            dashLineChartInstance.destroy();
+        }
+
+        dashLineChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: allDatasets // 預設顯示全部
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                    padding: { left: 15 } // 讓出空間給自訂的直立 Y 軸標題
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
+                scales: {
+                    x: {
+                        ticks: {
+                            // 稍微縮小字體讓直向文字更緊密
+                            font: { size: 10 }
+                        }
+                    },
+                    y: {
+                        min: 0,
+                        max: 100,
+                        title: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 10
+                        }
+                    },
+                    tooltip: {
                         mode: 'index',
                         intersect: false,
-                    },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } },
-                        x: { ticks: { font: { size: 9 }, maxRotation: 45, minRotation: 45 } }
-                    },
-                    plugins: { 
-                        legend: { 
-                            display: true,
-                            position: 'top',
-                            labels: { boxWidth: 10, font: { size: 10 } }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                title: (ctx) => `分數區間: ${ctx[0].label}`
+                        callbacks: {
+                            // 把陣列轉回原始字串，否則 tooltip 會顯示逗號分隔的陣列
+                            title: function(tooltipItems) {
+                                return tooltipItems[0].label.replace(/,/g, '');
+                            },
+                            label: function(context) {
+                                const subj = context.dataset.label || '';
+                                const examName = validExams[context.dataIndex] || '';
+                                const displaySubj = getSubjectDisplayName(subj, examName);
+                                const val = context.parsed.y;
+                                return (val !== null && !isNaN(val)) ? `${displaySubj}: ${val} 分` : `${displaySubj}: 無資料`;
                             }
                         }
                     }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
                 }
-            });
-            examChartInstances.push(chart);
+            }
         });
     }
 
-    // Global function for subject click
-    window.openSubjectDist = async function(examId, subject, type, score) {
-        alert(`這裡未來可以串接小考成績分佈圖\n科目: ${subject}\n類別: ${type}\n分數: ${score}`);
-        // 考量到避免一次載入太慢，這個可以後續加上
-    };
 });
