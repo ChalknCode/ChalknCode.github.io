@@ -8,16 +8,23 @@
   <link rel="icon" href="images/logo.png" type="image/jpeg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <!-- 手寫字體：芫荽 Iansui（繁體）、霞鶩文楷 TC（備用） -->
-  <link href="https://fonts.googleapis.com/css2?family=Iansui&family=LXGW+WenKai+TC:wght@300;400;700&display=swap" rel="stylesheet">
+  <!-- 手寫字體：辰宇落雁體（自行託管的精簡版，授權 OFL）；備用：霞鶩文楷 TC -->
+  <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&display=swap" rel="stylesheet">
   <style>
+    @font-face {
+      font-family: 'ChenYuluoyan';
+      src: url('fonts/ChenYuluoyan-Thin-subset.woff2') format('woff2');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
     :root {
       --rose: #c2516a;
       --rose-soft: #f7d6dd;
       --ink: #2c2a29;
       --muted: #8c8681;
       --paper: #fbf8f2;
-      --hand: 'Iansui', 'LXGW WenKai TC', 'DFKai-SB', 'BiauKai', 'Kaiti TC', cursive;
+      --hand: 'ChenYuluoyan', 'LXGW WenKai TC', 'DFKai-SB', 'BiauKai', 'Kaiti TC', cursive;
       --sans: -apple-system, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
       --pw: 420px;   /* 單頁寬度（由 JS 依螢幕計算） */
       --ph: 540px;   /* 單頁高度（由 JS 依螢幕計算） */
@@ -104,7 +111,7 @@
     .face.back  .page::after { right: 0; background: linear-gradient(to left,  rgba(60,40,30,.16), rgba(60,40,30,0)); }
     .book.single .face .page::after { display: none; }
 
-    .hand { font-family: var(--hand); font-weight: 400; }
+    .hand { font-family: var(--hand); font-weight: 400; -webkit-text-stroke: .03em currentColor; }
     .pnum {
       position: absolute; bottom: 1.2em; font-size: .8em; letter-spacing: .12em;
       color: #b0aaa4; font-variant-numeric: tabular-nums;
@@ -132,8 +139,8 @@
       border: .08em solid rgba(150,120,100,.28); border-radius: .9em; pointer-events: none;
     }
     .cover-year { position: absolute; top: 2.4em; right: 2.8em; font-size: .85em; color: #6d655f; letter-spacing: .08em; }
-    .cover-title { font-size: 2.9em; line-height: 1.25; color: var(--rose); text-shadow: 0 .04em 0 rgba(255,255,255,.7); margin-bottom: .35em; }
-    .cover-sub { font-size: 1.05em; color: #4f4944; letter-spacing: .06em; margin-top: .4em; }
+    .cover-title { font-size: 3.6em; line-height: 1.25; color: var(--rose); text-shadow: 0 .04em 0 rgba(255,255,255,.7); margin-bottom: .35em; }
+    .cover-sub { font-size: 1.4em; color: #4f4944; letter-spacing: .06em; margin-top: .4em; }
     .cover-doodle { width: 4.6em; height: auto; margin: .2em auto 0; color: #7a4b57; opacity: .85; }
     .cover-hint { position: absolute; bottom: 2.6em; left: 0; right: 0; font-size: .95em; color: #9a928b; letter-spacing: .15em; }
     .cover-hint span { display: inline-block; animation: nudge 1.6s ease-in-out infinite; }
@@ -147,7 +154,7 @@
     .book.single .ribbon { display: none; }
 
     /* ───────── 目錄 ───────── */
-    .toc h2 { font-size: 2.1em; line-height: 1.2; }
+    .toc h2 { font-size: 2.7em; line-height: 1.2; }
     .toc .rule { height: .09em; background: var(--rose); opacity: .75; margin: .45em 0 1.4em; width: 100%; }
     .toc-list { display: flex; flex-direction: column; gap: .25em; overflow: hidden; }
     .toc-h { text-align: left; font-weight: 700; font-size: 1.12em; padding: .5em .5em .2em; margin-top: .5em; border-radius: .6em; }
@@ -163,7 +170,7 @@
 
     /* ───────── 章節頁 ───────── */
     .chapter { align-items: center; justify-content: center; text-align: center; gap: .9em; }
-    .ch-title { font-size: 3em; color: #a58f94; line-height: 1.2; }
+    .ch-title { font-size: 3.7em; color: #a58f94; line-height: 1.2; }
     .ch-line { width: 3em; height: .09em; background: var(--rose); opacity: .5; }
     .ch-sub { font-size: 1em; color: #5a534e; letter-spacing: .1em; max-width: 80%; line-height: 1.8; }
 
@@ -181,7 +188,7 @@
     .photo svg { width: 3em; height: 3em; }
     .photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
     .info { flex: 1; min-width: 0; padding: 1em 1.1em; display: flex; flex-direction: column; justify-content: center; gap: .45em; }
-    .name { font-size: 1.55em; line-height: 1.25; color: #25221f; word-break: break-all; }
+    .name { font-size: 1.95em; line-height: 1.25; color: #25221f; word-break: break-all; }
     .date { font-size: .8em; color: #918a84; padding-bottom: .45em; border-bottom: .06em solid #ece6df; letter-spacing: .05em; }
     .desc { font-size: .82em; color: #6c655f; line-height: 1.55; }
     .go { font-size: .9em; color: var(--rose); font-weight: 600; margin-top: .1em; }
@@ -194,11 +201,11 @@
     .book.single .card { flex-direction: column; }
     .book.single .photo { flex: 1 1 0; min-height: 0; }
     .book.single .info { flex: 0 0 auto; padding: .8em 1em .9em; gap: .3em; }
-    .book.single .name { font-size: 1.45em; }
+    .book.single .name { font-size: 1.8em; }
 
     /* ───────── 結尾 / 空白頁 ───────── */
     .closing, .blank { align-items: center; justify-content: center; text-align: center; gap: 1em; }
-    .closing .big { font-size: 2.4em; color: var(--rose); }
+    .closing .big { font-size: 3.1em; color: var(--rose); }
     .closing p, .blank p { color: #6e6761; letter-spacing: .08em; line-height: 1.8; font-size: .95em; }
     .back-cover-btn { margin-top: .6em; padding: .55em 1.6em; border-radius: 999px; border: .1em solid var(--rose); color: var(--rose); font-size: .95em; transition: all .2s; }
     .back-cover-btn:hover { background: var(--rose); color: #fff; }
