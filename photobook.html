@@ -710,14 +710,16 @@
     }
     function clearSession() { try { sessionStorage.removeItem('pb_role'); sessionStorage.removeItem('pb_pass'); } catch (e) {} }
 
-    async function enter(roleName, pass, silent) {
+    async function enter(roleName, pass) {
       if (entering) return;
       entering = true;
       const gate = $('gate');
       if (gate) gate.classList.add('busy');
-      if (silent) setGateError('');
-      else setGateLoading('翻找相簿中');
-      const res = await fetchPhotobook(roleName, pass);
+      setGateLoading('翻找相簿中');
+      const [res] = await Promise.all([
+        fetchPhotobook(roleName, pass),
+        new Promise((r) => setTimeout(r, 900))
+      ]);
       entering = false;
       const gate2 = $('gate');
       if (gate2) gate2.classList.remove('busy');
@@ -733,7 +735,6 @@
         return;
       }
       role = roleName;
-      try { sessionStorage.setItem('pb_role', roleName); sessionStorage.setItem('pb_pass', roleName === 'student' ? (pass || '') : ''); } catch (e) {}
 
       pages = buildPages(chapters);
       gated = false;
@@ -773,11 +774,17 @@
       });
       $('roleBtn').addEventListener('click', () => {
         clearSession();
-        location.href = location.pathname + (isDemo ? '?demo=1' : '');
+        role = null;
+        gated = true;
+        pos = 0;
+        pages = [{ type: 'cover', gate: true, year: '' }, { type: 'blank' }];
+        $('controls').style.visibility = 'hidden';
+        render();
       });
     }
 
     async function init() {
+      clearSession();
       mode = calcMode();
       pos = 0;
       pages = [{ type: 'cover', gate: true, year: '' }, { type: 'blank' }];   // 先只顯示封面（含身分選擇）
@@ -798,11 +805,11 @@
       if (isDemo && urlParams.get('gate') === 'student') { const g = $('gate'); if (g) g.classList.add('student'); }   // 預覽用：直接顯示輸入密語畫面
       if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => applySize());
 
-      // 自動進入：示範模式可用 ?role=student&pass=demo；一般情況沿用同一個分頁先前選的身分
-      let r = null, p = '';
-      if (isDemo && urlParams.get('role')) { r = urlParams.get('role'); p = urlParams.get('pass') || ''; }
-      else { try { r = sessionStorage.getItem('pb_role'); p = sessionStorage.getItem('pb_pass') || ''; } catch (e) {} }
-      if (r === 'parent' || r === 'student') enter(r, p, true);
+      // 僅示範模式明確帶 ?role= 時才自動進入；正式環境每次開啟／重新整理都從封面選擇身分並驗證密語
+      if (isDemo && urlParams.get('role')) {
+        const r = urlParams.get('role'), p = urlParams.get('pass') || '';
+        if (r === 'parent' || r === 'student') enter(r, p);
+      }
     }
     init();
   })();
