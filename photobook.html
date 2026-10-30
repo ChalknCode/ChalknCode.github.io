@@ -275,6 +275,7 @@
     /* ============ 可自行修改的文字 ============ */
     const BOOK = {
       titleLines: ['歡迎來到', '805 相簿'],
+      badge: '114級',                      // 封面右上角的小字
       subtitle: '輕輕翻開，一起回味我們的日子',
       hint: '請翻頁',
       closingTitle: '未完待續…',
@@ -391,7 +392,7 @@
       switch (p.type) {
         case 'cover':
           return '<div class="page cover"><div class="cover-frame"></div>' +
-            (p.year ? '<div class="cover-year">' + esc(p.year) + '</div>' : '') +
+            (BOOK.badge ? '<div class="cover-year">' + esc(BOOK.badge) + '</div>' : '') +
             '<div class="cover-title hand">' + BOOK.titleLines.map(esc).join('<br>') + '</div>' +
             ICON_DOODLE +
             '<div class="cover-sub hand">' + esc(BOOK.subtitle) + '</div>' +
