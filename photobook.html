@@ -215,16 +215,17 @@
     }
     a.card:hover { transform: translateY(-.2em); box-shadow: 0 .6em 1.6em rgba(70,50,40,.16), 0 0 0 .06em rgba(70,50,40,.05); }
     .card.ghost { visibility: hidden; }
-    .photo { position: relative; background: linear-gradient(135deg, #f3e3e7, #e4e8f5); flex: 0 0 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; color: rgba(120,100,105,.45); }
+    .photo { position: relative; background: linear-gradient(135deg, #f3e3e7, #e4e8f5); flex: 0 0 45%; overflow: hidden; display: flex; align-items: center; justify-content: center; color: rgba(120,100,105,.45); }
     .photo svg { width: 3em; height: 3em; }
     .photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-    .info { flex: 1; min-width: 0; padding: .85em 1.05em; display: flex; flex-direction: column; justify-content: center; gap: .35em; overflow: hidden; }
-    .name { font-size: 1.85em; line-height: 1.18; color: #25221f; white-space: pre-line; word-break: keep-all; overflow-wrap: break-word; }
-    .date { font-size: .78em; color: #918a84; padding-bottom: .35em; border-bottom: .06em solid #ece6df; letter-spacing: .05em; }
-    .desc { font-family: var(--hand); -webkit-text-stroke: .025em currentColor; font-size: 1.18em; color: #5a534e; line-height: 1.32; white-space: pre-line; overflow-wrap: break-word; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
-    .card-foot { display: flex; align-items: center; gap: .5em; flex-wrap: wrap; margin-top: .1em; }
-    .go { font-size: .88em; color: var(--rose); font-weight: 600; }
-    .tag { align-self: flex-start; font-size: .72em; color: #7c6c58; background: #eadfd0; padding: .18em .75em; border-radius: 999px; }
+    .info { flex: 1; min-width: 0; padding: .6em .85em; display: flex; flex-direction: column; gap: .25em; overflow-y: auto; scrollbar-width: none; }
+    .info::-webkit-scrollbar { display: none; }
+    .name { margin-top: auto; flex-shrink: 0; font-size: 1.68em; line-height: 1.16; color: #25221f; white-space: pre-line; word-break: keep-all; overflow-wrap: break-word; }
+    .date { flex-shrink: 0; font-size: .78em; color: #918a84; padding-bottom: .3em; border-bottom: .06em solid #ece6df; letter-spacing: .05em; }
+    .desc { flex-shrink: 0; font-family: var(--hand); -webkit-text-stroke: .025em currentColor; font-size: 1.16em; color: #5a534e; line-height: 1.35; padding: .04em 0; white-space: pre-line; overflow-wrap: break-word; }
+    .card-foot { margin-bottom: auto; flex-shrink: 0; display: flex; align-items: center; gap: .42em; flex-wrap: wrap; padding-top: .06em; }
+    .go { font-size: .84em; color: var(--rose); font-weight: 600; white-space: nowrap; }
+    .tag { align-self: flex-start; font-size: .7em; color: #7c6c58; background: #eadfd0; padding: .16em .68em; border-radius: 999px; white-space: nowrap; }
     .tag.lock { background: #e6e9f7; color: #5c6bc0; }
     .card.disabled .name { color: #6e6761; }
     .card.disabled .photo { filter: grayscale(.6); }
@@ -233,9 +234,9 @@
     .book.single .page { padding: 1.8em 1.4em 2.6em; }
     .book.single .card { flex-direction: column; }
     .book.single .photo { flex: 1 1 0; min-height: 0; }
-    .book.single .info { flex: 0 0 auto; padding: .65em .95em .75em; gap: .25em; }
-    .book.single .name { font-size: 1.65em; }
-    .book.single .desc { font-size: 1.12em; -webkit-line-clamp: 4; }
+    .book.single .info { flex: 0 0 auto; max-height: 58%; padding: .6em .9em .7em; gap: .22em; }
+    .book.single .name { font-size: 1.58em; }
+    .book.single .desc { font-size: 1.12em; }
 
     /* ───────── 結尾 / 空白頁 ───────── */
     .closing, .blank { align-items: center; justify-content: center; text-align: center; gap: 1em; }
