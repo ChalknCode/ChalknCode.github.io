@@ -8,6 +8,7 @@
   <link rel="icon" href="images/logo.png" type="image/jpeg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="fonts/ChenYuluoyan-Thin-subset.woff2" as="font" type="font/woff2" crossorigin>
   <!-- 手寫字體：辰宇落雁體（自行託管的精簡版，授權 OFL）；備用：霞鶩文楷 TC -->
   <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&display=swap" rel="stylesheet">
   <style>
@@ -138,16 +139,16 @@
       position: absolute; inset: 1.6em 1.6em 1.6em 2.2em;
       border: .08em solid rgba(150,120,100,.28); border-radius: .9em; pointer-events: none;
     }
-    .cover-year { position: absolute; top: 2.4em; right: 2.8em; font-size: .85em; color: #6d655f; letter-spacing: .08em; }
+    .cover-year { position: absolute; top: 1.8em; right: 2.2em; font-size: 1.35em; color: #6d655f; letter-spacing: .08em; font-family: var(--hand); -webkit-text-stroke: .03em currentColor; }
     .cover-title { font-size: 3.6em; line-height: 1.25; color: var(--rose); text-shadow: 0 .04em 0 rgba(255,255,255,.7); margin-bottom: .35em; }
     .cover-sub { font-size: 1.4em; color: #4f4944; letter-spacing: .06em; margin-top: .4em; }
     .cover-doodle { width: 4.6em; height: auto; margin: .2em auto 0; color: #7a4b57; opacity: .85; }
-    .cover-hint { position: absolute; bottom: 2.6em; left: 0; right: 0; font-size: .95em; color: #9a928b; letter-spacing: .15em; }
+    .cover-hint { position: absolute; bottom: 2.2em; left: 0; right: 0; font-size: 1.3em; color: #8c847d; letter-spacing: .12em; font-family: var(--hand); -webkit-text-stroke: .03em currentColor; }
     .cover-hint span { display: inline-block; animation: nudge 1.6s ease-in-out infinite; }
 
     /* 身分選擇（封面上，打開之前先選家長或學生） */
-    .gate { position: absolute; left: 0; right: 0; bottom: 2.2em; padding: 0 2.6em 0 3em; display: flex; flex-direction: column; align-items: center; gap: .65em; }
-    .gate-q { font-size: 1.05em; color: #6f6862; letter-spacing: .1em; }
+    .gate { position: absolute; left: 0; right: 0; bottom: 2.1em; padding: 0 2.6em 0 3em; display: flex; flex-direction: column; align-items: center; gap: .55em; }
+    .gate-q { font-size: 1.45em; color: #5f5852; letter-spacing: .08em; font-family: var(--hand); -webkit-text-stroke: .03em currentColor; }
     .gate-btns { display: flex; gap: .8em; }
     .gate-btn { padding: .6em 1.5em; border-radius: 999px; border: .1em solid var(--rose); color: var(--rose); background: rgba(255,255,255,.6); font-size: 1em; font-weight: 600; letter-spacing: .08em; transition: all .2s; white-space: nowrap; }
     .gate-btn:hover { background: var(--rose); color: #fff; transform: translateY(-.1em); }
@@ -177,15 +178,16 @@
 
     /* ───────── 目錄 ───────── */
     .toc h2 { font-size: 2.7em; line-height: 1.2; }
-    .toc .rule { height: .09em; background: var(--rose); opacity: .75; margin: .45em 0 1.4em; width: 100%; }
-    .toc-list { display: flex; flex-direction: column; gap: .25em; overflow: hidden; }
-    .toc-h { text-align: left; font-weight: 700; font-size: 1.12em; padding: .5em .5em .2em; margin-top: .5em; border-radius: .6em; }
+    .toc .rule { height: .09em; background: var(--rose); opacity: .75; margin: .45em 0 1.2em; width: 100%; }
+    .toc-list { display: flex; flex-direction: column; gap: .2em; overflow: hidden; }
+    .toc-h { text-align: left; font-family: var(--hand); -webkit-text-stroke: .035em currentColor; font-size: 1.5em; color: var(--rose); padding: .35em .5em .15em; margin-top: .35em; border-radius: .6em; }
     .toc-h:first-child { margin-top: 0; }
     .toc-row {
       display: flex; align-items: baseline; gap: .5em; width: 100%;
-      padding: .5em .8em; border-radius: 999px; text-align: left; font-size: 1em;
+      padding: .35em .8em; border-radius: 999px; text-align: left; font-size: 1em;
       transition: background .2s;
     }
+    .toc-row span { font-family: var(--hand); -webkit-text-stroke: .03em currentColor; font-size: 1.35em; line-height: 1.2; }
     .toc-row .dots { flex: 1; border-bottom: .14em dotted #c9bfb3; transform: translateY(-.25em); }
     .toc-row b { font-weight: 400; font-variant-numeric: tabular-nums; color: #5f5852; }
     .toc-row:hover, .toc-h:hover { background: var(--rose-soft); }
@@ -194,11 +196,11 @@
     .chapter { align-items: center; justify-content: center; text-align: center; gap: .9em; }
     .ch-title { font-size: 3.7em; color: #a58f94; line-height: 1.2; }
     .ch-line { width: 3em; height: .09em; background: var(--rose); opacity: .5; }
-    .ch-sub { font-size: 1em; color: #5a534e; letter-spacing: .1em; max-width: 80%; line-height: 1.8; }
+    .ch-sub { font-family: var(--hand); -webkit-text-stroke: .03em currentColor; font-size: 1.45em; color: #5a534e; letter-spacing: .08em; max-width: 82%; line-height: 1.55; white-space: pre-line; }
 
     /* ───────── 相簿頁 ───────── */
-    .sec-label { font-size: .85em; letter-spacing: .22em; color: #7d756f; padding-left: .8em; border-left: .14em solid #cfc6bb; line-height: 1.2; min-height: 1.2em; margin-bottom: 1.1em; }
-    .cards { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 1.2em; }
+    .sec-label { font-family: var(--hand); -webkit-text-stroke: .03em currentColor; font-size: 1.25em; letter-spacing: .12em; color: #7d756f; padding-left: .65em; border-left: .12em solid #cfc6bb; line-height: 1.15; min-height: 1.15em; margin-bottom: .8em; }
+    .cards { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 1.1em; }
     .card {
       flex: 1; min-height: 0; display: flex; background: #fff; border-radius: .6em; overflow: hidden;
       box-shadow: 0 .2em 1em rgba(70,50,40,.10), 0 0 0 .06em rgba(70,50,40,.05);
@@ -206,30 +208,32 @@
     }
     a.card:hover { transform: translateY(-.2em); box-shadow: 0 .6em 1.6em rgba(70,50,40,.16), 0 0 0 .06em rgba(70,50,40,.05); }
     .card.ghost { visibility: hidden; }
-    .photo { position: relative; background: linear-gradient(135deg, #f3e3e7, #e4e8f5); flex: 0 0 52%; overflow: hidden; display: flex; align-items: center; justify-content: center; color: rgba(120,100,105,.45); }
+    .photo { position: relative; background: linear-gradient(135deg, #f3e3e7, #e4e8f5); flex: 0 0 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; color: rgba(120,100,105,.45); }
     .photo svg { width: 3em; height: 3em; }
     .photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-    .info { flex: 1; min-width: 0; padding: 1em 1.1em; display: flex; flex-direction: column; justify-content: center; gap: .45em; }
-    .name { font-size: 1.95em; line-height: 1.25; color: #25221f; word-break: break-all; }
-    .date { font-size: .8em; color: #918a84; padding-bottom: .45em; border-bottom: .06em solid #ece6df; letter-spacing: .05em; }
-    .desc { font-size: .82em; color: #6c655f; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-    .go { font-size: .9em; color: var(--rose); font-weight: 600; margin-top: .1em; }
-    .tag { align-self: flex-start; font-size: .75em; color: #7c6c58; background: #eadfd0; padding: .2em .8em; border-radius: 999px; }
+    .info { flex: 1; min-width: 0; padding: .85em 1.05em; display: flex; flex-direction: column; justify-content: center; gap: .35em; overflow: hidden; }
+    .name { font-size: 1.85em; line-height: 1.18; color: #25221f; white-space: pre-line; word-break: keep-all; overflow-wrap: break-word; }
+    .date { font-size: .78em; color: #918a84; padding-bottom: .35em; border-bottom: .06em solid #ece6df; letter-spacing: .05em; }
+    .desc { font-family: var(--hand); -webkit-text-stroke: .025em currentColor; font-size: 1.18em; color: #5a534e; line-height: 1.32; white-space: pre-line; overflow-wrap: break-word; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-foot { display: flex; align-items: center; gap: .5em; flex-wrap: wrap; margin-top: .1em; }
+    .go { font-size: .88em; color: var(--rose); font-weight: 600; }
+    .tag { align-self: flex-start; font-size: .72em; color: #7c6c58; background: #eadfd0; padding: .18em .75em; border-radius: 999px; }
     .tag.lock { background: #e6e9f7; color: #5c6bc0; }
     .card.disabled .name { color: #6e6761; }
     .card.disabled .photo { filter: grayscale(.6); }
 
     /* 手機單頁：照片在上、文字在下 */
-    .book.single .page { padding: 1.9em 1.5em 2.8em; }
+    .book.single .page { padding: 1.8em 1.4em 2.6em; }
     .book.single .card { flex-direction: column; }
     .book.single .photo { flex: 1 1 0; min-height: 0; }
-    .book.single .info { flex: 0 0 auto; padding: .8em 1em .9em; gap: .3em; }
-    .book.single .name { font-size: 1.8em; }
+    .book.single .info { flex: 0 0 auto; padding: .65em .95em .75em; gap: .25em; }
+    .book.single .name { font-size: 1.65em; }
+    .book.single .desc { font-size: 1.12em; -webkit-line-clamp: 4; }
 
     /* ───────── 結尾 / 空白頁 ───────── */
     .closing, .blank { align-items: center; justify-content: center; text-align: center; gap: 1em; }
     .closing .big { font-size: 3.1em; color: var(--rose); }
-    .closing p, .blank p { color: #6e6761; letter-spacing: .08em; line-height: 1.8; font-size: .95em; }
+    .closing p, .blank p { font-family: var(--hand); -webkit-text-stroke: .03em currentColor; color: #6e6761; letter-spacing: .06em; line-height: 1.6; font-size: 1.4em; }
     .back-cover-btn { margin-top: .6em; padding: .55em 1.6em; border-radius: 999px; border: .1em solid var(--rose); color: var(--rose); font-size: .95em; transition: all .2s; }
     .back-cover-btn:hover { background: var(--rose); color: #fff; }
 
@@ -315,8 +319,14 @@
     const $ = (id) => document.getElementById(id);
     const bookEl = $('book');
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const escBr = (s) => esc(s).replace(/\r?\n/g, '<br>');
     const safeUrl = (u) => (/^https?:\/\//i.test(String(u || '').trim()) ? String(u).trim() : '');
     const pad2 = (n) => String(n).padStart(2, '0');
+    const isParentChecked = (v) => {
+      if (v === true) return true;
+      const s = String(v == null ? '' : v).trim().toUpperCase();
+      return s === 'TRUE' || s === '✓' || s === '✔' || s === '1' || s === '是' || s === 'Y' || s === 'YES';
+    };
 
     // Google 雲端硬碟分享連結 → 圖片直連
     function convertDriveLink(url) {
@@ -338,30 +348,90 @@
     }
     const DEMO_PASSPHRASE = 'demo';   // 示範模式的學生通關密語
     const DEMO_ROWS = [
-      { '層級1': '114學年度', '層級2': '班際比賽', '相簿名稱': '七上運動會', '相簿連結': 'https://example.com', '封面圖片': demoCover('#ffd1a9', '#f28b82'), '日期': '2025.10.15', '簡介': '大家在操場上一起加油、一起喊到沒聲音的那一天。', '家長顯示': true },
-      { '層級1': '114學年度', '層級2': '班際比賽', '相簿名稱': '七下班際足球比賽', '相簿連結': '', '封面圖片': '', '家長顯示': true },
-      { '層級1': '114學年度', '層級2': '班際比賽', '相簿名稱': '七年級英語比賽', '相簿連結': 'https://example.com', '封面圖片': demoCover('#b9d7ff', '#8aa4f0'), '日期': '2025.11.20', '簡介': '站上舞台的勇氣', '家長顯示': true },
+      { '層級1': '114學年度', '層級2': '班際比賽', '相簿名稱': '七上運動會', '相簿連結': 'https://example.com', '封面圖片': demoCover('#ffd1a9', '#f28b82'), '簡介': '', '家長顯示': true },
+      { '層級1': '114學年度', '層級2': '班際比賽', '相簿名稱': '七下班際\n足球比賽', '相簿連結': 'https://example.com', '封面圖片': demoCover('#c9f0d2', '#6fcf97'), '簡介': '七下足球比賽\nvs 713\nvs 710', '家長顯示': true },
+      { '層級1': '114學年度', '層級2': '班際比賽', '相簿名稱': '七年級\n英語比賽', '相簿連結': 'https://example.com', '封面圖片': demoCover('#b9d7ff', '#8aa4f0'), '簡介': '', '家長顯示': true },
       { '層級1': '114學年度', '層級2': '七年級各種回憶', '相簿名稱': '七年級頒獎照片', '相簿連結': 'https://example.com', '封面圖片': demoCover('#c9f0d2', '#6fcf97'), '家長顯示': true },
-      { '層級1': '114學年度', '層級2': '七年級各種回憶', '相簿名稱': '七年級的日常', '相簿連結': 'https://example.com', '封面圖片': '', '家長顯示': false },
-      { '層級1': '115學年度', '層級2': '開學與日常', '相簿名稱': '八年級開學第一天', '相簿連結': 'https://example.com', '封面圖片': demoCover('#f7d6dd', '#e29db0'), '家長顯示': false }
+      { '層級1': '114學年度', '層級2': '七年級各種回憶', '相簿名稱': '七年級的日常', '相簿連結': 'https://example.com', '封面圖片': demoCover('#f7d6dd', '#e29db0'), '家長顯示': true },
+      { '層級1': '115學年度', '層級2': '班際比賽', '相簿名稱': '八上運動會 Day1', '相簿連結': '', '封面圖片': '', '簡介': '10/30 預賽', '家長顯示': false },
+      { '層級1': '115學年度', '層級2': '班際比賽', '相簿名稱': '八上運動會 Day2', '相簿連結': '', '封面圖片': '', '簡介': '10/31 運動會當天\n創意進場\n大隊接力', '家長顯示': false }
     ];
 
-    /* ============ 向後端（Apps Script）索取相簿資料 ============ */
+    /* ============ 索取相簿資料（優先透過 Apps Script，若尚未更新則直接讀取試算表） ============ */
+    async function fetchPhotobookFromSheet(roleName, passphrase) {
+      const sheetName = (typeof CONFIG !== 'undefined' && CONFIG.SHEETS && CONFIG.SHEETS.GALLERY) ? CONFIG.SHEETS.GALLERY : '相簿';
+      const rawRows = await fetchSheetData(sheetName);
+      if (!rawRows || !rawRows.length) return { status: 'error', message: '無法讀取相簿，請確認試算表「相簿」分頁有資料' };
+
+      if (roleName === 'student') {
+        let expected = '';
+        // 1. 先檢查「相簿」工作表裡有沒有「通關密語」欄位（例如 I1 填「通關密語」、I2 填密碼）
+        for (const r of rawRows) {
+          for (const k of ['通關密語', '學生通關密語', '密碼', 'col8']) {
+            const cand = r[k];
+            const s = cand == null ? '' : String(cand).trim();
+            if (s !== '' && s !== '通關密語' && s !== '學生通關密語' && s !== '密碼') {
+              expected = s;
+              break;
+            }
+          }
+          if (expected) break;
+        }
+        // 2. 若沒有，再嘗試讀取「相簿設定」工作表
+        if (!expected) {
+          const settingsRows = await fetchSheetData('相簿設定');
+          for (const sr of (settingsRows || [])) {
+            const k = String(sr['項目'] || sr['col0'] || '').trim();
+            const v = String(sr['內容'] || sr['col1'] || '').trim();
+            if ((k.includes('密語') || k.includes('密碼')) && v) { expected = v; break; }
+          }
+        }
+        // 3. 若都還沒填，預設通關密語為 805
+        if (!expected) expected = '805';
+
+        if (String(passphrase || '').trim() !== expected) {
+          return { status: 'error', message: '通關密語不正確，請再試一次' };
+        }
+      }
+
+      const hasParentCol = rawRows.some((r) => Object.prototype.hasOwnProperty.call(r, '家長顯示'));
+      const normalized = rawRows.map((r) => {
+        const pv = hasParentCol ? isParentChecked(r['家長顯示']) : true;
+        return Object.assign({}, r, { '家長顯示': pv });
+      });
+
+      const filtered = roleName === 'student'
+        ? normalized
+        : normalized.filter((r) => r['家長顯示'] === true);
+
+      return { status: 'success', role: roleName, rows: filtered };
+    }
+
     async function fetchPhotobook(roleName, passphrase) {
-      if (new URLSearchParams(location.search).has('demo')) {
-        await new Promise((r) => setTimeout(r, 400));
-        if (roleName === 'student' && passphrase !== DEMO_PASSPHRASE) return { status: 'error', message: '通關密語不正確（示範模式請輸入 demo）' };
+      const params = new URLSearchParams(location.search);
+      if (params.has('demo')) {
+        await new Promise((r) => setTimeout(r, 300));
+        if (roleName === 'student' && passphrase !== DEMO_PASSPHRASE && passphrase !== '805') {
+          return { status: 'error', message: '通關密語不正確（示範模式請輸入 demo 或 805）' };
+        }
         return { status: 'success', rows: DEMO_ROWS.filter((r) => roleName === 'student' || r['家長顯示'] === true) };
       }
-      try {
-        const res = await fetch(CONFIG.API_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'getPhotobook', role: roleName, passphrase: passphrase || '' })
-        });
-        return await res.json();
-      } catch (e) {
-        return { status: 'error', message: '連線失敗，請檢查網路後再試一次' };
+      // 先嘗試呼叫 Apps Script API；若 Apps Script 尚未更新部署 getPhotobook，自動退回直接讀取試算表
+      if (typeof CONFIG !== 'undefined' && CONFIG.API_URL) {
+        try {
+          const res = await fetch(CONFIG.API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'getPhotobook', role: roleName, passphrase: passphrase || '' })
+          });
+          const data = await res.json();
+          if (data && (data.status === 'success' || (data.message && !String(data.message).includes('未知的請求動作')))) {
+            return data;
+          }
+        } catch (e) {
+          // 忽略，改走試算表直接讀取
+        }
       }
+      return await fetchPhotobookFromSheet(roleName, passphrase);
     }
 
     /* ============ 資料 → 頁面 ============ */
@@ -432,14 +502,15 @@
       '</div>';
     function cardHtml(c) {
       if (!c) return '<div class="card ghost"></div>';
-      const img = c.cover ? '<img src="' + esc(c.cover) + '" alt="' + esc(c.name) + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : '';
+      const altText = esc(String(c.name || '').replace(/\s+/g, ' '));
+      const img = c.cover ? '<img src="' + esc(c.cover) + '" alt="' + altText + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : '';
       const photo = '<div class="photo">' + ICON_CAMERA + img + '</div>';
-      const meta = (c.date ? '<div class="date">' + esc(c.date) + '</div>' : '') + (c.desc ? '<div class="desc">' + esc(c.desc) + '</div>' : '');
+      const meta = (c.date ? '<div class="date">' + escBr(c.date) + '</div>' : '') + (c.desc ? '<div class="desc">' + escBr(c.desc) + '</div>' : '');
       const lock = c.studentOnly ? '<span class="tag lock">僅同學可見</span>' : '';
       if (!c.link) {
-        return '<div class="card disabled">' + photo + '<div class="info"><div class="name hand">' + esc(c.name) + '</div>' + meta + '<span class="tag">照片整理中</span>' + lock + '</div></div>';
+        return '<div class="card disabled">' + photo + '<div class="info"><div class="name hand">' + escBr(c.name) + '</div>' + meta + '<div class="card-foot"><span class="tag">照片整理中</span>' + lock + '</div></div></div>';
       }
-      return '<a class="card" href="' + esc(c.link) + '" target="_blank" rel="noopener noreferrer">' + photo + '<div class="info"><div class="name hand">' + esc(c.name) + '</div>' + meta + '<div class="go">查看相簿 →</div>' + lock + '</div></a>';
+      return '<a class="card" href="' + esc(c.link) + '" target="_blank" rel="noopener noreferrer">' + photo + '<div class="info"><div class="name hand">' + escBr(c.name) + '</div>' + meta + '<div class="card-foot"><span class="go">查看相簿 →</span>' + lock + '</div></div></a>';
     }
 
     function pageHtml(i, pages) {
@@ -696,6 +767,15 @@
       applySize();
       bindEvents();
       bindGateEvents();
+      if (document.fonts && document.fonts.load) {
+        try {
+          await Promise.race([
+            document.fonts.load('1em ChenYuluoyan'),
+            new Promise((r) => setTimeout(r, 2500))
+          ]);
+        } catch (e) {}
+      }
+      applySize();
       render();
       $('msg').classList.add('hidden');
       if (isDemo && urlParams.get('gate') === 'student') { const g = $('gate'); if (g) g.classList.add('student'); }   // 預覽用：直接顯示輸入密語畫面
