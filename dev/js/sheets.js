@@ -13,6 +13,21 @@ async function fetchSheetData(sheetName) {
     if (json.status === 'error') throw new Error('試算表存取失敗，請確認已設為公開');
     return parseSheetRows(json.table);
   } catch (e) {
+    // 若試算表已改為「限制」（不公開），自動改由 Apps Script 後端讀取
+    if (typeof CONFIG !== 'undefined' && CONFIG.API_URL) {
+      try {
+        const apiRes = await fetch(CONFIG.API_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'getWebsiteSheet', sheetName })
+        });
+        const apiJson = await apiRes.json();
+        if (apiJson && apiJson.status === 'success' && Array.isArray(apiJson.rows)) {
+          return apiJson.rows;
+        }
+      } catch (err) {
+        // 忽略
+      }
+    }
     console.warn(`讀取「${sheetName}」失敗：`, e.message);
     return [];
   }

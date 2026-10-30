@@ -4,7 +4,7 @@ const CONFIG = {
   SHEET_ID: '1dtqdnPgVUWuCY-GmKwqK-ZYXXRCURIumiUAB2DFHoug',
   
   // Apps Script 部署後的 Web App URL (用於查詢系統 API)
-  API_URL: 'https://script.google.com/macros/s/AKfycbxnqTcJtVUrw0VKsofP0pHw1aPk9ifqfQu6_kWmPLCspDhepOWvYRouhWXjpiP5Zbx8/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbzMHJNs6k6KmkfEt_gd6JZ66r3o3eISn7WbBDv16WY6eyx_nEEPlD383dgTtMEUo6PZ/exec',
 
   // 工作表名稱
   SHEETS: {

@@ -296,8 +296,8 @@
     <button class="toc-btn" id="tocBtn" aria-label="前往目錄"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>目錄</button>
   </div>
 
-  <script src="js/config.js?v=50"></script>
-  <script src="js/sheets.js?v=37"></script>
+  <script src="js/config.js?v=51"></script>
+  <script src="js/sheets.js?v=38"></script>
   <script>
   (function () {
     'use strict';
@@ -424,7 +424,7 @@
             body: JSON.stringify({ action: 'getPhotobook', role: roleName, passphrase: passphrase || '' })
           });
           const data = await res.json();
-          if (data && (data.status === 'success' || (data.message && !String(data.message).includes('未知的請求動作')))) {
+          if (data && (data.status === 'success' || (data.message && (String(data.message).includes('密語') || String(data.message).includes('嘗試次數'))))) {
             return data;
           }
         } catch (e) {
