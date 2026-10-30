@@ -162,7 +162,14 @@
     .gate-go:hover { background: #a93f57; }
     .gate-back { font-size: .85em; color: #8c8681; padding: .2em .6em; }
     .gate-back:hover { color: var(--rose); }
-    .gate-err { min-height: 1.4em; color: #c0392b; font-size: .9em; text-align: center; }
+    .gate-err { min-height: 1.5em; color: #c0392b; font-size: .92em; text-align: center; }
+    .gate-err.loading { color: #5b6d8a; font-weight: 500; letter-spacing: .08em; }
+    .gate-dots { display: inline-flex; margin-left: .12em; letter-spacing: .06em; }
+    .gate-dots span { display: inline-block; font-weight: 700; animation: dotBounce .9s ease-in-out infinite; }
+    .gate-dots span:nth-child(1) { animation-delay: 0s; color: #c2516a; }
+    .gate-dots span:nth-child(2) { animation-delay: .16s; color: #d48b45; }
+    .gate-dots span:nth-child(3) { animation-delay: .32s; color: #5b8c72; }
+    @keyframes dotBounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-.34em); } }
     .gate.shake .gate-form, .gate.shake .gate-err { animation: shake .4s; }
     @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-.5em); } 75% { transform: translateX(.5em); } }
     .gate.busy .gate-btn, .gate.busy .gate-input { opacity: .55; pointer-events: none; }
@@ -689,8 +696,17 @@
 
     function setGateError(msg, shake) {
       const el = $('gateErr'), gate = $('gate');
-      if (el) el.textContent = msg || '';
+      if (el) {
+        el.classList.remove('loading');
+        el.textContent = msg || '';
+      }
       if (shake && gate) { gate.classList.remove('shake'); void gate.offsetWidth; gate.classList.add('shake'); }
+    }
+    function setGateLoading(msg) {
+      const el = $('gateErr');
+      if (!el) return;
+      el.classList.add('loading');
+      el.innerHTML = esc(msg) + '<span class="gate-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span>';
     }
     function clearSession() { try { sessionStorage.removeItem('pb_role'); sessionStorage.removeItem('pb_pass'); } catch (e) {} }
 
@@ -699,7 +715,8 @@
       entering = true;
       const gate = $('gate');
       if (gate) gate.classList.add('busy');
-      setGateError(silent ? '' : '翻找相簿中…');
+      if (silent) setGateError('');
+      else setGateLoading('翻找相簿中');
       const res = await fetchPhotobook(roleName, pass);
       entering = false;
       const gate2 = $('gate');
