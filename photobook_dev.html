@@ -144,6 +144,28 @@
     .cover-doodle { width: 4.6em; height: auto; margin: .2em auto 0; color: #7a4b57; opacity: .85; }
     .cover-hint { position: absolute; bottom: 2.6em; left: 0; right: 0; font-size: .95em; color: #9a928b; letter-spacing: .15em; }
     .cover-hint span { display: inline-block; animation: nudge 1.6s ease-in-out infinite; }
+
+    /* 身分選擇（封面上，打開之前先選家長或學生） */
+    .gate { position: absolute; left: 0; right: 0; bottom: 2.2em; padding: 0 2.6em 0 3em; display: flex; flex-direction: column; align-items: center; gap: .65em; }
+    .gate-q { font-size: 1.05em; color: #6f6862; letter-spacing: .1em; }
+    .gate-btns { display: flex; gap: .8em; }
+    .gate-btn { padding: .6em 1.5em; border-radius: 999px; border: .1em solid var(--rose); color: var(--rose); background: rgba(255,255,255,.6); font-size: 1em; font-weight: 600; letter-spacing: .08em; transition: all .2s; white-space: nowrap; }
+    .gate-btn:hover { background: var(--rose); color: #fff; transform: translateY(-.1em); }
+    .gate-form { display: none; width: 100%; max-width: 22em; flex-direction: column; align-items: center; gap: .6em; }
+    .gate.student .gate-btns, .gate.student .gate-q { display: none; }
+    .gate.student .gate-form { display: flex; }
+    .gate-row { display: flex; gap: .5em; width: 100%; }
+    .gate-input { flex: 1; min-width: 0; padding: .6em 1em; border-radius: 999px; border: .1em solid #d9cfc4; background: rgba(255,255,255,.9); font-size: max(16px, 1em); outline: none; text-align: center; letter-spacing: .12em; color: var(--ink); font-family: var(--sans); }
+    .gate-input:focus { border-color: var(--rose); box-shadow: 0 0 0 .2em rgba(194,81,106,.15); }
+    .gate-go { background: var(--rose); color: #fff; }
+    .gate-go:hover { background: #a93f57; }
+    .gate-back { font-size: .85em; color: #8c8681; padding: .2em .6em; }
+    .gate-back:hover { color: var(--rose); }
+    .gate-err { min-height: 1.4em; color: #c0392b; font-size: .9em; text-align: center; }
+    .gate.shake .gate-form, .gate.shake .gate-err { animation: shake .4s; }
+    @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-.5em); } 75% { transform: translateX(.5em); } }
+    .gate.busy .gate-btn, .gate.busy .gate-input { opacity: .55; pointer-events: none; }
+    .book.single .gate { bottom: 1.6em; padding: 0 1.6em; }
     @keyframes nudge { 0%,100% { transform: translateX(0); } 50% { transform: translateX(.45em); } }
     .ribbon {
       position: absolute; left: 3.4em; bottom: -3.2em; width: 1.5em; height: 5em;
@@ -190,9 +212,10 @@
     .info { flex: 1; min-width: 0; padding: 1em 1.1em; display: flex; flex-direction: column; justify-content: center; gap: .45em; }
     .name { font-size: 1.95em; line-height: 1.25; color: #25221f; word-break: break-all; }
     .date { font-size: .8em; color: #918a84; padding-bottom: .45em; border-bottom: .06em solid #ece6df; letter-spacing: .05em; }
-    .desc { font-size: .82em; color: #6c655f; line-height: 1.55; }
+    .desc { font-size: .82em; color: #6c655f; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
     .go { font-size: .9em; color: var(--rose); font-weight: 600; margin-top: .1em; }
     .tag { align-self: flex-start; font-size: .75em; color: #7c6c58; background: #eadfd0; padding: .2em .8em; border-radius: 999px; }
+    .tag.lock { background: #e6e9f7; color: #5c6bc0; }
     .card.disabled .name { color: #6e6761; }
     .card.disabled .photo { filter: grayscale(.6); }
 
@@ -214,6 +237,7 @@
     .zone { position: absolute; top: 0; bottom: 0; width: 9%; z-index: 2000; cursor: pointer; display: none; }
     .book.spread .zone { display: block; }
     .zone.hide { display: none !important; }
+    .book.gated .zone { display: none !important; }
     .zone-prev { left: 0; }
     .zone-next { right: 0; }
     .zone-prev:hover { background: linear-gradient(to right, rgba(194,81,106,.10), transparent); }
@@ -263,6 +287,8 @@
     <span class="ind" id="ind">封面</span>
     <button id="next" aria-label="下一頁"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
     <span class="sep"></span>
+    <button class="toc-btn" id="roleBtn" aria-label="切換身分" title="切換身分" style="font-size:.85em;color:#8c8681;">切換身分</button>
+    <span class="sep"></span>
     <button class="toc-btn" id="tocBtn" aria-label="前往目錄"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>目錄</button>
   </div>
 
@@ -309,14 +335,33 @@
       const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + a + '"/><stop offset="1" stop-color="' + b + '"/></linearGradient></defs><rect width="600" height="400" fill="url(#g)"/><circle cx="440" cy="120" r="46" fill="rgba(255,255,255,.55)"/><path d="M0 330 Q150 250 300 320 T600 290 V400 H0Z" fill="rgba(255,255,255,.45)"/></svg>';
       return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
     }
+    const DEMO_PASSPHRASE = 'demo';   // 示範模式的學生通關密語
     const DEMO_ROWS = [
-      { '層級1': '114學年度', '層級2': '班際比賽', '相簿名稱': '七上運動會', '相簿連結': 'https://example.com', '封面圖片': demoCover('#ffd1a9', '#f28b82'), '日期': '2025.10.15' },
-      { '層級1': '114學年度', '層級2': '班際比賽', '相簿名稱': '七下班際足球比賽', '相簿連結': '', '封面圖片': '' },
-      { '層級1': '114學年度', '層級2': '班際比賽', '相簿名稱': '七年級英語比賽', '相簿連結': 'https://example.com', '封面圖片': demoCover('#b9d7ff', '#8aa4f0'), '日期': '2025.11.20', '簡介': '站上舞台的勇氣' },
-      { '層級1': '114學年度', '層級2': '七年級各種回憶', '相簿名稱': '七年級頒獎照片', '相簿連結': 'https://example.com', '封面圖片': demoCover('#c9f0d2', '#6fcf97') },
-      { '層級1': '114學年度', '層級2': '七年級各種回憶', '相簿名稱': '七年級的日常', '相簿連結': 'https://example.com', '封面圖片': '' },
-      { '層級1': '115學年度', '層級2': '開學與日常', '相簿名稱': '八年級開學第一天', '相簿連結': 'https://example.com', '封面圖片': demoCover('#f7d6dd', '#e29db0') }
+      { '層級1': '114學年度', '層級2': '班際比賽', '相簿名稱': '七上運動會', '相簿連結': 'https://example.com', '封面圖片': demoCover('#ffd1a9', '#f28b82'), '日期': '2025.10.15', '簡介': '大家在操場上一起加油、一起喊到沒聲音的那一天。', '家長顯示': true },
+      { '層級1': '114學年度', '層級2': '班際比賽', '相簿名稱': '七下班際足球比賽', '相簿連結': '', '封面圖片': '', '家長顯示': true },
+      { '層級1': '114學年度', '層級2': '班際比賽', '相簿名稱': '七年級英語比賽', '相簿連結': 'https://example.com', '封面圖片': demoCover('#b9d7ff', '#8aa4f0'), '日期': '2025.11.20', '簡介': '站上舞台的勇氣', '家長顯示': true },
+      { '層級1': '114學年度', '層級2': '七年級各種回憶', '相簿名稱': '七年級頒獎照片', '相簿連結': 'https://example.com', '封面圖片': demoCover('#c9f0d2', '#6fcf97'), '家長顯示': true },
+      { '層級1': '114學年度', '層級2': '七年級各種回憶', '相簿名稱': '七年級的日常', '相簿連結': 'https://example.com', '封面圖片': '', '家長顯示': false },
+      { '層級1': '115學年度', '層級2': '開學與日常', '相簿名稱': '八年級開學第一天', '相簿連結': 'https://example.com', '封面圖片': demoCover('#f7d6dd', '#e29db0'), '家長顯示': false }
     ];
+
+    /* ============ 向後端（Apps Script）索取相簿資料 ============ */
+    async function fetchPhotobook(roleName, passphrase) {
+      if (new URLSearchParams(location.search).has('demo')) {
+        await new Promise((r) => setTimeout(r, 400));
+        if (roleName === 'student' && passphrase !== DEMO_PASSPHRASE) return { status: 'error', message: '通關密語不正確（示範模式請輸入 demo）' };
+        return { status: 'success', rows: DEMO_ROWS.filter((r) => roleName === 'student' || r['家長顯示'] === true) };
+      }
+      try {
+        const res = await fetch(CONFIG.API_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'getPhotobook', role: roleName, passphrase: passphrase || '' })
+        });
+        return await res.json();
+      } catch (e) {
+        return { status: 'error', message: '連線失敗，請檢查網路後再試一次' };
+      }
+    }
 
     /* ============ 資料 → 頁面 ============ */
     function buildModel(rows) {
@@ -336,7 +381,8 @@
           link: safeUrl(row['相簿連結']),
           cover: convertDriveLink(String(row['封面圖片'] || '').trim()),
           date: String(row['日期'] || '').trim(),
-          desc: String(row['簡介'] || '').trim()
+          desc: String(row['簡介'] || '').trim(),
+          studentOnly: row['家長顯示'] === false      // 只有學生看得到（後端只會對學生回傳這個欄位）
         });
       });
       return chapters;
@@ -373,15 +419,26 @@
     }
 
     /* ============ 頁面 HTML ============ */
+    const GATE_HTML =
+      '<div class="gate" id="gate">' +
+        '<div class="gate-q">請問您是？</div>' +
+        '<div class="gate-btns"><button class="gate-btn" data-role="parent">我是家長</button><button class="gate-btn" data-role="student">我是學生</button></div>' +
+        '<form class="gate-form" id="gateForm" autocomplete="off">' +
+          '<div class="gate-row"><input class="gate-input" id="gatePass" type="password" placeholder="請輸入通關密語" autocomplete="off"><button class="gate-btn gate-go" type="submit">進入</button></div>' +
+          '<button class="gate-back" type="button" data-gate-back>← 返回</button>' +
+        '</form>' +
+        '<div class="gate-err" id="gateErr"></div>' +
+      '</div>';
     function cardHtml(c) {
       if (!c) return '<div class="card ghost"></div>';
       const img = c.cover ? '<img src="' + esc(c.cover) + '" alt="' + esc(c.name) + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : '';
       const photo = '<div class="photo">' + ICON_CAMERA + img + '</div>';
       const meta = (c.date ? '<div class="date">' + esc(c.date) + '</div>' : '') + (c.desc ? '<div class="desc">' + esc(c.desc) + '</div>' : '');
+      const lock = c.studentOnly ? '<span class="tag lock">僅同學可見</span>' : '';
       if (!c.link) {
-        return '<div class="card disabled">' + photo + '<div class="info"><div class="name hand">' + esc(c.name) + '</div>' + meta + '<span class="tag">照片整理中</span></div></div>';
+        return '<div class="card disabled">' + photo + '<div class="info"><div class="name hand">' + esc(c.name) + '</div>' + meta + '<span class="tag">照片整理中</span>' + lock + '</div></div>';
       }
-      return '<a class="card" href="' + esc(c.link) + '" target="_blank" rel="noopener noreferrer">' + photo + '<div class="info"><div class="name hand">' + esc(c.name) + '</div>' + meta + '<div class="go">查看相簿 →</div></div></a>';
+      return '<a class="card" href="' + esc(c.link) + '" target="_blank" rel="noopener noreferrer">' + photo + '<div class="info"><div class="name hand">' + esc(c.name) + '</div>' + meta + '<div class="go">查看相簿 →</div>' + lock + '</div></a>';
     }
 
     function pageHtml(i, pages) {
@@ -395,7 +452,8 @@
             '<div class="cover-title hand">' + BOOK.titleLines.map(esc).join('<br>') + '</div>' +
             ICON_DOODLE +
             '<div class="cover-sub hand">' + esc(BOOK.subtitle) + '</div>' +
-            '<div class="cover-hint">' + esc(BOOK.hint) + ' <span>→</span></div><div class="ribbon"></div></div>';
+            (p.gate ? GATE_HTML : '<div class="cover-hint">' + esc(BOOK.hint) + ' <span>→</span></div>') +
+            '<div class="ribbon"></div></div>';
         case 'toc': {
           const rows = p.items.map((e) => e.level === 1
             ? '<button class="toc-h" data-goto="' + e.page + '">' + esc(e.text) + '</button>'
@@ -471,6 +529,7 @@
     }
 
     function setPos(np) {
+      if (gated) return;                       // 還沒通過身分選擇，不能翻頁
       np = Math.max(0, Math.min(maxPos(), np));
       if (np === pos) return;
       const step = np > pos ? 1 : -1;
@@ -488,6 +547,7 @@
     }
 
     function updateUI() {
+      bookEl.classList.toggle('gated', gated);
       bookEl.classList.toggle('closed-front', mode === 'spread' && pos === 0);
       bookEl.classList.toggle('closed-back', mode === 'spread' && pos === L);
       $('prev').disabled = pos <= 0;
@@ -509,8 +569,8 @@
         if (g) { goToPage(parseInt(g.getAttribute('data-goto'), 10)); return; }
         if (e.target.id === 'zPrev') setPos(pos - 1);
         else if (e.target.id === 'zNext') setPos(pos + 1);
-        else if (mode === 'spread' && pos === 0 && e.target.closest('.cover')) setPos(1);   // 點封面翻開
-        else if (mode === 'single' && pos === 0 && e.target.closest('.cover')) setPos(1);
+        else if (mode === 'spread' && pos === 0 && !gated && e.target.closest('.cover')) setPos(1);   // 點封面翻開
+        else if (mode === 'single' && pos === 0 && !gated && e.target.closest('.cover')) setPos(1);
       });
 
       document.addEventListener('keydown', (e) => {
@@ -548,37 +608,103 @@
       });
     }
 
-    /* ============ 啟動 ============ */
-    function showError(title, hint) {
-      const m = $('msg'); m.classList.remove('hidden');
-      m.innerHTML = '<div>' + title + '</div><small>' + hint + '</small><button onclick="location.reload()">重新整理</button>';
+    /* ============ 啟動與身分驗證 ============ */
+    const urlParams = new URLSearchParams(location.search);
+    const isDemo = urlParams.has('demo');
+    let gated = true;       // 還沒選身分 / 還沒通過驗證
+    let entering = false;
+    let role = null;
+
+    function setGateError(msg, shake) {
+      const el = $('gateErr'), gate = $('gate');
+      if (el) el.textContent = msg || '';
+      if (shake && gate) { gate.classList.remove('shake'); void gate.offsetWidth; gate.classList.add('shake'); }
+    }
+    function clearSession() { try { sessionStorage.removeItem('pb_role'); sessionStorage.removeItem('pb_pass'); } catch (e) {} }
+
+    async function enter(roleName, pass, silent) {
+      if (entering) return;
+      entering = true;
+      const gate = $('gate');
+      if (gate) gate.classList.add('busy');
+      setGateError(silent ? '' : '翻找相簿中…');
+      const res = await fetchPhotobook(roleName, pass);
+      entering = false;
+      const gate2 = $('gate');
+      if (gate2) gate2.classList.remove('busy');
+
+      if (!res || res.status !== 'success') {
+        clearSession();
+        setGateError((res && res.message) || '無法讀取相簿，請稍後再試', true);
+        return;
+      }
+      const chapters = buildModel(res.rows || []);
+      if (!chapters.length) {
+        setGateError(roleName === 'parent' ? '目前還沒有開放給家長的相簿' : '相簿還是空的', true);
+        return;
+      }
+      role = roleName;
+      try { sessionStorage.setItem('pb_role', roleName); sessionStorage.setItem('pb_pass', roleName === 'student' ? (pass || '') : ''); } catch (e) {}
+
+      pages = buildPages(chapters);
+      gated = false;
+      pos = 0;
+      // 網址加 ?start=頁碼（0 = 封面）可直接打開到指定頁，方便預覽
+      const sp = parseInt(urlParams.get('start'), 10);
+      if (!isNaN(sp)) pos = Math.max(0, Math.min(mode === 'spread' ? pages.length / 2 : pages.length - 1, mode === 'spread' ? Math.floor((sp + 1) / 2) : sp));
+      render();
+      $('controls').style.visibility = 'visible';
+      if (isNaN(sp)) setTimeout(() => setPos(1), 450);   // 通過後自動翻開封面
+    }
+
+    function bindGateEvents() {
+      bookEl.addEventListener('click', (e) => {
+        const r = e.target.closest('[data-role]');
+        if (r) {
+          const which = r.getAttribute('data-role');
+          if (which === 'parent') enter('parent', '');
+          else {
+            const gate = $('gate'); if (!gate) return;
+            gate.classList.add('student'); setGateError('');
+            setTimeout(() => { const inp = $('gatePass'); if (inp) inp.focus(); }, 60);
+          }
+          return;
+        }
+        if (e.target.closest('[data-gate-back]')) {
+          const gate = $('gate'); if (gate) gate.classList.remove('student');
+          setGateError('');
+        }
+      });
+      bookEl.addEventListener('submit', (e) => {
+        if (!e.target.classList || !e.target.classList.contains('gate-form')) return;
+        e.preventDefault();
+        const v = ($('gatePass').value || '').trim();
+        if (!v) { setGateError('請輸入通關密語', true); return; }
+        enter('student', v);
+      });
+      $('roleBtn').addEventListener('click', () => {
+        clearSession();
+        location.href = location.pathname + (isDemo ? '?demo=1' : '');
+      });
     }
 
     async function init() {
-      const demo = new URLSearchParams(location.search).has('demo');
-      let rows;
-      if (demo) rows = DEMO_ROWS;
-      else {
-        const sheetName = (typeof CONFIG !== 'undefined' && CONFIG.SHEETS && CONFIG.SHEETS.GALLERY) ? CONFIG.SHEETS.GALLERY : '相簿';
-        rows = await fetchSheetData(sheetName);
-      }
-      const chapters = buildModel(rows || []);
-      if (!chapters.length) { showError('相簿還是空的', '請確認試算表「相簿」工作表有資料，且已設為公開'); return; }
-
-      pages = buildPages(chapters);
       mode = calcMode();
       pos = 0;
-      // 網址加 ?start=頁碼（0 = 封面）可直接打開到指定頁，方便預覽
-      const sp = parseInt(new URLSearchParams(location.search).get('start'), 10);
-      if (!isNaN(sp)) pos = Math.max(0, Math.min(mode === 'spread' ? pages.length / 2 : pages.length - 1, mode === 'spread' ? Math.floor((sp + 1) / 2) : sp));
+      pages = [{ type: 'cover', gate: true, year: '' }, { type: 'blank' }];   // 先只顯示封面（含身分選擇）
       applySize();
       bindEvents();
+      bindGateEvents();
       render();
       $('msg').classList.add('hidden');
-      $('controls').style.visibility = 'visible';
-
-      // 手寫字體載入後再重排一次（避免寬度跳動）
+      if (isDemo && urlParams.get('gate') === 'student') { const g = $('gate'); if (g) g.classList.add('student'); }   // 預覽用：直接顯示輸入密語畫面
       if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => applySize());
+
+      // 自動進入：示範模式可用 ?role=student&pass=demo；一般情況沿用同一個分頁先前選的身分
+      let r = null, p = '';
+      if (isDemo && urlParams.get('role')) { r = urlParams.get('role'); p = urlParams.get('pass') || ''; }
+      else { try { r = sessionStorage.getItem('pb_role'); p = sessionStorage.getItem('pb_pass') || ''; } catch (e) {} }
+      if (r === 'parent' || r === 'student') enter(r, p, true);
     }
     init();
   })();
