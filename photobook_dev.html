@@ -183,6 +183,115 @@
     }
     .book.single .ribbon { display: none; }
 
+    /* ───────── 扉頁（老師精選拍立得 ＋ 寫在前面） ───────── */
+    .page.preface { padding: 1.75em 2.1em 2.3em; gap: .6em; align-items: center; }
+    .preface-head {
+      align-self: stretch; display: flex; align-items: center; justify-content: space-between;
+      font-family: var(--hand); -webkit-text-stroke: .03em currentColor;
+      font-size: 1.28em; color: var(--rose); letter-spacing: .1em;
+      border-bottom: .07em dashed rgba(194,81,106,.32); padding-bottom: .22em; flex-shrink: 0;
+    }
+    .preface-head small { font-size: .78em; color: #8c827a; letter-spacing: .06em; }
+    .polaroid-stage {
+      position: relative; width: 84%; max-width: 21em; margin: .35em auto .15em;
+      flex-shrink: 0; user-select: none;
+    }
+    .polaroid-back {
+      position: absolute; inset: 0; background: #fff; border-radius: .35em;
+      box-shadow: 0 .2em .75em rgba(60,40,30,.12), 0 0 0 .05em rgba(60,40,30,.06);
+      pointer-events: none;
+    }
+    .polaroid-back.b1 { transform: rotate(-3.4deg) translate(-.25em, .12em); }
+    .polaroid-back.b2 { transform: rotate(2.8deg) translate(.28em, .16em); }
+    .polaroid-card {
+      position: relative; background: #fff; padding: .58em .58em .48em; border-radius: .35em;
+      box-shadow: 0 .35em 1.2em rgba(60,40,30,.16), 0 0 0 .06em rgba(60,40,30,.06);
+      transform: rotate(-.8deg); transition: transform .25s ease;
+    }
+    .polaroid-card:hover { transform: rotate(0deg) translateY(-.08em); }
+    .polaroid-card.flip-anim { animation: polShuffle .32s ease; }
+    @keyframes polShuffle {
+      0%   { transform: rotate(-.8deg) scale(1); }
+      45%  { transform: rotate(2.2deg) scale(.96) translateY(-.18em); }
+      100% { transform: rotate(-.8deg) scale(1); }
+    }
+    .washi-tape {
+      position: absolute; top: -.52em; left: 50%; width: 5.4em; height: 1.15em;
+      transform: translateX(-50%) rotate(-2deg); z-index: 3; pointer-events: none;
+      background: repeating-linear-gradient(45deg, rgba(231,160,178,.58) 0 6px, rgba(244,198,210,.58) 6px 12px);
+      box-shadow: 0 .08em .2em rgba(80,40,50,.12);
+      border-left: .12em dotted rgba(255,255,255,.85);
+      border-right: .12em dotted rgba(255,255,255,.85);
+    }
+    .polaroid-photo {
+      position: relative; width: 100%; aspect-ratio: 16 / 10; border-radius: .18em;
+      background: linear-gradient(135deg, #f3e3e7, #e4e8f5); overflow: hidden;
+      display: flex; align-items: center; justify-content: center; color: rgba(120,100,105,.45);
+      cursor: pointer;
+    }
+    .polaroid-photo svg { width: 2.8em; height: 2.8em; }
+    .polaroid-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+    .polaroid-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: .4em;
+      padding: .38em .2em 0; min-height: 1.75em;
+    }
+    .polaroid-cap {
+      font-family: var(--hand); -webkit-text-stroke: .025em currentColor;
+      font-size: 1.18em; color: #3d3834; line-height: 1.2;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .polaroid-nav {
+      display: inline-flex; align-items: center; gap: .2em; flex-shrink: 0;
+      background: #f6f1ea; border-radius: 999px; padding: .08em .32em; font-size: .78em; color: #6b625b;
+    }
+    .pol-btn {
+      width: 1.45em; height: 1.45em; border-radius: 50%; display: inline-flex;
+      align-items: center; justify-content: center; font-size: 1.05em; color: var(--rose);
+      font-weight: 700; transition: background .15s;
+    }
+    .pol-btn:hover { background: var(--rose-soft); }
+    .pol-count { font-variant-numeric: tabular-nums; padding: 0 .15em; }
+    .preface-notes {
+      flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column;
+      gap: .52em; overflow-y: auto; scrollbar-width: none; padding: .1em .15em;
+    }
+    .preface-notes::-webkit-scrollbar { display: none; }
+    .preface-common {
+      flex-shrink: 0; font-family: var(--hand); -webkit-text-stroke: .028em currentColor;
+      font-size: 1.26em; line-height: 1.38; color: #3a3430; letter-spacing: .04em;
+      white-space: pre-line; padding: .1em .25em;
+    }
+    .preface-role-box {
+      flex-shrink: 0; position: relative; border-radius: .65em; padding: .58em .85em .62em;
+      background: rgba(194,81,106,.065); border: .08em dashed rgba(194,81,106,.38);
+      display: flex; flex-direction: column; gap: .22em;
+    }
+    .preface-role-box.student {
+      background: rgba(92,107,192,.075); border-color: rgba(92,107,192,.4);
+    }
+    .preface-role-tag {
+      align-self: flex-start; font-size: .72em; font-weight: 600; letter-spacing: .08em;
+      padding: .14em .7em; border-radius: 999px;
+      background: rgba(194,81,106,.15); color: var(--rose);
+    }
+    .preface-role-box.student .preface-role-tag {
+      background: #e2e6f9; color: #4e5ba6;
+    }
+    .preface-role-text {
+      font-family: var(--hand); -webkit-text-stroke: .025em currentColor;
+      font-size: 1.2em; line-height: 1.36; color: #4a433f; letter-spacing: .04em;
+      white-space: pre-line;
+    }
+    .preface-sign {
+      flex-shrink: 0; align-self: flex-end; font-family: var(--hand);
+      -webkit-text-stroke: .03em currentColor; font-size: 1.22em; color: var(--rose);
+      letter-spacing: .08em; margin-top: auto; padding-right: .2em;
+    }
+    .book.single .page.preface { padding: 1.45em 1.35em 2.3em; gap: .48em; }
+    .book.single .polaroid-stage { width: 88%; }
+    .book.single .preface-common { font-size: 1.2em; }
+    .book.single .preface-role-text { font-size: 1.15em; }
+
     /* ───────── 目錄 ───────── */
     .toc h2 { font-size: 2.7em; line-height: 1.2; }
     .toc .rule { height: .09em; background: var(--rose); opacity: .75; margin: .45em 0 1.2em; width: 100%; }
@@ -316,6 +425,11 @@
       badge: '114級',                      // 封面右上角的小字
       subtitle: '輕輕翻開，一起回味我們的日子',
       hint: '請翻頁',
+      prefaceTitle: '✦ 老師精選 · 寫在前面',
+      prefaceSign: '— 導師 詠涵',
+      defaultCommonText: '每一張照片，都是我們在 805 一起走過的足跡。\n謝謝你們讓教室裡總是充滿笑聲與活力！',
+      defaultParentText: '謝謝家長們一直以來的支持與信任，\n讓我們一起陪伴孩子成長。',
+      defaultStudentText: '看到自己的黑歷史不准偷笑太誇張，\n這些都是最珍貴的青春回憶啦！',
       closingTitle: '未完待續…',
       closingText: '還有更多故事，<br>等著我們一起寫進下一頁',
       blankText: '這一頁，<br>留給之後的回憶'
@@ -467,7 +581,83 @@
       return chapters;
     }
 
-    function buildPages(chapters) {
+    let currentPreface = null;
+    let polIdx = 0;
+
+    function parsePhotoItem(raw, fallbackCap) {
+      const s = String(raw || '').trim();
+      if (!s) return null;
+      const lines = s.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
+      if (!lines.length) return null;
+      const url = convertDriveLink(lines[0]);
+      if (!url) return null;
+      const caption = lines.length > 1 ? lines.slice(1).join(' · ') : (fallbackCap || '');
+      return { url, caption };
+    }
+
+    function buildPreface(res, rows, roleName) {
+      const apiPref = (res && res.preface) ? res.preface : null;
+      const photos = [];
+      let commonText = '';
+      let parentText = '';
+      let studentText = '';
+      let sign = '';
+
+      if (apiPref) {
+        (apiPref.photos || []).forEach((it) => {
+          if (typeof it === 'string') {
+            const p = parsePhotoItem(it, '');
+            if (p) photos.push(p);
+          } else if (it && it.url) {
+            photos.push({ url: convertDriveLink(it.url), caption: String(it.caption || '').trim() });
+          }
+        });
+        commonText = String(apiPref.commonText || '').trim();
+        parentText = String(apiPref.parentText || '').trim();
+        studentText = String(apiPref.studentText || '').trim();
+        sign = String(apiPref.sign || '').trim();
+      }
+
+      // 若直接從試算表列讀取，也支援「精選照片」、「共同的話」、「給家長的話」、「給學生的話」欄位
+      (rows || []).forEach((r) => {
+        const pRaw = r['精選照片'] || r['老師精選'] || '';
+        const pItem = parsePhotoItem(pRaw, String(r['精選說明'] || '').trim());
+        if (pItem) photos.push(pItem);
+        if (!commonText && (r['共同的話'] || r['寫在前面'])) commonText = String(r['共同的話'] || r['寫在前面']).trim();
+        if (!parentText && r['給家長的話']) parentText = String(r['給家長的話']).trim();
+        if (!studentText && (r['給學生的話'] || r['給同學的話'])) studentText = String(r['給學生的話'] || r['給同學的話']).trim();
+        if (!sign && r['署名']) sign = String(r['署名']).trim();
+      });
+
+      // 測試頁預設預覽：若試算表還沒填精選照片／文字，自動挑現有相簿封面與範例文字呈現效果
+      if (!photos.length) {
+        (rows || []).forEach((r) => {
+          const c = convertDriveLink(String(r['封面圖片'] || '').trim());
+          const n = String(r['相簿名稱'] || '').replace(/\s+/g, ' ').trim();
+          if (c && photos.length < 5) photos.push({ url: c, caption: n });
+        });
+      }
+      if (!commonText && !parentText && !studentText) {
+        commonText = BOOK.defaultCommonText;
+        parentText = BOOK.defaultParentText;
+        studentText = BOOK.defaultStudentText;
+      }
+
+      const roleText = roleName === 'student' ? studentText : parentText;
+      const roleLabel = roleName === 'student' ? '給 805 同學的悄悄話' : '給家長的話';
+      if (!photos.length && !commonText && !roleText) return null;
+
+      return {
+        photos,
+        commonText,
+        roleText,
+        roleLabel,
+        role: roleName,
+        sign: sign || BOOK.prefaceSign
+      };
+    }
+
+    function buildPages(chapters, preface) {
       const body = [];       // 章節頁、相簿頁（相對位置）
       const toc = [];        // 目錄項目
       chapters.forEach((ch) => {
@@ -486,8 +676,10 @@
       });
 
       const tocPages = Math.max(1, Math.ceil(toc.length / TOC_ROWS_PER_PAGE));
-      const offset = 1 + tocPages;            // 封面(0) + 目錄頁們
+      const prefaceCount = preface ? 1 : 0;
+      const offset = 1 + prefaceCount + tocPages;   // 封面(0) + 扉頁 + 目錄頁們
       const pages = [{ type: 'cover', year: chapters[0] ? chapters[0].l1 : '' }];
+      if (preface) pages.push({ type: 'preface', preface });
       for (let t = 0; t < tocPages; t++) {
         pages.push({ type: 'toc', first: t === 0, items: toc.slice(t * TOC_ROWS_PER_PAGE, (t + 1) * TOC_ROWS_PER_PAGE).map((e) => Object.assign({}, e, { page: e.rel + offset })) });
       }
@@ -521,6 +713,51 @@
       return '<a class="card" href="' + esc(c.link) + '" target="_blank" rel="noopener noreferrer">' + photo + '<div class="info"><div class="name hand">' + escBr(c.name) + '</div>' + meta + '<div class="card-foot"><span class="go">查看相簿 →</span>' + lock + '</div></div></a>';
     }
 
+    function prefaceHtml(pf, num) {
+      const photos = (pf && pf.photos) || [];
+      const cur = photos[polIdx] || photos[0] || null;
+      const multi = photos.length > 1;
+      let polaroid = '';
+      if (cur) {
+        const backs = multi ? '<div class="polaroid-back b1"></div><div class="polaroid-back b2"></div>' : '';
+        const imgTag = '<img id="polImg" src="' + esc(cur.url) + '" alt="' + esc(cur.caption || '老師精選') + '" referrerpolicy="no-referrer" onerror="this.remove()">';
+        const nav = multi
+          ? '<div class="polaroid-nav"><button type="button" class="pol-btn" data-pol-dir="-1" aria-label="上一張">‹</button><span class="pol-count" id="polCount">' + (polIdx + 1) + ' / ' + photos.length + '</span><button type="button" class="pol-btn" data-pol-dir="1" aria-label="下一張">›</button></div>'
+          : '';
+        polaroid =
+          '<div class="polaroid-stage">' +
+            backs +
+            '<div class="polaroid-card" id="polCard">' +
+              '<div class="washi-tape"></div>' +
+              '<div class="polaroid-photo" data-pol-dir="1" title="點一下換下一張精選照片">' + ICON_CAMERA + imgTag + '</div>' +
+              '<div class="polaroid-bar">' +
+                '<span class="polaroid-cap" id="polCap">' + esc(cur.caption || '805 精選回憶') + '</span>' +
+                nav +
+              '</div>' +
+            '</div>' +
+          '</div>';
+      }
+      const commonBlock = pf.commonText
+        ? '<div class="preface-common">' + escBr(pf.commonText) + '</div>'
+        : '';
+      const roleBlock = pf.roleText
+        ? '<div class="preface-role-box ' + (pf.role === 'student' ? 'student' : 'parent') + '">' +
+            '<span class="preface-role-tag">' + esc(pf.roleLabel) + '</span>' +
+            '<div class="preface-role-text">' + escBr(pf.roleText) + '</div>' +
+          '</div>'
+        : '';
+      const signBlock = pf.sign
+        ? '<div class="preface-sign">' + esc(pf.sign) + '</div>'
+        : '';
+      const hintTxt = multi ? '<small>點照片可換張</small>' : '';
+      return '<div class="page preface">' +
+        '<div class="preface-head"><span>' + esc(BOOK.prefaceTitle) + '</span>' + hintTxt + '</div>' +
+        polaroid +
+        '<div class="preface-notes">' + commonBlock + roleBlock + signBlock + '</div>' +
+        num +
+      '</div>';
+    }
+
     function pageHtml(i, pages) {
       const p = pages[i];
       const side = i % 2 === 1 ? 'l' : 'r';
@@ -534,6 +771,8 @@
             '<div class="cover-sub hand">' + esc(BOOK.subtitle) + '</div>' +
             (p.gate ? GATE_HTML : '<div class="cover-hint">' + esc(BOOK.hint) + ' <span>→</span></div>') +
             '<div class="ribbon"></div></div>';
+        case 'preface':
+          return prefaceHtml(p.preface, num);
         case 'toc': {
           const rows = p.items.map((e) => e.level === 1
             ? '<button class="toc-h" data-goto="' + e.page + '">' + esc(e.text) + '</button>'
@@ -638,13 +877,43 @@
       if (zn) zn.classList.toggle('hide', pos >= L);
     }
 
+    function stepPolaroid(dir) {
+      const photos = (currentPreface && currentPreface.photos) || [];
+      if (photos.length <= 1) return;
+      polIdx = (polIdx + dir + photos.length) % photos.length;
+      const cur = photos[polIdx];
+      const card = $('polCard');
+      if (card) {
+        card.classList.remove('flip-anim');
+        void card.offsetWidth;
+        card.classList.add('flip-anim');
+      }
+      const photoBox = card ? card.querySelector('.polaroid-photo') : null;
+      if (photoBox && cur) {
+        photoBox.innerHTML = ICON_CAMERA + '<img id="polImg" src="' + esc(cur.url) + '" alt="' + esc(cur.caption || '老師精選') + '" referrerpolicy="no-referrer" onerror="this.remove()">';
+      }
+      const cap = $('polCap');
+      if (cap && cur) cap.textContent = cur.caption || '805 精選回憶';
+      const cnt = $('polCount');
+      if (cnt) cnt.textContent = (polIdx + 1) + ' / ' + photos.length;
+    }
+
     /* ============ 事件 ============ */
     function bindEvents() {
       $('prev').addEventListener('click', () => setPos(pos - 1));
       $('next').addEventListener('click', () => setPos(pos + 1));
-      $('tocBtn').addEventListener('click', () => goToPage(1));
+      $('tocBtn').addEventListener('click', () => {
+        const ti = pages.findIndex((p) => p.type === 'toc');
+        goToPage(ti !== -1 ? ti : 1);
+      });
 
       bookEl.addEventListener('click', (e) => {
+        const pol = e.target.closest('[data-pol-dir]');
+        if (pol) {
+          e.stopPropagation();
+          stepPolaroid(parseInt(pol.getAttribute('data-pol-dir'), 10) || 1);
+          return;
+        }
         const g = e.target.closest('[data-goto]');
         if (g) { goToPage(parseInt(g.getAttribute('data-goto'), 10)); return; }
         if (e.target.id === 'zPrev') setPos(pos - 1);
@@ -736,8 +1005,10 @@
         return;
       }
       role = roleName;
+      polIdx = 0;
+      currentPreface = buildPreface(res, res.rows || [], roleName);
 
-      pages = buildPages(chapters);
+      pages = buildPages(chapters, currentPreface);
       gated = false;
       pos = 0;
       // 網址加 ?start=頁碼（0 = 封面）可直接打開到指定頁，方便預覽
