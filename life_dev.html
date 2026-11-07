@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>805 生活計點＆聯絡簿工作台（預覽版）</title>
+  <link rel="icon" href="images/logo.png" type="image/jpeg">
+  <style>
+    :root {
+      --bg: #f6f4f0;
+      --card: #ffffff;
+      --ink: #2c2825;
+      --muted: #78716c;
+      --line: #e7e2da;
+      --primary: #b84a62;
+      --primary-dark: #96384d;
+      --primary-soft: #fceef1;
+      --indigo: #4f5d95;
+      --indigo-soft: #eef1fa;
+      --emerald: #2e7d5b;
+      --emerald-soft: #e9f6ef;
+      --amber: #b4690e;
+      --amber-soft: #fef5e7;
+      --red: #c0392b;
+      --red-soft: #fdecea;
+      --radius: 16px;
+      --shadow: 0 4px 20px rgba(60, 45, 35, 0.06);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      background: var(--bg); color: var(--ink);
+      min-height: 100dvh;
+    }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; border: none; background: none; }
+
+    /* ───────── 登入通行碼遮罩 ───────── */
+    .gate-overlay {
+      position: fixed; inset: 0; z-index: 900;
+      background: linear-gradient(135deg, #f8ecee 0%, #f5f2eb 50%, #eaf0f8 100%);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .gate-overlay.hidden { display: none; }
+    .gate-card {
+      width: 100%; max-width: 400px; background: #fff;
+      border-radius: 24px; padding: 32px 28px;
+      box-shadow: 0 16px 40px rgba(80, 50, 60, 0.12);
+      text-align: center; border: 1px solid rgba(184, 74, 98, 0.15);
+    }
+    .gate-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--primary-soft); color: var(--primary);
+      font-weight: 700; font-size: 0.82rem; padding: 5px 14px;
+      border-radius: 999px; margin-bottom: 12px;
+    }
+    .gate-title { font-size: 1.55rem; font-weight: 800; margin: 0 0 6px; color: var(--ink); }
+    .gate-sub { font-size: 0.9rem; color: var(--muted); margin: 0 0 22px; line-height: 1.5; }
+    .gate-input {
+      width: 100%; padding: 14px 16px; border-radius: 14px;
+      border: 2px solid var(--line); font-size: 1.15rem; text-align: center;
+      letter-spacing: 0.18em; font-weight: 700; outline: none; transition: border-color 0.2s;
+      background: #faf9f7;
+    }
+    .gate-input:focus { border-color: var(--primary); background: #fff; }
+    .gate-btn-main {
+      width: 100%; margin-top: 12px; padding: 14px; border-radius: 14px;
+      background: var(--primary); color: #fff; font-weight: 700; font-size: 1.02rem;
+      box-shadow: 0 6px 16px rgba(184, 74, 98, 0.25); transition: background 0.2s, transform 0.1s;
+    }
+    .gate-btn-main:hover { background: var(--primary-dark); }
+    .gate-btn-main:active { transform: scale(0.98); }
+    .gate-quick {
+      margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--line);
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .gate-quick small { color: var(--muted); font-size: 0.78rem; }
+    .gate-quick-btns { display: flex; gap: 8px; justify-content: center; }
+    .gate-pill {
+      padding: 7px 14px; border-radius: 999px; font-size: 0.82rem; font-weight: 600;
+      background: #f3f0eb; color: #57534e; transition: all 0.15s;
+    }
+    .gate-pill:hover { background: var(--indigo-soft); color: var(--indigo); }
+    .gate-err { color: var(--red); font-size: 0.85rem; min-height: 1.3em; margin-top: 8px; font-weight: 600; }
+
+    /* ───────── 頂部導覽列 ───────── */
+    .topbar {
+      position: sticky; top: 0; z-index: 200;
+      background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 18px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-icon {
+      width: 38px; height: 38px; border-radius: 11px;
+      background: var(--primary); color: #fff; font-weight: 800; font-size: 1.05rem;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 3px 10px rgba(184, 74, 98, 0.25);
+    }
+    .brand-text h1 { font-size: 1.1rem; font-weight: 800; margin: 0; line-height: 1.2; }
+    .brand-text p { font-size: 0.76rem; color: var(--muted); margin: 2px 0 0; }
+
+    /* 三大主功能頁籤 */
+    .main-tabs {
+      display: flex; gap: 6px; background: #efece6; padding: 5px; border-radius: 14px;
+    }
+    .main-tab {
+      padding: 9px 18px; border-radius: 10px; font-weight: 700; font-size: 0.92rem;
+      color: #57534e; display: inline-flex; align-items: center; gap: 6px;
+      transition: all 0.18s; white-space: nowrap;
+    }
+    .main-tab.active {
+      background: #fff; color: var(--primary);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+    }
+    .badge-count {
+      background: var(--amber); color: #fff; font-size: 0.72rem;
+      padding: 1px 7px; border-radius: 999px; font-weight: 800;
+    }
+
+    /* 身分模式切換（小老師平板 vs 導師電腦） */
+    .role-switch {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .role-chip {
+      padding: 7px 13px; border-radius: 999px; font-size: 0.82rem; font-weight: 700;
+      display: inline-flex; align-items: center; gap: 5px;
+      border: 1.5px solid var(--line); background: #fff; color: var(--ink);
+      transition: all 0.2s;
+    }
+    .role-chip.cadre { border-color: var(--indigo); background: var(--indigo-soft); color: var(--indigo); }
+    .role-chip.teacher { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+
+    /* ───────── 版面容器 ───────── */
+    .container { max-width: 1320px; margin: 0 auto; padding: 16px; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* 導師待處理標註提醒橫幅 */
+    .alert-banner {
+      background: var(--amber-soft); border: 1.5px solid #f5cba7;
+      border-radius: 14px; padding: 12px 16px; margin-bottom: 16px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    }
+    .alert-banner.hidden { display: none; }
+    .alert-banner-left { display: flex; align-items: center; gap: 10px; font-size: 0.92rem; font-weight: 700; color: #7e4a08; }
+    .alert-banner-btn {
+      padding: 6px 14px; border-radius: 999px; background: var(--amber); color: #fff;
+      font-size: 0.82rem; font-weight: 700;
+    }
+
+    /* ───────── 分頁 1：快速登記台 ───────── */
+    .checkin-grid {
+      display: grid; grid-template-columns: 1fr 390px; gap: 16px; align-items: start;
+    }
+    @media (max-width: 1024px) {
+      .checkin-grid { grid-template-columns: 1fr; }
+    }
+    .panel-card {
+      background: var(--card); border-radius: var(--radius);
+      border: 1px solid var(--line); box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    .step-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+      padding-bottom: 14px; border-bottom: 1px solid var(--line); margin-bottom: 14px;
+    }
+    .date-picker-wrap {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .date-input {
+      padding: 8px 12px; border-radius: 10px; border: 1.5px solid var(--line);
+      font-weight: 700; color: var(--ink); background: #faf9f7;
+    }
+    .week-pill {
+      padding: 6px 12px; border-radius: 999px; background: var(--indigo-soft);
+      color: var(--indigo); font-weight: 700; font-size: 0.84rem;
+    }
+    .cat-switch { display: flex; gap: 6px; }
+    .cat-btn {
+      padding: 8px 15px; border-radius: 999px; font-weight: 700; font-size: 0.88rem;
+      border: 1.5px solid var(--line); color: var(--muted); background: #faf9f7;
+      transition: all 0.15s;
+    }
+    .cat-btn.active {
+      background: var(--primary); color: #fff; border-color: var(--primary);
+      box-shadow: 0 3px 10px rgba(184, 74, 98, 0.22);
+    }
+
+    /* 事由印章按鈕區 */
+    .section-label {
+      font-size: 0.8rem; font-weight: 700; color: var(--muted);
+      letter-spacing: 0.06em; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .stamp-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap: 8px; margin-bottom: 14px;
+    }
+    .stamp-btn {
+      padding: 11px 12px; border-radius: 12px; border: 2px solid var(--line);
+      background: #faf9f7; text-align: left; display: flex; align-items: center; justify-content: space-between; gap: 6px;
+      transition: all 0.15s;
+    }
+    .stamp-btn:hover { border-color: #d0c8bc; background: #fff; }
+    .stamp-btn.active {
+      border-color: var(--primary); background: var(--primary-soft);
+      box-shadow: 0 3px 10px rgba(184, 74, 98, 0.12);
+    }
+    .stamp-btn.active.plus { border-color: var(--emerald); background: var(--emerald-soft); }
+    .stamp-name { font-weight: 700; font-size: 0.92rem; color: var(--ink); line-height: 1.25; }
+    .stamp-pts {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-weight: 800; font-size: 0.86rem; padding: 2px 8px; border-radius: 999px; flex-shrink: 0;
+    }
+    .stamp-pts.neg { background: var(--red-soft); color: var(--red); }
+    .stamp-pts.pos { background: var(--emerald-soft); color: var(--emerald); }
+
+    /* 點數微調與備註列 */
+    .pts-remark-bar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      background: #faf8f5; padding: 10px 12px; border-radius: 12px; margin-bottom: 16px;
+      border: 1px solid var(--line);
+    }
+    .pts-quick-group { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .pts-quick-group span { font-size: 0.82rem; font-weight: 700; color: var(--muted); margin-right: 2px; }
+    .pts-chip {
+      padding: 5px 11px; border-radius: 8px; border: 1.5px solid var(--line);
+      background: #fff; font-weight: 800; font-size: 0.86rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .pts-chip.active.neg { background: var(--red); color: #fff; border-color: var(--red); }
+    .pts-chip.active.pos { background: var(--emerald); color: #fff; border-color: var(--emerald); }
+    .remark-inline {
+      flex: 1; min-width: 180px; padding: 7px 12px; border-radius: 8px;
+      border: 1.5px solid var(--line); background: #fff; font-size: 0.88rem; outline: none;
+    }
+    .remark-inline:focus { border-color: var(--primary); }
+
+    /* 全班座號點名網格（專為平板觸控加大） */
+    .seat-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+      gap: 8px; margin-bottom: 16px;
+    }
+    .seat-card {
+      position: relative; padding: 11px 10px; border-radius: 13px;
+      border: 2px solid var(--line); background: #fff;
+      display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+      transition: all 0.14s; user-select: none; min-height: 70px;
+    }
+    .seat-card:hover { border-color: #c7bfb2; }
+    .seat-card.selected {
+      background: var(--primary); color: #fff; border-color: var(--primary);
+      transform: translateY(-2px); box-shadow: 0 6px 14px rgba(184, 74, 98, 0.25);
+    }
+    .seat-top { display: flex; align-items: baseline; justify-content: space-between; width: 100%; }
+    .seat-num {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.82rem; font-weight: 800; color: var(--muted);
+    }
+    .seat-card.selected .seat-num { color: rgba(255, 255, 255, 0.85); }
+    .seat-name { font-size: 1.02rem; font-weight: 800; }
+    .seat-tags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+    .seat-mini-tag {
+      font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 999px;
+      background: var(--red-soft); color: var(--red); max-width: 100%;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .seat-mini-tag.pos { background: var(--emerald-soft); color: var(--emerald); }
+    .seat-mini-tag.flagged { background: var(--amber-soft); color: var(--amber); }
+    .seat-card.selected .seat-mini-tag { background: rgba(255, 255, 255, 0.22); color: #fff; }
+
+    /* 底部送出列 */
+    .submit-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+      background: #fdfaf6; border: 1.5px solid var(--line); border-radius: 14px; padding: 12px 16px;
+    }
+    .submit-summary { font-size: 0.92rem; font-weight: 700; color: var(--ink); }
+    .submit-summary b { color: var(--primary); }
+    .submit-btn {
+      padding: 12px 24px; border-radius: 12px; background: var(--primary); color: #fff;
+      font-weight: 800; font-size: 0.98rem; box-shadow: 0 4px 14px rgba(184, 74, 98, 0.25);
+      transition: all 0.15s;
+    }
+    .submit-btn:disabled { opacity: 0.4; pointer-events: none; }
+    .submit-btn:hover { background: var(--primary-dark); }
+
+    /* 當日已登記＆標註側欄 */
+    .today-list { display: flex; flex-direction: column; gap: 8px; max-height: 620px; overflow-y: auto; }
+    .rec-item {
+      border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px;
+      background: #fff; display: flex; flex-direction: column; gap: 6px;
+    }
+    .rec-item.flagged { border-color: #f0b27a; background: #fffdf9; }
+    .rec-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .rec-who { font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; gap: 6px; }
+    .rec-seat {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem; background: #f1ede6; padding: 2px 7px; border-radius: 6px; color: #57534e;
+    }
+    .rec-reason { font-size: 0.88rem; font-weight: 700; color: #44403c; }
+    .rec-remark { font-size: 0.8rem; color: var(--muted); }
+    .rec-flag-box {
+      background: var(--amber-soft); border-left: 3px solid var(--amber);
+      padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; color: #7e4a08; font-weight: 600;
+    }
+    .rec-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
+    .btn-flag {
+      padding: 5px 10px; border-radius: 8px; font-size: 0.78rem; font-weight: 700;
+      background: #f5f2ec; color: #57534e; transition: all 0.15s;
+    }
+    .btn-flag:hover { background: var(--amber-soft); color: var(--amber); }
+    .btn-teacher-act {
+      padding: 5px 10px; border-radius: 8px; font-size: 0.76rem; font-weight: 700;
+    }
+    .btn-teacher-act.del { background: var(--red-soft); color: var(--red); }
+    .btn-teacher-act.ok { background: var(--emerald-soft); color: var(--emerald); }
+
+    /* ───────── 分頁 2：個人各週紀錄 ───────── */
+    .seat-strip {
+      display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 14px;
+      scrollbar-width: thin;
+    }
+    .seat-pill {
+      padding: 8px 13px; border-radius: 10px; border: 1.5px solid var(--line);
+      background: #fff; font-weight: 700; font-size: 0.86rem; white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
+    }
+    .seat-pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .seat-pill .dot-flag { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); }
+
+    .student-summary-bar {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px; margin-bottom: 16px;
+    }
+    .stat-box {
+      background: #fff; border: 1px solid var(--line); border-radius: 14px;
+      padding: 14px 16px; box-shadow: var(--shadow);
+    }
+    .stat-label { font-size: 0.78rem; font-weight: 700; color: var(--muted); }
+    .stat-val {
+      font-size: 1.65rem; font-weight: 900; margin-top: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .week-filter-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .week-Card {
+      background: #fff; border: 1px solid var(--line); border-radius: 14px;
+      padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow);
+    }
+    .week-card-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-bottom: 10px; border-bottom: 1px solid var(--line); margin-bottom: 10px;
+    }
+    .week-card-title { font-weight: 800; font-size: 1.02rem; }
+
+    /* ───────── 分頁 3：全班統計總覽 ───────── */
+    .stats-toolbar {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .table-wrap {
+      background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+      box-shadow: var(--shadow); overflow-x: auto;
+    }
+    table.stat-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    .stat-table th, .stat-table td {
+      padding: 10px 12px; border-bottom: 1px solid #f0ece4; text-align: left;
+    }
+    .stat-table th {
+      background: #faf7f2; font-weight: 800; color: #57534e; font-size: 0.8rem;
+      position: sticky; top: 0; white-space: nowrap;
+    }
+    .stat-table tr:hover td { background: #fdfaf6; }
+    .cell-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+    .cell-chip {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 2px 8px; border-radius: 999px; font-size: 0.74rem; font-weight: 700;
+      background: var(--red-soft); color: var(--red); cursor: pointer;
+    }
+    .cell-chip.pos { background: var(--emerald-soft); color: var(--emerald); }
+    .cell-chip.flagged { background: var(--amber-soft); color: var(--amber); border: 1px dashed var(--amber); }
+
+    /* ───────── 📌 標註／備註彈窗 ───────── */
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 800;
+      background: rgba(35, 28, 24, 0.48); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal-backdrop.hidden { display: none; }
+    .modal-box {
+      width: 100%; max-width: 440px; background: #fff; border-radius: 20px;
+      padding: 22px; box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18);
+    }
+    .modal-title { font-size: 1.15rem; font-weight: 800; margin: 0 0 6px; }
+    .modal-sub { font-size: 0.85rem; color: var(--muted); margin: 0 0 14px; }
+    .flag-preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .flag-preset-btn {
+      padding: 10px; border-radius: 10px; border: 1.5px solid var(--line);
+      font-weight: 700; font-size: 0.86rem; color: var(--ink); background: #faf9f7;
+      text-align: center; transition: all 0.15s;
+    }
+    .flag-preset-btn.active {
+      border-color: var(--amber); background: var(--amber-soft); color: #7e4a08;
+    }
+    .modal-textarea {
+      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--line);
+      font-size: 0.9rem; resize: vertical; min-height: 70px; outline: none;
+    }
+    .modal-textarea:focus { border-color: var(--amber); }
+    .modal-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #2c2825; color: #fff; padding: 11px 20px; border-radius: 999px;
+      font-weight: 700; font-size: 0.9rem; z-index: 950;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+    .toast.hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- 1. 通行碼驗證畫面（只有指定平板＆老師電腦知道） -->
+  <div class="gate-overlay" id="gateOverlay">
+    <div class="gate-card">
+      <div class="gate-badge">🔒 805 班級內部專用</div>
+      <h2 class="gate-title">生活計點＆聯絡簿工作台</h2>
+      <p class="gate-sub">請輸入小老師／導師通行碼進入<br><small>（全班預設初始分數：100 分）</small></p>
+      <form id="gateForm" autocomplete="off">
+        <input type="password" id="gateInput" class="gate-input" placeholder="請輸入通行碼" inputmode="text">
+        <div class="gate-err" id="gateErr"></div>
+        <button type="submit" class="gate-btn-main">進入工作台</button>
+      </form>
+      <div class="gate-quick">
+        <small>✨ 測試預覽快速通道（免打字直接體驗）：</small>
+        <div class="gate-quick-btns">
+          <button type="button" class="gate-pill" data-quick-role="cadre">📱 以「平板小老師」進入</button>
+          <button type="button" class="gate-pill" data-quick-role="teacher">💻 以「電腦導師」進入</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 頂部導覽列 -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">805</div>
+      <div class="brand-text">
+        <h1>生活計點＆聯絡簿工作台</h1>
+        <p id="semesterLabel">114 學年度第 2 學期 · 初始預設 100 分</p>
+      </div>
+    </div>
+
+    <nav class="main-tabs">
+      <button type="button" class="main-tab active" data-tab="checkin">✏️ 快速登記</button>
+      <button type="button" class="main-tab" data-tab="personal">👤 個人各週</button>
+      <button type="button" class="main-tab" data-tab="stats">📊 全班統計 <span class="badge-count" id="flagBadgeTop">2</span></button>
+    </nav>
+
+    <div class="role-switch">
+      <button type="button" class="role-chip cadre" id="roleToggleBtn" title="點擊切換預覽「小老師平板模式」與「導師電腦模式」">
+        📱 目前身分：小老師模式（可標註／不可直接刪改）
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- 導師模式專用：有待處理標註時顯示提醒 -->
+    <div class="alert-banner hidden" id="teacherAlertBanner">
+      <div class="alert-banner-left">
+        <span>🔔 目前有 <b id="pendingFlagCount">2</b> 筆小老師送出的「📌 標註／補交更正申請」等待老師確認！</span>
+      </div>
+      <button type="button" class="alert-banner-btn" id="jumpToFlagsBtn">前往查看處理 →</button>
+    </div>
+
+    <!-- ==================== 分頁 1：快速登記台 ==================== -->
+    <section class="tab-panel active" id="panel-checkin">
+      <div class="checkin-grid">
+        <!-- 左側：點選項目＋全班座號方格 -->
+        <div class="panel-card">
+          <div class="step-bar">
+            <div class="date-picker-wrap">
+              <label for="checkinDate" style="font-weight:800;font-size:0.9rem;">📅 登記日期：</label>
+              <input type="date" id="checkinDate" class="date-input">
+              <span class="week-pill" id="checkinWeekLabel">第 10 週 · 週五</span>
+            </div>
+            <div class="cat-switch">
+              <button type="button" class="cat-btn active" data-cat="contact">📒 聯絡簿＆週報表</button>
+              <button type="button" class="cat-btn" data-cat="other">📋 其他生活計點</button>
+            </div>
+          </div>
+
+          <div class="section-label">
+            <span>STEP 1 · 點選計點事由（開頭為「聯絡簿」或「週報表」自動歸入第一類）</span>
+          </div>
+          <div class="stamp-grid" id="stampGrid"></div>
+
+          <div class="pts-remark-bar">
+            <div class="pts-quick-group" id="ptsQuickGroup">
+              <span>點數：</span>
+              <button type="button" class="pts-chip neg" data-pts="-2">-2</button>
+              <button type="button" class="pts-chip neg active" data-pts="-1">-1</button>
+              <button type="button" class="pts-chip neg" data-pts="-0.5">-0.5</button>
+              <button type="button" class="pts-chip pos" data-pts="0.5">+0.5</button>
+              <button type="button" class="pts-chip pos" data-pts="1">+1</button>
+              <button type="button" class="pts-chip pos" data-pts="2">+2</button>
+            </div>
+            <input type="text" id="checkinRemark" class="remark-inline" placeholder="選填備註（如：第2節下課已提醒）">
+          </div>
+
+          <div class="section-label">
+            <span>STEP 2 · 點選學生座號（方格內會直接顯示該日已登記狀態，防止重複扣分）</span>
+            <div>
+              <button type="button" id="clearSeatsBtn" style="color:var(--primary);font-weight:700;font-size:0.82rem;">清空選取</button>
+            </div>
+          </div>
+          <div class="seat-grid" id="seatGrid"></div>
+
+          <div class="submit-bar">
+            <div class="submit-summary" id="submitSummary">請先在上方勾選要登記的座號</div>
+            <button type="button" class="submit-btn" id="submitCheckinBtn" disabled>確認送出登記</button>
+          </div>
+        </div>
+
+        <!-- 右側：當日已登記清單 ＆ 📌標註修改區 -->
+        <div class="panel-card">
+          <div class="section-label" style="margin-bottom:10px;">
+            <span id="todayListTitle">📋 當日已登記紀錄</span>
+            <span style="color:var(--amber);font-weight:700;">點「📌標註」可註記補交或誤按</span>
+          </div>
+          <div class="today-list" id="todayRecordList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 分頁 2：個人各週紀錄 ==================== -->
+    <section class="tab-panel" id="panel-personal">
+      <div class="panel-card" style="margin-bottom:16px;">
+        <div class="section-label">
+          <span>點選座號快速切換學生（橘點代表有 📌 待確認標註）</span>
+        </div>
+        <div class="seat-strip" id="personalSeatStrip"></div>
+
+        <div class="student-summary-bar" id="personalSummaryBar"></div>
+
+        <div class="week-filter-bar" id="personalWeekFilter"></div>
+      </div>
+
+      <div id="personalWeekList"></div>
+    </section>
+
+    <!-- ==================== 分頁 3：全班統計總覽 ==================== -->
+    <section class="tab-panel" id="panel-stats">
+      <div class="stats-toolbar">
+        <div class="cat-switch">
+          <button type="button" class="cat-btn active" data-stat-view="matrix">📅 每週五日打卡矩陣（催交聯絡簿神器）</button>
+          <button type="button" class="cat-btn" data-stat-view="ranking">🏆 全班累計統計＆排行榜</button>
+          <button type="button" class="cat-btn" data-stat-view="flags">📌 待處理標註清單</button>
+        </div>
+
+        <div class="date-picker-wrap" id="matrixWeekWrap">
+          <label style="font-weight:700;font-size:0.86rem;">選擇週次：</label>
+          <select id="matrixWeekSelect" class="date-input"></select>
+          <select id="matrixCategoryFilter" class="date-input">
+            <option value="contact">只看「聯絡簿＆週報表」</option>
+            <option value="all">顯示全部生活計點項目</option>
+          </select>
+        </div>
+
+        <div class="date-picker-wrap hidden" id="rankingSortWrap">
+          <label style="font-weight:700;font-size:0.86rem;">排序方式：</label>
+          <select id="rankingSortSelect" class="date-input">
+            <option value="seat">依座號排序</option>
+            <option value="scoreDesc">依總積分（高 → 低）</option>
+            <option value="contactDesc">依聯絡簿異常次數（多 → 少）</option>
+            <option value="weekAsc">依本週扣分最多</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-wrap" id="statsTableContainer"></div>
+    </section>
+  </main>
+
+  <!-- 📌 標註／備註彈窗（取代直接刪改分數） -->
+  <div class="modal-backdrop hidden" id="flagModal">
+    <div class="modal-box">
+      <h3 class="modal-title">📌 新增標註與備註</h3>
+      <p class="modal-sub" id="flagModalTargetInfo"></p>
+      <div class="section-label"><span>選擇標註類型（小老師不直接改分數，由系統標記提醒老師）</span></div>
+      <div class="flag-preset-grid" id="flagPresetGrid">
+        <button type="button" class="flag-preset-btn active" data-flag-tag="已補交">✅ 已補交（請改遲交或銷單）</button>
+        <button type="button" class="flag-preset-btn" data-flag-tag="已補簽名">✍️ 家長已補簽名</button>
+        <button type="button" class="flag-preset-btn" data-flag-tag="誤記請撤銷">🙋 小老師按錯座號請撤銷</button>
+        <button type="button" class="flag-preset-btn" data-flag-tag="請假免計">🏥 當日請假／公假</button>
+      </div>
+      <textarea id="flagModalNote" class="modal-textarea" placeholder="補充說明（例如：第一節下課已拿到老師桌上）"></textarea>
+      <div class="modal-foot">
+        <button type="button" class="gate-pill" id="closeFlagModalBtn">取消</button>
+        <button type="button" class="submit-btn" id="saveFlagModalBtn" style="padding:9px 20px;font-size:0.9rem;">儲存標註</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast hidden" id="toast"></div>
+
+  <script>
+  (function () {
+    'use strict';
+
+    /* ============ 1. 預設項目表（開頭為「聯絡簿」與「週報表」自動歸為第一類） ============ */
+    const LIFE_ITEMS = [
+      // 聯絡簿＆週報表類
+      { name: '聯絡簿未交', defaultPts: -1, cat: 'contact' },
+      { name: '聯絡簿遲交', defaultPts: -0.5, cat: 'contact' },
+      { name: '聯絡簿家長未簽名', defaultPts: -1, cat: 'contact' },
+      { name: '聯絡簿札記未寫', defaultPts: -1, cat: 'contact' },
+      { name: '聯絡簿內容缺漏', defaultPts: -0.5, cat: 'contact' },
+      { name: '聯絡簿書寫優良', defaultPts: 1, cat: 'contact' },
+      { name: '週報表未交', defaultPts: -1, cat: 'contact' },
+      { name: '週報表家長未簽', defaultPts: -1, cat: 'contact' },
+      // 其他生活計點項目
+      { name: '早自習秩序優良', defaultPts: 1, cat: 'other' },
+      { name: '打掃工作認真', defaultPts: 1, cat: 'other' },
+      { name: '熱心班級事務', defaultPts: 1, cat: 'other' },
+      { name: '抽屜座位整潔優良', defaultPts: 1, cat: 'other' },
+      { name: '作業未交／遲交', defaultPts: -1, cat: 'other' },
+      { name: '上課秩序欠佳', defaultPts: -1, cat: 'other' },
+      { name: '打掃未確實', defaultPts: -1, cat: 'other' },
+      { name: '服儀／物品未帶', defaultPts: -1, cat: 'other' }
+    ];
+
+    /* ============ 2. 805 班學生名單（預設初始分數 100 分） ============ */
+    const STUDENTS = [
+      { seatNo: '1', name: '林宥辰', init: 100 },
+      { seatNo: '2', name: '陳品言', init: 100 },
+      { seatNo: '3', name: '張宇翔', init: 100 },
+      { seatNo: '4', name: '黃子軒', init: 100 },
+      { seatNo: '5', name: '李承恩', init: 100 },
+      { seatNo: '6', name: '王宥翔', init: 100 },
+      { seatNo: '7', name: '吳冠廷', init: 100 },
+      { seatNo: '8', name: '劉品希', init: 100 },
+      { seatNo: '9', name: '蔡秉諺', init: 100 },
+      { seatNo: '10', name: '楊博鈞', init: 100 },
+      { seatNo: '11', name: '許哲瑋', init: 100 },
+      { seatNo: '12', name: '鄭宇恩', init: 100 },
+      { seatNo: '13', name: '謝承翰', init: 100 },
+      { seatNo: '14', name: '郭宥廷', init: 100 },
+      { seatNo: '15', name: '林語彤', init: 100 },
+      { seatNo: '16', name: '陳思妤', init: 100 },
+      { seatNo: '17', name: '張芷晴', init: 100 },
+      { seatNo: '18', name: '黃品妍', init: 100 },
+      { seatNo: '19', name: '李采潔', init: 100 },
+      { seatNo: '20', name: '王詩涵', init: 100 },
+      { seatNo: '21', name: '吳宥蓁', init: 100 },
+      { seatNo: '22', name: '劉子瑜', init: 100 },
+      { seatNo: '23', name: '蔡依宸', init: 100 },
+      { seatNo: '24', name: '楊芷瑄', init: 100 },
+      { seatNo: '25', name: '許庭瑜', init: 100 },
+      { seatNo: '26', name: '鄭羽彤', init: 100 },
+      { seatNo: '27', name: '謝宜蓁', init: 100 },
+      { seatNo: '28', name: '洪子晴', init: 100 }
+    ];
+
+    /* ============ 3. 示範週次與歷史紀錄（含聯絡簿、週報表與 📌 標註範例） ============ */
+    const WEEKS = [
+      { week: 10, label: '第 10 週 (11/03 ~ 11/07 · 本週)', days: ['2026-11-03', '2026-11-04', '2026-11-05', '2026-11-06', '2026-11-07'] },
+      { week: 9,  label: '第 9 週 (10/27 ~ 10/31)',        days: ['2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30', '2026-10-31'] },
+      { week: 8,  label: '第 8 週 (10/20 ~ 10/24)',        days: ['2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23', '2026-10-24'] }
+    ];
+
+    let records = [
+      { id: 101, seatNo: '3',  date: '2026-11-07', week: 10, reason: '聯絡簿未交', points: -1, remarks: '', flagTag: '已補交', flagNote: '第一節下課已補交給小老師' },
+      { id: 102, seatNo: '7',  date: '2026-11-07', week: 10, reason: '聯絡簿家長未簽名', points: -1, remarks: '', flagTag: '', flagNote: '' },
+      { id: 103, seatNo: '12', date: '2026-11-07', week: 10, reason: '週報表未交', points: -1, remarks: '', flagTag: '誤記請撤銷', flagNote: '小老師看錯行，12號其實有交' },
+      { id: 104, seatNo: '16', date: '2026-11-07', week: 10, reason: '聯絡簿書寫優良', points: 1, remarks: '札記寫得很用心', flagTag: '', flagNote: '' },
+      { id: 105, seatNo: '3',  date: '2026-11-06', week: 10, reason: '聯絡簿遲交', points: -0.5, remarks: '早自習後補交', flagTag: '', flagNote: '' },
+      { id: 106, seatNo: '5',  date: '2026-11-06', week: 10, reason: '聯絡簿家長未簽名', points: -1, remarks: '', flagTag: '', flagNote: '' },
+      { id: 107, seatNo: '19', date: '2026-11-05', week: 10, reason: '聯絡簿未交', points: -1, remarks: '', flagTag: '', flagNote: '' },
+      { id: 108, seatNo: '3',  date: '2026-11-04', week: 10, reason: '聯絡簿未交', points: -1, remarks: '', flagTag: '', flagNote: '' },
+      { id: 109, seatNo: '8',  date: '2026-11-04', week: 10, reason: '打掃工作認真', points: 1, remarks: '主動幫忙倒垃圾', flagTag: '', flagNote: '' },
+      { id: 110, seatNo: '12', date: '2026-11-03', week: 10, reason: '週報表家長未簽', points: -1, remarks: '', flagTag: '', flagNote: '' },
+      { id: 111, seatNo: '3',  date: '2026-10-30', week: 9,  reason: '聯絡簿未交', points: -1, remarks: '', flagTag: '', flagNote: '' },
+      { id: 112, seatNo: '7',  date: '2026-10-29', week: 9,  reason: '聯絡簿札記未寫', points: -1, remarks: '', flagTag: '', flagNote: '' },
+      { id: 113, seatNo: '16', date: '2026-10-28', week: 9,  reason: '熱心班級事務', points: 1, remarks: '協助運動會道具', flagTag: '', flagNote: '' },
+      { id: 114, seatNo: '21', date: '2026-10-23', week: 8,  reason: '聯絡簿書寫優良', points: 1, remarks: '', flagTag: '', flagNote: '' }
+    ];
+
+    /* ============ 狀態變數 ============ */
+    let currentRole = 'cadre';          // 'cadre' (小老師平板) | 'teacher' (導師電腦)
+    let activeTab = 'checkin';
+    let activeCat = 'contact';          // 'contact' | 'other'
+    let selectedReason = LIFE_ITEMS[0].name;
+    let selectedPoints = LIFE_ITEMS[0].defaultPts;
+    let selectedSeats = new Set();
+    let personalSeat = '3';
+    let personalWeek = 'all';
+    let activeStatView = 'matrix';      // 'matrix' | 'ranking' | 'flags'
+    let editingFlagRecId = null;
+    let selectedFlagPreset = '已補交';
+
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    function isContactOrWeekly(reason) {
+      const r = String(reason || '').trim();
+      return r.startsWith('聯絡簿') || r.startsWith('週報表');
+    }
+
+    function getStudent(seatNo) {
+      return STUDENTS.find((s) => s.seatNo === String(seatNo)) || { seatNo: String(seatNo), name: '同學', init: 100 };
+    }
+
+    function getWeekFromDate(dateStr) {
+      for (const w of WEEKS) {
+        if (w.days.includes(dateStr)) return w.week;
+      }
+      return 10;
+    }
+
+    function formatWeekday(dateStr) {
+      const d = new Date(dateStr + 'T00:00:00');
+      if (isNaN(d.getTime())) return '';
+      const names = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+      return names[d.getDay()];
+    }
+
+    function showToast(msg) {
+      const t = $('toast');
+      t.textContent = msg;
+      t.classList.remove('hidden');
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => t.classList.add('hidden'), 2600);
+    }
+
+    /* ============ 通行碼與角色切換 ============ */
+    function enterApp(roleMode) {
+      currentRole = roleMode || 'cadre';
+      $('gateOverlay').classList.add('hidden');
+      updateRoleUI();
+      renderAll();
+    }
+
+    function updateRoleUI() {
+      const btn = $('roleToggleBtn');
+      const flaggedCount = records.filter((r) => r.flagTag).length;
+      $('flagBadgeTop').textContent = flaggedCount;
+      $('flagBadgeTop').style.display = flaggedCount > 0 ? 'inline-block' : 'none';
+      $('pendingFlagCount').textContent = flaggedCount;
+
+      if (currentRole === 'teacher') {
+        btn.className = 'role-chip teacher';
+        btn.innerHTML = '💻 目前身分：導師電腦模式（可核准標註／直接刪改）';
+        $('teacherAlertBanner').classList.toggle('hidden', flaggedCount === 0);
+      } else {
+        btn.className = 'role-chip cadre';
+        btn.innerHTML = '📱 目前身分：小老師平板模式（可📌標註／不可直接刪改）';
+        $('teacherAlertBanner').classList.add('hidden');
+      }
+    }
+
+    /* ============ 分頁 1：快速登記台渲染 ============ */
+    function renderStamps() {
+      const items = LIFE_ITEMS.filter((it) => (activeCat === 'contact' ? isContactOrWeekly(it.name) : !isContactOrWeekly(it.name)));
+      if (!items.some((it) => it.name === selectedReason) && items.length) {
+        selectedReason = items[0].name;
+        selectedPoints = items[0].defaultPts;
+      }
+      $('stampGrid').innerHTML = items.map((it) => {
+        const isAct = it.name === selectedReason;
+        const ptsStr = (it.defaultPts > 0 ? '+' : '') + it.defaultPts;
+        return '<button type="button" class="stamp-btn ' + (isAct ? 'active ' : '') + (it.defaultPts > 0 ? 'plus' : '') + '" data-reason="' + esc(it.name) + '" data-default-pts="' + it.defaultPts + '">' +
+          '<span class="stamp-name">' + esc(it.name) + '</span>' +
+          '<span class="stamp-pts ' + (it.defaultPts > 0 ? 'pos' : 'neg') + '">' + ptsStr + '</span>' +
+        '</button>';
+      }).join('');
+      renderPointsChips();
+    }
+
+    function renderPointsChips() {
+      document.querySelectorAll('#ptsQuickGroup .pts-chip').forEach((btn) => {
+        const v = parseFloat(btn.getAttribute('data-pts'));
+        btn.classList.toggle('active', v === selectedPoints);
+      });
+    }
+
+    function renderSeatGrid() {
+      const dateStr = $('checkinDate').value;
+      const dayRecs = records.filter((r) => r.date === dateStr);
+      $('seatGrid').innerHTML = STUDENTS.map((s) => {
+        const isSel = selectedSeats.has(s.seatNo);
+        const myRecs = dayRecs.filter((r) => r.seatNo === s.seatNo);
+        const tagsHtml = myRecs.map((r) => {
+          const shortName = r.reason.replace(/^聯絡簿/, '').replace(/^週報表/, '週報');
+          const cls = r.flagTag ? 'flagged' : (r.points > 0 ? 'pos' : '');
+          return '<span class="seat-mini-tag ' + cls + '">' + (r.flagTag ? '📌' : '') + esc(shortName) + '</span>';
+        }).join('');
+        return '<button type="button" class="seat-card ' + (isSel ? 'selected' : '') + '" data-seat="' + s.seatNo + '">' +
+          '<div class="seat-top"><span class="seat-num">#' + s.seatNo.padStart(2, '0') + '</span></div>' +
+          '<div class="seat-name">' + esc(s.name) + '</div>' +
+          (tagsHtml ? '<div class="seat-tags">' + tagsHtml + '</div>' : '') +
+        '</button>';
+      }).join('');
+      updateSubmitBar();
+    }
+
+    function updateSubmitBar() {
+      const count = selectedSeats.size;
+      const btn = $('submitCheckinBtn');
+      const sum = $('submitSummary');
+      if (count === 0) {
+        sum.innerHTML = '請點選上方學生座號進行登記（目前事由：<b>' + esc(selectedReason) + '</b>）';
+        btn.disabled = true;
+      } else {
+        const list = Array.from(selectedSeats).sort((a, b) => Number(a) - Number(b)).map((no) => no + '號').join('、');
+        const ptsStr = (selectedPoints > 0 ? '+' : '') + selectedPoints;
+        sum.innerHTML = '已選 <b>' + count + ' 人</b>（' + list + '）· 事由：<b>' + esc(selectedReason) + ' (' + ptsStr + '分)</b>';
+        btn.disabled = false;
+      }
+    }
+
+    function renderTodayList() {
+      const dateStr = $('checkinDate').value;
+      const wk = getWeekFromDate(dateStr);
+      const wd = formatWeekday(dateStr);
+      $('checkinWeekLabel').textContent = '第 ' + wk + ' 週 · ' + wd;
+      $('todayListTitle').textContent = '📋 ' + dateStr.slice(5).replace('-', '/') + ' (' + wd + ') 已登記紀錄';
+
+      const dayRecs = records.filter((r) => r.date === dateStr);
+      const box = $('todayRecordList');
+      if (!dayRecs.length) {
+        box.innerHTML = '<div style="text-align:center;padding:36px 12px;color:var(--muted);font-size:0.9rem;">這一天還沒有任何登記紀錄 ✨</div>';
+        return;
+      }
+      box.innerHTML = dayRecs.map((r) => {
+        const stu = getStudent(r.seatNo);
+        const ptsStr = (r.points > 0 ? '+' : '') + r.points;
+        const flagHtml = r.flagTag
+          ? '<div class="rec-flag-box">📌 小老師標註：【' + esc(r.flagTag) + '】' + (r.flagNote ? '— ' + esc(r.flagNote) : '') + '</div>'
+          : '';
+        const teacherBtns = currentRole === 'teacher'
+          ? (r.flagTag ? '<button type="button" class="btn-teacher-act ok" data-clear-flag="' + r.id + '">👌 已讀保留</button>' : '') +
+            '<button type="button" class="btn-teacher-act del" data-del-rec="' + r.id + '">🗑️ 刪除紀錄</button>'
+          : '';
+        return '<div class="rec-item ' + (r.flagTag ? 'flagged' : '') + '">' +
+          '<div class="rec-top">' +
+            '<div class="rec-who"><span class="rec-seat">#' + stu.seatNo.padStart(2, '0') + '</span>' + esc(stu.name) + '</div>' +
+            '<span class="stamp-pts ' + (r.points > 0 ? 'pos' : 'neg') + '">' + ptsStr + '</span>' +
+          '</div>' +
+          '<div class="rec-reason">' + esc(r.reason) + '</div>' +
+          (r.remarks ? '<div class="rec-remark">備註：' + esc(r.remarks) + '</div>' : '') +
+          flagHtml +
+          '<div class="rec-actions">' +
+            '<button type="button" class="btn-flag" data-open-flag="' + r.id + '">📌 ' + (r.flagTag ? '修改標註／備註' : '標註補交／備註') + '</button>' +
+            teacherBtns +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    /* ============ 分頁 2：個人各週紀錄渲染 ============ */
+    function renderPersonalTab() {
+      // 1. 座號橫條
+      $('personalSeatStrip').innerHTML = STUDENTS.map((s) => {
+        const hasFlag = records.some((r) => r.seatNo === s.seatNo && r.flagTag);
+        return '<button type="button" class="seat-pill ' + (s.seatNo === personalSeat ? 'active' : '') + '" data-p-seat="' + s.seatNo + '">' +
+          '<span>' + s.seatNo.padStart(2, '0') + ' ' + esc(s.name) + '</span>' +
+          (hasFlag ? '<span class="dot-flag" title="有待確認標註"></span>' : '') +
+        '</button>';
+      }).join('');
+
+      // 2. 個人統計卡
+      const stu = getStudent(personalSeat);
+      const myRecs = records.filter((r) => r.seatNo === personalSeat);
+      const sumPts = myRecs.reduce((acc, r) => acc + r.points, 0);
+      const totalScore = stu.init + sumPts;
+      const wk10Pts = myRecs.filter((r) => r.week === 10).reduce((acc, r) => acc + r.points, 0);
+      const contactMiss = myRecs.filter((r) => r.reason.startsWith('聯絡簿') && r.points < 0).length;
+      const weeklyMiss = myRecs.filter((r) => r.reason.startsWith('週報表') && r.points < 0).length;
+
+      $('personalSummaryBar').innerHTML =
+        '<div class="stat-box"><div class="stat-label">學生姓名</div><div class="stat-val" style="font-size:1.35rem;">#' + stu.seatNo.padStart(2, '0') + ' ' + esc(stu.name) + '</div></div>' +
+        '<div class="stat-box"><div class="stat-label">目前總積分（初始 100）</div><div class="stat-val" style="color:' + (totalScore >= 100 ? 'var(--emerald)' : 'var(--primary)') + ';">' + totalScore + '</div></div>' +
+        '<div class="stat-box"><div class="stat-label">本週 (第10週) 增減</div><div class="stat-val" style="color:' + (wk10Pts >= 0 ? 'var(--emerald)' : 'var(--red)') + ';">' + (wk10Pts > 0 ? '+' : '') + wk10Pts + '</div></div>' +
+        '<div class="stat-box"><div class="stat-label">聯絡簿／週報表異常</div><div class="stat-val" style="font-size:1.3rem;">聯絡簿 ' + contactMiss + ' 次 · 週報 ' + weeklyMiss + ' 次</div></div>';
+
+      // 3. 週次篩選按鈕
+      $('personalWeekFilter').innerHTML =
+        '<button type="button" class="cat-btn ' + (personalWeek === 'all' ? 'active' : '') + '" data-p-week="all">全部週次總覽</button>' +
+        WEEKS.map((w) => '<button type="button" class="cat-btn ' + (String(personalWeek) === String(w.week) ? 'active' : '') + '" data-p-week="' + w.week + '">第 ' + w.week + ' 週</button>').join('');
+
+      // 4. 各週卡片
+      const targetWeeks = personalWeek === 'all' ? WEEKS : WEEKS.filter((w) => String(w.week) === String(personalWeek));
+      $('personalWeekList').innerHTML = targetWeeks.map((w) => {
+        const wRecs = myRecs.filter((r) => r.week === w.week);
+        const wSum = wRecs.reduce((acc, r) => acc + r.points, 0);
+        const rowsHtml = wRecs.length
+          ? wRecs.map((r) => {
+              const ptsStr = (r.points > 0 ? '+' : '') + r.points;
+              return '<div class="rec-item ' + (r.flagTag ? 'flagged' : '') + '" style="margin-bottom:8px;">' +
+                '<div class="rec-top">' +
+                  '<div class="rec-who"><span class="rec-seat">' + r.date + ' (' + formatWeekday(r.date) + ')</span>' + esc(r.reason) + '</div>' +
+                  '<div style="display:flex;align-items:center;gap:8px;">' +
+                    '<span class="stamp-pts ' + (r.points > 0 ? 'pos' : 'neg') + '">' + ptsStr + '</span>' +
+                    '<button type="button" class="btn-flag" data-open-flag="' + r.id + '">📌 ' + (r.flagTag ? '修改標註' : '標註／備註') + '</button>' +
+                  '</div>' +
+                '</div>' +
+                (r.remarks ? '<div class="rec-remark">備註：' + esc(r.remarks) + '</div>' : '') +
+                (r.flagTag ? '<div class="rec-flag-box">📌 小老師標註：【' + esc(r.flagTag) + '】' + (r.flagNote ? '— ' + esc(r.flagNote) : '') + '</div>' : '') +
+              '</div>';
+            }).join('')
+          : '<div style="color:var(--muted);font-size:0.88rem;padding:8px 0;">本週無任何扣分或異常紀錄 👍</div>';
+
+        return '<div class="week-Card">' +
+          '<div class="week-card-head">' +
+            '<div class="week-card-title">' + esc(w.label) + '</div>' +
+            '<span class="stamp-pts ' + (wSum >= 0 ? 'pos' : 'neg') + '">本週小計：' + (wSum > 0 ? '+' : '') + wSum + '</span>' +
+          '</div>' +
+          rowsHtml +
+        '</div>';
+      }).join('');
+    }
+
+    /* ============ 分頁 3：全班統計總覽渲染 ============ */
+    function renderStatsTab() {
+      const weekSel = $('matrixWeekSelect');
+      if (!weekSel.options.length) {
+        weekSel.innerHTML = WEEKS.map((w) => '<option value="' + w.week + '">' + esc(w.label) + '</option>').join('');
+      }
+      $('matrixWeekWrap').classList.toggle('hidden', activeStatView !== 'matrix');
+      $('rankingSortWrap').classList.toggle('hidden', activeStatView !== 'ranking');
+
+      const box = $('statsTableContainer');
+
+      if (activeStatView === 'matrix') {
+        const wkNum = Number(weekSel.value || 10);
+        const wkObj = WEEKS.find((w) => w.week === wkNum) || WEEKS[0];
+        const catFilter = $('matrixCategoryFilter').value;
+        const dayLabels = ['週一', '週二', '週三', '週四', '週五'];
+
+        let html = '<table class="stat-table"><thead><tr>' +
+          '<th style="width:90px;">座號姓名</th>' +
+          wkObj.days.map((d, i) => '<th>' + dayLabels[i] + '<br><small style="font-weight:500;color:var(--muted);">' + d.slice(5).replace('-', '/') + '</small></th>').join('') +
+          '<th style="text-align:right;width:90px;">本週小計</th>' +
+          '<th style="text-align:right;width:95px;">目前總分</th>' +
+        '</tr></thead><tbody>';
+
+        STUDENTS.forEach((s) => {
+          const allStuRecs = records.filter((r) => r.seatNo === s.seatNo);
+          const totalScore = s.init + allStuRecs.reduce((a, r) => a + r.points, 0);
+          const wkRecs = allStuRecs.filter((r) => r.week === wkNum && (catFilter === 'all' || isContactOrWeekly(r.reason)));
+          const wkSum = wkRecs.reduce((a, r) => a + r.points, 0);
+
+          html += '<tr>' +
+            '<td><button type="button" data-jump-student="' + s.seatNo + '" style="font-weight:800;color:var(--ink);text-align:left;">#' + s.seatNo.padStart(2, '0') + ' ' + esc(s.name) + '</button></td>' +
+            wkObj.days.map((d) => {
+              const dRecs = wkRecs.filter((r) => r.date === d);
+              if (!dRecs.length) return '<td style="color:#d6d3cd;">✓</td>';
+              const chips = dRecs.map((r) => {
+                const cls = r.flagTag ? 'flagged' : (r.points > 0 ? 'pos' : '');
+                const short = r.reason.replace(/^聯絡簿/, '').replace(/^週報表/, '週報');
+                return '<span class="cell-chip ' + cls + '" data-open-flag="' + r.id + '" title="點擊標註或查看備註">' +
+                  (r.flagTag ? '📌' : '') + esc(short) + ' (' + (r.points > 0 ? '+' : '') + r.points + ')' +
+                '</span>';
+              }).join('');
+              return '<td><div class="cell-chips">' + chips + '</div></td>';
+            }).join('') +
+            '<td style="text-align:right;font-family:monospace;font-weight:800;color:' + (wkSum < 0 ? 'var(--red)' : (wkSum > 0 ? 'var(--emerald)' : 'var(--muted)')) + ';">' + (wkSum > 0 ? '+' : '') + wkSum + '</td>' +
+            '<td style="text-align:right;font-family:monospace;font-weight:900;">' + totalScore + '</td>' +
+          '</tr>';
+        });
+        html += '</tbody></table>';
+        box.innerHTML = html;
+        return;
+      }
+
+      if (activeStatView === 'ranking') {
+        const sortBy = $('rankingSortSelect').value;
+        const stats = STUDENTS.map((s) => {
+          const myRecs = records.filter((r) => r.seatNo === s.seatNo);
+          const totalScore = s.init + myRecs.reduce((a, r) => a + r.points, 0);
+          const wk10 = myRecs.filter((r) => r.week === 10).reduce((a, r) => a + r.points, 0);
+          const contactCnt = myRecs.filter((r) => r.reason.startsWith('聯絡簿') && r.points < 0).length;
+          const weeklyCnt = myRecs.filter((r) => r.reason.startsWith('週報表') && r.points < 0).length;
+          const flagCnt = myRecs.filter((r) => r.flagTag).length;
+          return { ...s, totalScore, wk10, contactCnt, weeklyCnt, flagCnt };
+        });
+
+        // 計算總分排名
+        const byScore = [...stats].sort((a, b) => b.totalScore - a.totalScore);
+        stats.forEach((st) => { st.rank = byScore.findIndex((x) => x.totalScore === st.totalScore) + 1; });
+
+        if (sortBy === 'scoreDesc') stats.sort((a, b) => b.totalScore - a.totalScore || Number(a.seatNo) - Number(b.seatNo));
+        else if (sortBy === 'contactDesc') stats.sort((a, b) => (b.contactCnt + b.weeklyCnt) - (a.contactCnt + a.weeklyCnt));
+        else if (sortBy === 'weekAsc') stats.sort((a, b) => a.wk10 - b.wk10);
+        else stats.sort((a, b) => Number(a.seatNo) - Number(b.seatNo));
+
+        box.innerHTML = '<table class="stat-table"><thead><tr>' +
+          '<th>座號</th><th>姓名</th><th>目前總分 (初始100)</th><th>班級排名</th><th>本週增減</th><th>聯絡簿異常累計</th><th>週報表異常累計</th><th>📌 待處理標註</th><th>明細</th>' +
+        '</tr></thead><tbody>' +
+        stats.map((st) => '<tr>' +
+          '<td style="font-family:monospace;font-weight:800;">#' + st.seatNo.padStart(2, '0') + '</td>' +
+          '<td style="font-weight:800;">' + esc(st.name) + '</td>' +
+          '<td style="font-family:monospace;font-weight:900;font-size:1rem;color:' + (st.totalScore >= 100 ? 'var(--emerald)' : 'var(--primary)') + ';">' + st.totalScore + '</td>' +
+          '<td style="font-family:monospace;font-weight:700;">第 ' + st.rank + ' 名</td>' +
+          '<td style="font-family:monospace;font-weight:800;color:' + (st.wk10 < 0 ? 'var(--red)' : (st.wk10 > 0 ? 'var(--emerald)' : 'var(--muted)')) + ';">' + (st.wk10 > 0 ? '+' : '') + st.wk10 + '</td>' +
+          '<td>' + (st.contactCnt ? '<span class="cell-chip">' + st.contactCnt + ' 次</span>' : '<span style="color:#ccc;">0</span>') + '</td>' +
+          '<td>' + (st.weeklyCnt ? '<span class="cell-chip">' + st.weeklyCnt + ' 次</span>' : '<span style="color:#ccc;">0</span>') + '</td>' +
+          '<td>' + (st.flagCnt ? '<span class="cell-chip flagged">📌 ' + st.flagCnt + ' 筆</span>' : '-') + '</td>' +
+          '<td><button type="button" class="btn-flag" data-jump-student="' + st.seatNo + '">查看各週 →</button></td>' +
+        '</tr>').join('') +
+        '</tbody></table>';
+        return;
+      }
+
+      // 待處理標註清單
+      const flagged = records.filter((r) => r.flagTag);
+      if (!flagged.length) {
+        box.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);">目前沒有任何待確認的 📌 標註事項 🎉</div>';
+        return;
+      }
+      box.innerHTML = '<table class="stat-table"><thead><tr>' +
+        '<th>日期</th><th>學生</th><th>原登記項目與點數</th><th>📌 小老師標註內容</th><th>操作</th>' +
+      '</tr></thead><tbody>' +
+      flagged.map((r) => {
+        const stu = getStudent(r.seatNo);
+        return '<tr>' +
+          '<td style="font-family:monospace;">' + r.date + ' (' + formatWeekday(r.date) + ')</td>' +
+          '<td style="font-weight:800;">#' + stu.seatNo.padStart(2, '0') + ' ' + esc(stu.name) + '</td>' +
+          '<td><b>' + esc(r.reason) + '</b> <span class="stamp-pts neg">' + r.points + '</span></td>' +
+          '<td><span class="cell-chip flagged">📌 ' + esc(r.flagTag) + '</span> ' + esc(r.flagNote || '') + '</td>' +
+          '<td style="display:flex;gap:6px;flex-wrap:wrap;">' +
+            '<button type="button" class="btn-flag" data-open-flag="' + r.id + '">編輯標註</button>' +
+            (currentRole === 'teacher'
+              ? '<button type="button" class="btn-teacher-act ok" data-change-late="' + r.id + '">✅ 改為遲交(-0.5)</button>' +
+                '<button type="button" class="btn-teacher-act del" data-del-rec="' + r.id + '">🗑️ 核准撤銷刪除</button>' +
+                '<button type="button" class="btn-teacher-act ok" data-clear-flag="' + r.id + '">👌 已讀保留原紀錄</button>'
+              : '<span style="font-size:0.78rem;color:var(--muted);">等待導師確認</span>') +
+          '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table>';
+    }
+
+    function renderAll() {
+      updateRoleUI();
+      renderStamps();
+      renderSeatGrid();
+      renderTodayList();
+      renderPersonalTab();
+      renderStatsTab();
+    }
+
+    /* ============ 事件綁定 ============ */
+    function initEvents() {
+      $('checkinDate').value = '2026-11-07';
+
+      // 登入表單
+      $('gateForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const v = ($('gateInput').value || '').trim();
+        if (!v) { $('gateErr').textContent = '請輸入通行碼（預覽可輸入 805）'; return; }
+        enterApp(v.toLowerCase() === 'teacher' ? 'teacher' : 'cadre');
+      });
+      document.querySelectorAll('[data-quick-role]').forEach((btn) => {
+        btn.addEventListener('click', () => enterApp(btn.getAttribute('data-quick-role')));
+      });
+
+      // 切換小老師／導師模式
+      $('roleToggleBtn').addEventListener('click', () => {
+        currentRole = currentRole === 'cadre' ? 'teacher' : 'cadre';
+        showToast(currentRole === 'teacher' ? '已切換為「💻 導師電腦管理模式」' : '已切換為「📱 小老師平板登記模式」');
+        renderAll();
+      });
+
+      // 頂部三大頁籤切換
+      document.querySelectorAll('.main-tab').forEach((tab) => {
+        tab.addEventListener('click', () => {
+          activeTab = tab.getAttribute('data-tab');
+          document.querySelectorAll('.main-tab').forEach((t) => t.classList.toggle('active', t === tab));
+          document.querySelectorAll('.tab-panel').forEach((p) => p.classList.toggle('active', p.id === 'panel-' + activeTab));
+          renderAll();
+        });
+      });
+
+      $('jumpToFlagsBtn').addEventListener('click', () => {
+        activeTab = 'stats';
+        activeStatView = 'flags';
+        document.querySelectorAll('.main-tab').forEach((t) => t.classList.toggle('active', t.getAttribute('data-tab') === 'stats'));
+        document.querySelectorAll('.tab-panel').forEach((p) => p.classList.toggle('active', p.id === 'panel-stats'));
+        document.querySelectorAll('[data-stat-view]').forEach((b) => b.classList.toggle('active', b.getAttribute('data-stat-view') === 'flags'));
+        renderStatsTab();
+      });
+
+      // 日期變更
+      $('checkinDate').addEventListener('change', () => {
+        selectedSeats.clear();
+        renderSeatGrid();
+        renderTodayList();
+      });
+
+      // 項目分類切換（聯絡簿＆週報表 vs 其他）
+      document.querySelectorAll('[data-cat]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          activeCat = btn.getAttribute('data-cat');
+          document.querySelectorAll('[data-cat]').forEach((b) => b.classList.toggle('active', b === btn));
+          renderStamps();
+          updateSubmitBar();
+        });
+      });
+
+      // 點選事由印章
+      $('stampGrid').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-reason]');
+        if (!b) return;
+        selectedReason = b.getAttribute('data-reason');
+        selectedPoints = parseFloat(b.getAttribute('data-default-pts'));
+        renderStamps();
+        updateSubmitBar();
+      });
+
+      // 點選點數按鈕
+      $('ptsQuickGroup').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-pts]');
+        if (!b) return;
+        selectedPoints = parseFloat(b.getAttribute('data-pts'));
+        renderPointsChips();
+        updateSubmitBar();
+      });
+
+      // 點選座號方格
+      $('seatGrid').addEventListener('click', (e) => {
+        const card = e.target.closest('[data-seat]');
+        if (!card) return;
+        const sno = card.getAttribute('data-seat');
+        if (selectedSeats.has(sno)) selectedSeats.delete(sno);
+        else selectedSeats.add(sno);
+        renderSeatGrid();
+      });
+
+      $('clearSeatsBtn').addEventListener('click', () => {
+        selectedSeats.clear();
+        renderSeatGrid();
+      });
+
+      // 送出登記
+      $('submitCheckinBtn').addEventListener('click', () => {
+        if (!selectedSeats.size) return;
+        const dateStr = $('checkinDate').value;
+        const wk = getWeekFromDate(dateStr);
+        const rem = ($('checkinRemark').value || '').trim();
+        let added = 0, skipped = 0;
+
+        Array.from(selectedSeats).sort((a, b) => Number(a) - Number(b)).forEach((sno) => {
+          const dup = records.some((r) => r.date === dateStr && r.seatNo === sno && r.reason === selectedReason);
+          if (dup) { skipped++; return; }
+          records.unshift({
+            id: Date.now() + Math.floor(Math.random() * 10000),
+            seatNo: sno,
+            date: dateStr,
+            week: wk,
+            reason: selectedReason,
+            points: selectedPoints,
+            remarks: rem,
+            flagTag: '',
+            flagNote: ''
+          });
+          added++;
+        });
+
+        selectedSeats.clear();
+        $('checkinRemark').value = '';
+        renderAll();
+        if (skipped > 0) {
+          showToast('✅ 已新增 ' + added + ' 筆（另有 ' + skipped + ' 人今日已登記過相同事由，自動防重複略過！）');
+        } else {
+          showToast('✅ 成功登記 ' + added + ' 筆「' + selectedReason + '」紀錄！');
+        }
+      });
+
+      // 個人分頁：切換座號與週次
+      $('personalSeatStrip').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-p-seat]');
+        if (!b) return;
+        personalSeat = b.getAttribute('data-p-seat');
+        renderPersonalTab();
+      });
+      $('personalWeekFilter').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-p-week]');
+        if (!b) return;
+        personalWeek = b.getAttribute('data-p-week');
+        renderPersonalTab();
+      });
+
+      // 統計分頁：視角與篩選切換
+      document.querySelectorAll('[data-stat-view]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          activeStatView = btn.getAttribute('data-stat-view');
+          document.querySelectorAll('[data-stat-view]').forEach((b) => b.classList.toggle('active', b === btn));
+          renderStatsTab();
+        });
+      });
+      $('matrixWeekSelect').addEventListener('change', renderStatsTab);
+      $('matrixCategoryFilter').addEventListener('change', renderStatsTab);
+      $('rankingSortSelect').addEventListener('change', renderStatsTab);
+
+      // 全域委派：開啟 📌 標註彈窗、跳轉學生個人頁、導師核准刪除
+      document.body.addEventListener('click', (e) => {
+        const flagBtn = e.target.closest('[data-open-flag]');
+        if (flagBtn) {
+          const rid = Number(flagBtn.getAttribute('data-open-flag'));
+          const rec = records.find((r) => r.id === rid);
+          if (!rec) return;
+          editingFlagRecId = rid;
+          const stu = getStudent(rec.seatNo);
+          $('flagModalTargetInfo').textContent = '#' + stu.seatNo.padStart(2, '0') + ' ' + stu.name + ' ｜ ' + rec.date + ' ｜ ' + rec.reason + ' (' + rec.points + '分)';
+          selectedFlagPreset = rec.flagTag || '已補交';
+          document.querySelectorAll('#flagPresetGrid .flag-preset-btn').forEach((b) => {
+            b.classList.toggle('active', b.getAttribute('data-flag-tag') === selectedFlagPreset);
+          });
+          $('flagModalNote').value = rec.flagNote || '';
+          $('flagModal').classList.remove('hidden');
+          return;
+        }
+
+        const jumpBtn = e.target.closest('[data-jump-student]');
+        if (jumpBtn) {
+          personalSeat = jumpBtn.getAttribute('data-jump-student');
+          activeTab = 'personal';
+          document.querySelectorAll('.main-tab').forEach((t) => t.classList.toggle('active', t.getAttribute('data-tab') === 'personal'));
+          document.querySelectorAll('.tab-panel').forEach((p) => p.classList.toggle('active', p.id === 'panel-personal'));
+          renderPersonalTab();
+          return;
+        }
+
+        const delBtn = e.target.closest('[data-del-rec]');
+        if (delBtn) {
+          const rid = Number(delBtn.getAttribute('data-del-rec'));
+          records = records.filter((r) => r.id !== rid);
+          showToast('🗑️ 導師已刪除該筆紀錄');
+          renderAll();
+          return;
+        }
+
+        const clrBtn = e.target.closest('[data-clear-flag]');
+        if (clrBtn) {
+          const rid = Number(clrBtn.getAttribute('data-clear-flag'));
+          const rec = records.find((r) => r.id === rid);
+          if (rec) {
+            rec.remarks = (rec.remarks ? rec.remarks + ' · ' : '') + '[已確認標註：' + rec.flagTag + ']';
+            rec.flagTag = '';
+            rec.flagNote = '';
+          }
+          showToast('👌 已確認並轉入一般備註');
+          renderAll();
+          return;
+        }
+
+        const lateBtn = e.target.closest('[data-change-late]');
+        if (lateBtn) {
+          const rid = Number(lateBtn.getAttribute('data-change-late'));
+          const rec = records.find((r) => r.id === rid);
+          if (rec) {
+            rec.reason = '聯絡簿遲交';
+            rec.points = -0.5;
+            rec.remarks = '補交改列遲交';
+            rec.flagTag = '';
+            rec.flagNote = '';
+          }
+          showToast('✅ 已將該筆紀錄改為「聯絡簿遲交 (-0.5)」');
+          renderAll();
+          return;
+        }
+      });
+
+      // 📌 標註彈窗內部事件
+      $('flagPresetGrid').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-flag-tag]');
+        if (!b) return;
+        selectedFlagPreset = b.getAttribute('data-flag-tag');
+        document.querySelectorAll('#flagPresetGrid .flag-preset-btn').forEach((btn) => btn.classList.toggle('active', btn === b));
+      });
+      $('closeFlagModalBtn').addEventListener('click', () => $('flagModal').classList.add('hidden'));
+      $('saveFlagModalBtn').addEventListener('click', () => {
+        const rec = records.find((r) => r.id === editingFlagRecId);
+        if (rec) {
+          rec.flagTag = selectedFlagPreset;
+          rec.flagNote = ($('flagModalNote').value || '').trim();
+        }
+        $('flagModal').classList.add('hidden');
+        showToast('📌 已加上標註「' + selectedFlagPreset + '」，將提醒導師確認！');
+        renderAll();
+      });
+    }
+
+    initEvents();
+  })();
+  </script>
+</body>
+</html>
