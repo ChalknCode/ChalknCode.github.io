@@ -193,10 +193,10 @@
     /* 事由印章按鈕區 */
     .section-label {
       font-size: 0.8rem; font-weight: 700; color: var(--muted);
-      letter-spacing: 0.06em; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;
+      letter-spacing: 0.06em; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
     }
     .stamp-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
       gap: 8px; margin-bottom: 14px;
     }
     .stamp-btn {
@@ -207,13 +207,27 @@
     .stamp-btn:hover { border-color: #d0c8bc; background: #fff; }
     .stamp-btn.active {
       border-color: var(--primary); background: var(--primary-soft);
-      box-shadow: 0 3px 10px rgba(184, 74, 98, 0.12);
+      box-shadow: 0 3px 10px rgba(184, 74, 98, 0.14);
+      transform: translateY(-1px);
     }
     .stamp-btn.active.plus { border-color: var(--emerald); background: var(--emerald-soft); }
-    .stamp-name { font-weight: 700; font-size: 0.92rem; color: var(--ink); line-height: 1.25; }
+    .stamp-left { display: flex; align-items: center; gap: 7px; min-width: 0; }
+    .stamp-check {
+      width: 18px; height: 18px; border-radius: 5px; border: 2px solid #c7bfb2;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 900; color: transparent; background: #fff; flex-shrink: 0;
+      transition: all 0.14s;
+    }
+    .stamp-btn.active .stamp-check {
+      background: var(--primary); border-color: var(--primary); color: #fff;
+    }
+    .stamp-btn.active.plus .stamp-check {
+      background: var(--emerald); border-color: var(--emerald); color: #fff;
+    }
+    .stamp-name { font-weight: 700; font-size: 0.9rem; color: var(--ink); line-height: 1.25; }
     .stamp-pts {
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-weight: 800; font-size: 0.86rem; padding: 2px 8px; border-radius: 999px; flex-shrink: 0;
+      font-weight: 800; font-size: 0.84rem; padding: 2px 8px; border-radius: 999px; flex-shrink: 0;
     }
     .stamp-pts.neg { background: var(--red-soft); color: var(--red); }
     .stamp-pts.pos { background: var(--emerald-soft); color: var(--emerald); }
@@ -255,14 +269,25 @@
       background: var(--primary); color: #fff; border-color: var(--primary);
       transform: translateY(-2px); box-shadow: 0 6px 14px rgba(184, 74, 98, 0.25);
     }
-    .seat-top { display: flex; align-items: baseline; justify-content: space-between; width: 100%; }
+    .seat-card.has-draft:not(.selected) {
+      border-color: var(--primary); background: #fff8fa;
+      box-shadow: 0 3px 10px rgba(184, 74, 98, 0.1);
+    }
+    .seat-top { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 4px; }
     .seat-num {
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       font-size: 0.82rem; font-weight: 800; color: var(--muted);
     }
     .seat-card.selected .seat-num { color: rgba(255, 255, 255, 0.85); }
+    .seat-draft-badge {
+      font-size: 0.66rem; font-weight: 800; padding: 1px 6px; border-radius: 999px;
+      background: var(--primary); color: #fff;
+    }
+    .seat-card.selected .seat-draft-badge {
+      background: rgba(255, 255, 255, 0.28); color: #fff;
+    }
     .seat-name { font-size: 1.02rem; font-weight: 800; }
-    .seat-tags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+    .seat-tags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; width: 100%; }
     .seat-mini-tag {
       font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 999px;
       background: var(--red-soft); color: var(--red); max-width: 100%;
@@ -270,19 +295,48 @@
     }
     .seat-mini-tag.pos { background: var(--emerald-soft); color: var(--emerald); }
     .seat-mini-tag.flagged { background: var(--amber-soft); color: var(--amber); }
-    .seat-card.selected .seat-mini-tag { background: rgba(255, 255, 255, 0.22); color: #fff; }
-
-    /* 底部送出列 */
-    .submit-bar {
-      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-      background: #fdfaf6; border: 1.5px solid var(--line); border-radius: 14px; padding: 12px 16px;
+    .seat-mini-tag.draft {
+      background: #ffe0e6; color: #962d43; border: 1px solid #f2a6b6;
+      display: inline-flex; align-items: center; gap: 3px;
     }
+    .seat-card.selected .seat-mini-tag { background: rgba(255, 255, 255, 0.22); color: #fff; border-color: rgba(255,255,255,0.4); }
+
+    /* 底部待送出暫存清單＆送出列 */
+    .submit-bar {
+      display: flex; flex-direction: column; gap: 10px;
+      background: #fdfaf6; border: 1.5px solid var(--line); border-radius: 14px; padding: 14px 16px;
+    }
+    .submit-bar.has-items {
+      border-color: #e6b4c0; background: #fff9fb;
+    }
+    .submit-bar-top {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    }
+    .draft-chips-wrap {
+      display: flex; flex-wrap: wrap; gap: 6px; padding-top: 4px;
+      max-height: 150px; overflow-y: auto;
+    }
+    .draft-chips-wrap.hidden { display: none; }
+    .draft-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 700;
+      background: #fff; border: 1.5px solid #e4c1ca; color: var(--ink);
+      box-shadow: 0 1px 4px rgba(184, 74, 98, 0.08);
+    }
+    .draft-chip .dc-seat { color: var(--primary); font-weight: 800; font-family: monospace; }
+    .draft-chip .dc-pts { font-family: monospace; font-weight: 800; color: var(--red); }
+    .draft-chip .dc-pts.pos { color: var(--emerald); }
+    .draft-chip .dc-del {
+      width: 18px; height: 18px; border-radius: 50%; background: #f3ecee; color: #78716c;
+      display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem;
+    }
+    .draft-chip .dc-del:hover { background: var(--red); color: #fff; }
     .submit-summary { font-size: 0.92rem; font-weight: 700; color: var(--ink); }
     .submit-summary b { color: var(--primary); }
     .submit-btn {
       padding: 12px 24px; border-radius: 12px; background: var(--primary); color: #fff;
       font-weight: 800; font-size: 0.98rem; box-shadow: 0 4px 14px rgba(184, 74, 98, 0.25);
-      transition: all 0.15s;
+      transition: all 0.15s; white-space: nowrap;
     }
     .submit-btn:disabled { opacity: 0.4; pointer-events: none; }
     .submit-btn:hover { background: var(--primary-dark); }
@@ -494,13 +548,17 @@
           </div>
 
           <div class="section-label">
-            <span>STEP 1 · 點選計點事由（開頭為「聯絡簿」或「週報表」自動歸入第一類）</span>
+            <span>STEP 1 · 點選計點事由（☑️ 可同時勾選多項；點完座號後換事由也會自動保留暫存）</span>
+            <div>
+              <span id="selectedReasonsHint" style="color:var(--primary);font-weight:800;margin-right:8px;">已勾選 1 項</span>
+              <button type="button" id="resetReasonsBtn" style="color:var(--indigo);font-weight:700;font-size:0.82rem;">重設事由</button>
+            </div>
           </div>
           <div class="stamp-grid" id="stampGrid"></div>
 
           <div class="pts-remark-bar">
             <div class="pts-quick-group" id="ptsQuickGroup">
-              <span>點數：</span>
+              <span id="ptsBarLabel">單項點數微調：</span>
               <button type="button" class="pts-chip neg" data-pts="-2">-2</button>
               <button type="button" class="pts-chip neg active" data-pts="-1">-1</button>
               <button type="button" class="pts-chip neg" data-pts="-0.5">-0.5</button>
@@ -512,16 +570,19 @@
           </div>
 
           <div class="section-label">
-            <span>STEP 2 · 點選學生座號（方格內會直接顯示該日已登記狀態，防止重複扣分）</span>
+            <span>STEP 2 · 點選學生座號（可跨項目連續點選不同座號，全部點完再一次送出）</span>
             <div>
-              <button type="button" id="clearSeatsBtn" style="color:var(--primary);font-weight:700;font-size:0.82rem;">清空選取</button>
+              <button type="button" id="clearSeatsBtn" style="color:var(--primary);font-weight:700;font-size:0.82rem;">清空待送出暫存</button>
             </div>
           </div>
           <div class="seat-grid" id="seatGrid"></div>
 
-          <div class="submit-bar">
-            <div class="submit-summary" id="submitSummary">請先在上方勾選要登記的座號</div>
-            <button type="button" class="submit-btn" id="submitCheckinBtn" disabled>確認送出登記</button>
+          <div class="submit-bar" id="submitBarBox">
+            <div class="submit-bar-top">
+              <div class="submit-summary" id="submitSummary">請先在上方勾選事由與學生座號（可累積多項後一次送出）</div>
+              <button type="button" class="submit-btn" id="submitCheckinBtn" disabled>🚀 確認一次送出</button>
+            </div>
+            <div class="draft-chips-wrap hidden" id="draftChipsWrap"></div>
           </div>
         </div>
 
@@ -693,14 +754,24 @@
     let currentRole = 'cadre';          // 'cadre' (小老師平板) | 'teacher' (導師電腦)
     let activeTab = 'checkin';
     let activeCat = 'contact';          // 'contact' | 'other'
-    let selectedReason = LIFE_ITEMS[0].name;
-    let selectedPoints = LIFE_ITEMS[0].defaultPts;
-    let selectedSeats = new Set();
+    // 支援「同時勾選多項事由」＋「跨項目暫存多筆後一次送出」
+    let selectedReasons = [LIFE_ITEMS[0].name];
+    let isDefaultPreselected = true;    // 初始預設選中第一項，若使用者直接點其他事由則先替換預設項，連點第二項即進入多選
+    let customPtsMap = {};              // { [reasonName]: number }
+    LIFE_ITEMS.forEach((it) => { customPtsMap[it.name] = it.defaultPts; });
+    let hasStampedSinceReasonPick = false; // 點過座號後，再點新事由會自動切換為新事由（舊座號保留在暫存區）
+    let pendingDrafts = [];             // [{ draftId, seatNo, date, reason, points, remarks }]
     let personalSeat = '3';
     let personalWeek = 'all';
     let activeStatView = 'matrix';      // 'matrix' | 'ranking' | 'flags'
     let editingFlagRecId = null;
     let selectedFlagPreset = '已補交';
+
+    function getReasonPts(reasonName) {
+      if (customPtsMap[reasonName] !== undefined) return customPtsMap[reasonName];
+      const found = LIFE_ITEMS.find((x) => x.name === reasonName);
+      return found ? found.defaultPts : -1;
+    }
 
     const $ = (id) => document.getElementById(id);
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -765,60 +836,119 @@
     /* ============ 分頁 1：快速登記台渲染 ============ */
     function renderStamps() {
       const items = LIFE_ITEMS.filter((it) => (activeCat === 'contact' ? isContactOrWeekly(it.name) : !isContactOrWeekly(it.name)));
-      if (!items.some((it) => it.name === selectedReason) && items.length) {
-        selectedReason = items[0].name;
-        selectedPoints = items[0].defaultPts;
-      }
       $('stampGrid').innerHTML = items.map((it) => {
-        const isAct = it.name === selectedReason;
-        const ptsStr = (it.defaultPts > 0 ? '+' : '') + it.defaultPts;
-        return '<button type="button" class="stamp-btn ' + (isAct ? 'active ' : '') + (it.defaultPts > 0 ? 'plus' : '') + '" data-reason="' + esc(it.name) + '" data-default-pts="' + it.defaultPts + '">' +
-          '<span class="stamp-name">' + esc(it.name) + '</span>' +
-          '<span class="stamp-pts ' + (it.defaultPts > 0 ? 'pos' : 'neg') + '">' + ptsStr + '</span>' +
+        const isAct = selectedReasons.includes(it.name);
+        const curPts = getReasonPts(it.name);
+        const ptsStr = (curPts > 0 ? '+' : '') + curPts;
+        return '<button type="button" class="stamp-btn ' + (isAct ? 'active ' : '') + (curPts > 0 ? 'plus' : '') + '" data-reason="' + esc(it.name) + '">' +
+          '<span class="stamp-left">' +
+            '<span class="stamp-check">' + (isAct ? '✓' : '') + '</span>' +
+            '<span class="stamp-name">' + esc(it.name) + '</span>' +
+          '</span>' +
+          '<span class="stamp-pts ' + (curPts > 0 ? 'pos' : 'neg') + '">' + ptsStr + '</span>' +
         '</button>';
       }).join('');
+
+      const hint = $('selectedReasonsHint');
+      if (hint) {
+        if (selectedReasons.length === 0) {
+          hint.textContent = '尚未勾選事由';
+        } else {
+          hint.textContent = '目前勾選 ' + selectedReasons.length + ' 項：' + selectedReasons.map((r) => r.replace(/^聯絡簿/, '')).join('＋');
+        }
+      }
       renderPointsChips();
     }
 
     function renderPointsChips() {
+      const lastReason = selectedReasons[selectedReasons.length - 1] || LIFE_ITEMS[0].name;
+      const activePts = getReasonPts(lastReason);
+      const lbl = $('ptsBarLabel');
+      if (lbl) {
+        lbl.textContent = selectedReasons.length > 1
+          ? '微調「' + lastReason.replace(/^聯絡簿/, '') + '」點數：'
+          : '點數：';
+      }
       document.querySelectorAll('#ptsQuickGroup .pts-chip').forEach((btn) => {
         const v = parseFloat(btn.getAttribute('data-pts'));
-        btn.classList.toggle('active', v === selectedPoints);
+        btn.classList.toggle('active', v === activePts);
       });
     }
 
     function renderSeatGrid() {
       const dateStr = $('checkinDate').value;
       const dayRecs = records.filter((r) => r.date === dateStr);
+      const dayDrafts = pendingDrafts.filter((d) => d.date === dateStr);
+
       $('seatGrid').innerHTML = STUDENTS.map((s) => {
-        const isSel = selectedSeats.has(s.seatNo);
+        const myDrafts = dayDrafts.filter((d) => d.seatNo === s.seatNo);
+        const hasAllActiveReasons = selectedReasons.length > 0 && selectedReasons.every((rName) => myDrafts.some((d) => d.reason === rName));
+        const hasAnyDraft = myDrafts.length > 0;
         const myRecs = dayRecs.filter((r) => r.seatNo === s.seatNo);
-        const tagsHtml = myRecs.map((r) => {
+
+        const draftTagsHtml = myDrafts.map((d) => {
+          const shortName = d.reason.replace(/^聯絡簿/, '').replace(/^週報表/, '週報');
+          const ptsStr = (d.points > 0 ? '+' : '') + d.points;
+          return '<span class="seat-mini-tag draft" data-del-draft="' + d.draftId + '" title="點擊移除此項暫存">⏳' + esc(shortName) + '(' + ptsStr + ') ×</span>';
+        }).join('');
+
+        const savedTagsHtml = myRecs.map((r) => {
           const shortName = r.reason.replace(/^聯絡簿/, '').replace(/^週報表/, '週報');
           const cls = r.flagTag ? 'flagged' : (r.points > 0 ? 'pos' : '');
-          return '<span class="seat-mini-tag ' + cls + '">' + (r.flagTag ? '📌' : '') + esc(shortName) + '</span>';
+          return '<span class="seat-mini-tag ' + cls + '">' + (r.flagTag ? '📌' : '✓') + esc(shortName) + '</span>';
         }).join('');
-        return '<button type="button" class="seat-card ' + (isSel ? 'selected' : '') + '" data-seat="' + s.seatNo + '">' +
-          '<div class="seat-top"><span class="seat-num">#' + s.seatNo.padStart(2, '0') + '</span></div>' +
+
+        const cardCls = hasAllActiveReasons ? 'selected' : (hasAnyDraft ? 'has-draft' : '');
+        const badgeHtml = hasAnyDraft ? '<span class="seat-draft-badge">待送 ' + myDrafts.length + '</span>' : '';
+
+        return '<button type="button" class="seat-card ' + cardCls + '" data-seat="' + s.seatNo + '">' +
+          '<div class="seat-top"><span class="seat-num">#' + s.seatNo.padStart(2, '0') + '</span>' + badgeHtml + '</div>' +
           '<div class="seat-name">' + esc(s.name) + '</div>' +
-          (tagsHtml ? '<div class="seat-tags">' + tagsHtml + '</div>' : '') +
+          ((draftTagsHtml || savedTagsHtml) ? '<div class="seat-tags">' + draftTagsHtml + savedTagsHtml + '</div>' : '') +
         '</button>';
       }).join('');
       updateSubmitBar();
     }
 
     function updateSubmitBar() {
-      const count = selectedSeats.size;
+      const dateStr = $('checkinDate').value;
+      const dayDrafts = pendingDrafts.filter((d) => d.date === dateStr);
+      const count = dayDrafts.length;
       const btn = $('submitCheckinBtn');
       const sum = $('submitSummary');
+      const barBox = $('submitBarBox');
+      const chipsWrap = $('draftChipsWrap');
+
+      barBox.classList.toggle('has-items', count > 0);
+
       if (count === 0) {
-        sum.innerHTML = '請點選上方學生座號進行登記（目前事由：<b>' + esc(selectedReason) + '</b>）';
+        const activeStr = selectedReasons.length
+          ? selectedReasons.map((r) => r + '(' + (getReasonPts(r) > 0 ? '+' : '') + getReasonPts(r) + ')').join('、')
+          : '請先勾選上方事由';
+        sum.innerHTML = '目前選取事由：<b>' + esc(activeStr) + '</b> · 請點選座號加入待送出清單（可跨項目連續點選）';
+        btn.textContent = '🚀 確認一次送出';
         btn.disabled = true;
+        chipsWrap.classList.add('hidden');
+        chipsWrap.innerHTML = '';
       } else {
-        const list = Array.from(selectedSeats).sort((a, b) => Number(a) - Number(b)).map((no) => no + '號').join('、');
-        const ptsStr = (selectedPoints > 0 ? '+' : '') + selectedPoints;
-        sum.innerHTML = '已選 <b>' + count + ' 人</b>（' + list + '）· 事由：<b>' + esc(selectedReason) + ' (' + ptsStr + '分)</b>';
+        const uniqueSeats = new Set(dayDrafts.map((d) => d.seatNo)).size;
+        const uniqueReasons = new Set(dayDrafts.map((d) => d.reason)).size;
+        sum.innerHTML = '🛒 待送出暫存清單：共 <b>' + uniqueSeats + ' 人 / ' + count + ' 筆項目</b>（涵蓋 ' + uniqueReasons + ' 種事由，可繼續換事由點選其他人，最後一次送出）';
+        btn.textContent = '🚀 確認一次送出（共 ' + count + ' 筆）';
         btn.disabled = false;
+        chipsWrap.classList.remove('hidden');
+
+        const sortedDrafts = [...dayDrafts].sort((a, b) => Number(a.seatNo) - Number(b.seatNo));
+        chipsWrap.innerHTML = sortedDrafts.map((d) => {
+          const stu = getStudent(d.seatNo);
+          const ptsStr = (d.points > 0 ? '+' : '') + d.points;
+          return '<span class="draft-chip">' +
+            '<span class="dc-seat">#' + stu.seatNo.padStart(2, '0') + ' ' + esc(stu.name) + '</span>' +
+            '<span>' + esc(d.reason) + '</span>' +
+            '<span class="dc-pts ' + (d.points > 0 ? 'pos' : '') + '">' + ptsStr + '</span>' +
+            '<button type="button" class="dc-del" data-del-draft="' + d.draftId + '" title="移除此筆">✕</button>' +
+          '</span>';
+        }).join('');
       }
     }
 
@@ -1097,7 +1227,6 @@
 
       // 日期變更
       $('checkinDate').addEventListener('change', () => {
-        selectedSeats.clear();
         renderSeatGrid();
         renderTodayList();
       });
@@ -1112,72 +1241,162 @@
         });
       });
 
-      // 點選事由印章
+      // 點選事由印章（支援同時勾選多項，且點過座號後換事由會自動保留先前暫存）
       $('stampGrid').addEventListener('click', (e) => {
         const b = e.target.closest('[data-reason]');
         if (!b) return;
-        selectedReason = b.getAttribute('data-reason');
-        selectedPoints = parseFloat(b.getAttribute('data-default-pts'));
+        const rName = b.getAttribute('data-reason');
+        const clickedCheck = Boolean(e.target.closest('.stamp-check'));
+
+        if (hasStampedSinceReasonPick) {
+          // 剛剛已經用上一組事由點過座號了（已存入暫存區），現在點新事由代表開始下一輪挑選
+          selectedReasons = [rName];
+          hasStampedSinceReasonPick = false;
+          isDefaultPreselected = false;
+        } else if (isDefaultPreselected && !clickedCheck && rName !== selectedReasons[0]) {
+          // 剛進頁面還沒自己點過事由時，第一次點別的事由先替換預設項；緊接著再點第二項就會多選疊加
+          selectedReasons = [rName];
+          isDefaultPreselected = false;
+        } else {
+          // 還沒點座號前，在 STEP 1 連續點選事由可直接「多項同時勾選／取消」
+          isDefaultPreselected = false;
+          const idx = selectedReasons.indexOf(rName);
+          if (idx >= 0) {
+            selectedReasons.splice(idx, 1);
+          } else {
+            selectedReasons.push(rName);
+          }
+        }
         renderStamps();
-        updateSubmitBar();
+        renderSeatGrid();
+      });
+
+      $('resetReasonsBtn').addEventListener('click', () => {
+        const items = LIFE_ITEMS.filter((it) => (activeCat === 'contact' ? isContactOrWeekly(it.name) : !isContactOrWeekly(it.name)));
+        selectedReasons = items.length ? [items[0].name] : [];
+        hasStampedSinceReasonPick = false;
+        isDefaultPreselected = true;
+        renderStamps();
+        renderSeatGrid();
+        showToast('已重設事由選取（下方待送出暫存清單仍保留）');
       });
 
       // 點選點數按鈕
       $('ptsQuickGroup').addEventListener('click', (e) => {
         const b = e.target.closest('[data-pts]');
         if (!b) return;
-        selectedPoints = parseFloat(b.getAttribute('data-pts'));
-        renderPointsChips();
-        updateSubmitBar();
+        const newPts = parseFloat(b.getAttribute('data-pts'));
+        const lastReason = selectedReasons[selectedReasons.length - 1];
+        if (lastReason) {
+          customPtsMap[lastReason] = newPts;
+        }
+        renderStamps();
+        renderSeatGrid();
       });
 
-      // 點選座號方格
+      // 點選座號方格（把目前勾選的 1～多項事由加到該座號的待送出暫存清單）
       $('seatGrid').addEventListener('click', (e) => {
+        const delDraftEl = e.target.closest('[data-del-draft]');
+        if (delDraftEl) {
+          e.stopPropagation();
+          const did = Number(delDraftEl.getAttribute('data-del-draft'));
+          pendingDrafts = pendingDrafts.filter((d) => d.draftId !== did);
+          renderSeatGrid();
+          return;
+        }
+
         const card = e.target.closest('[data-seat]');
         if (!card) return;
+        if (!selectedReasons.length) {
+          showToast('⚠️ 請先在 STEP 1 勾選至少一項計點事由！');
+          return;
+        }
+
         const sno = card.getAttribute('data-seat');
-        if (selectedSeats.has(sno)) selectedSeats.delete(sno);
-        else selectedSeats.add(sno);
+        const dateStr = $('checkinDate').value;
+        const rem = ($('checkinRemark').value || '').trim();
+
+        const hasAll = selectedReasons.every((rName) =>
+          pendingDrafts.some((d) => d.date === dateStr && d.seatNo === sno && d.reason === rName)
+        );
+
+        if (hasAll) {
+          // 該座號已擁有目前勾選的所有事由 → 再點一下即取消這幾項
+          pendingDrafts = pendingDrafts.filter(
+            (d) => !(d.date === dateStr && d.seatNo === sno && selectedReasons.includes(d.reason))
+          );
+        } else {
+          // 把目前勾選的事由全部掛到該座號身上
+          selectedReasons.forEach((rName) => {
+            const exists = pendingDrafts.some((d) => d.date === dateStr && d.seatNo === sno && d.reason === rName);
+            if (!exists) {
+              pendingDrafts.push({
+                draftId: Date.now() + Math.floor(Math.random() * 100000),
+                seatNo: sno,
+                date: dateStr,
+                reason: rName,
+                points: getReasonPts(rName),
+                remarks: rem
+              });
+            }
+          });
+          hasStampedSinceReasonPick = true;
+        }
+        renderSeatGrid();
+      });
+
+      // 底部暫存清單移除單筆
+      $('draftChipsWrap').addEventListener('click', (e) => {
+        const delBtn = e.target.closest('[data-del-draft]');
+        if (!delBtn) return;
+        const did = Number(delBtn.getAttribute('data-del-draft'));
+        pendingDrafts = pendingDrafts.filter((d) => d.draftId !== did);
         renderSeatGrid();
       });
 
       $('clearSeatsBtn').addEventListener('click', () => {
-        selectedSeats.clear();
+        const dateStr = $('checkinDate').value;
+        pendingDrafts = pendingDrafts.filter((d) => d.date !== dateStr);
+        hasStampedSinceReasonPick = false;
         renderSeatGrid();
+        showToast('已清空當日待送出暫存清單');
       });
 
-      // 送出登記
+      // 一次送出所有暫存登記
       $('submitCheckinBtn').addEventListener('click', () => {
-        if (!selectedSeats.size) return;
         const dateStr = $('checkinDate').value;
+        const dayDrafts = pendingDrafts.filter((d) => d.date === dateStr);
+        if (!dayDrafts.length) return;
+
         const wk = getWeekFromDate(dateStr);
-        const rem = ($('checkinRemark').value || '').trim();
+        const fallbackRem = ($('checkinRemark').value || '').trim();
         let added = 0, skipped = 0;
 
-        Array.from(selectedSeats).sort((a, b) => Number(a) - Number(b)).forEach((sno) => {
-          const dup = records.some((r) => r.date === dateStr && r.seatNo === sno && r.reason === selectedReason);
+        dayDrafts.forEach((d) => {
+          const dup = records.some((r) => r.date === dateStr && r.seatNo === d.seatNo && r.reason === d.reason);
           if (dup) { skipped++; return; }
           records.unshift({
-            id: Date.now() + Math.floor(Math.random() * 10000),
-            seatNo: sno,
+            id: Date.now() + Math.floor(Math.random() * 100000),
+            seatNo: d.seatNo,
             date: dateStr,
             week: wk,
-            reason: selectedReason,
-            points: selectedPoints,
-            remarks: rem,
+            reason: d.reason,
+            points: d.points,
+            remarks: d.remarks || fallbackRem,
             flagTag: '',
             flagNote: ''
           });
           added++;
         });
 
-        selectedSeats.clear();
+        pendingDrafts = pendingDrafts.filter((d) => d.date !== dateStr);
+        hasStampedSinceReasonPick = false;
         $('checkinRemark').value = '';
         renderAll();
         if (skipped > 0) {
-          showToast('✅ 已新增 ' + added + ' 筆（另有 ' + skipped + ' 人今日已登記過相同事由，自動防重複略過！）');
+          showToast('✅ 已一次送出 ' + added + ' 筆（另有 ' + skipped + ' 筆今日已登記過相同事由，自動防重複略過！）');
         } else {
-          showToast('✅ 成功登記 ' + added + ' 筆「' + selectedReason + '」紀錄！');
+          showToast('✅ 成功一次送出 ' + added + ' 筆生活計點紀錄！');
         }
       });
 
