@@ -624,7 +624,7 @@
         if (typeof google !== 'undefined' && google.script && google.script.run) {
             return new Promise((resolve, reject) => {
                 const runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
-                if (action === 'getMultiWeekReportData') runner.getMultiWeekReportData(payload.ranges, payload.semesterName);
+                if (action === 'getMultiWeekReportData') runner.getMultiWeekReportData(payload.ranges, payload.semesterName, payload.startWeekNum, payload.weekCount);
                 else if (action === 'getCompleteReportData') runner.getCompleteReportData(payload.startDateStr, payload.endDateStr, payload.semesterName);
                 else if (action === 'saveWeekDayNotes') runner.saveWeekDayNotes(payload.semester, payload.week, payload.notesObj);
                 else if (action === 'saveWeeklyComment') runner.saveWeeklyComment(payload.semester, payload.week, payload.seatNo, payload.studentName, payload.comment);
@@ -641,17 +641,21 @@
         return null;
     }
 
-    async function fetchAllData() {
+    async function fetchAllData(useStartWeek = true) {
         const loader = getEl('global-loader');
         if (loader) loader.style.display = 'flex';
 
         const semName = getEl('input-semester').value;
+        const m = (getEl('input-start-week').value || '').match(/\d+/);
+        const startW = m ? parseInt(m[0], 10) : 7;
         const ranges = weeksList.map(w => ({ startDateStr: w.startDate, endDateStr: w.endDate }));
 
         try {
             const res = await callBackendAPI('getMultiWeekReportData', {
                 ranges: ranges,
-                semesterName: semName
+                semesterName: semName,
+                startWeekNum: useStartWeek ? startW : null,
+                weekCount: useStartWeek ? selectedWeekCount : null
             });
 
             if (res && res.success && Array.isArray(res.weeks) && res.weeks.length === weeksList.length) {
@@ -683,7 +687,7 @@
                 const badge = getEl('data-source-badge');
                 if (badge) {
                     badge.textContent = '🟢 已連線試算表';
-                    badge.className = 'text-[11px] bg-emerald-600/90 text-white px-2.5 py-1 rounded-full font-bold';
+                    badge.className = 'text-[10px] bg-emerald-600/90 text-white px-2 py-0.5 rounded-full font-bold whitespace-nowrap';
                 }
             }
         } catch (err) {
@@ -726,14 +730,14 @@
             inp.addEventListener('change', (e) => {
                 const i = Number(e.target.getAttribute('data-wk-start'));
                 weeksList[i].startDate = e.target.value;
-                updatePreview();
+                fetchAllData(false);
             });
         });
         box.querySelectorAll('[data-wk-end]').forEach(inp => {
             inp.addEventListener('change', (e) => {
                 const i = Number(e.target.getAttribute('data-wk-end'));
                 weeksList[i].endDate = e.target.value;
-                updatePreview();
+                fetchAllData(false);
             });
         });
     }
@@ -1358,13 +1362,16 @@
             btn.addEventListener('click', () => setPageSplitMode(btn.getAttribute('data-page-mode')));
         });
 
-        // 修改起始週次時，自動重算連續 N 週的區間
+        // 修改學期或起始週次時，自動重算連續 N 週的區間並向試算表抓取
+        getEl('input-semester').addEventListener('change', () => {
+            fetchAllData(true);
+        });
         getEl('input-start-week').addEventListener('change', () => {
             setWeekCount(selectedWeekCount);
         });
 
         getEl('input-seat').addEventListener('change', loadStudentData);
-        getEl('btn-refresh-data').addEventListener('click', fetchAllData);
+        getEl('btn-refresh-data').addEventListener('click', () => fetchAllData(false));
         getEl('btn-open-edit').addEventListener('click', openEditModal);
         getEl('btn-download-single').addEventListener('click', () => performExport(false));
         getEl('btn-download-all').addEventListener('click', () => performExport(true));
@@ -1376,6 +1383,16 @@
         });
         getEl('input-signature-height').addEventListener('input', updateFlex);
 
+        const showSavingStatus = (id) => {
+            const el = getEl(id); if (!el) return;
+            el.textContent = '儲存中...'; el.className = 'text-[10px] font-bold text-amber-500 opacity-100 transition';
+        };
+        const showSavedStatus = (id) => {
+            const el = getEl(id); if (!el) return;
+            el.textContent = '✓ 已存雲端'; el.className = 'text-[10px] font-bold text-emerald-600 opacity-100 transition';
+            setTimeout(() => { el.classList.replace('opacity-100', 'opacity-0'); }, 2000);
+        };
+
         // 每日放假備註（針對目前選取的 activeDayNoteWeekIdx 週次）
         let noteSaveTimer;
         for (let i = 1; i <= 5; i++) {
@@ -1385,9 +1402,11 @@
                 w.dayNotes[i] = e.target.value;
                 renderDayNoteWeekTabs();
                 updatePreview();
+                showSavingStatus('save-status-class');
                 clearTimeout(noteSaveTimer);
-                noteSaveTimer = setTimeout(() => {
-                    callBackendAPI('saveWeekDayNotes', { semester: getEl('input-semester').value, week: w.weekLabel, notesObj: w.dayNotes });
+                noteSaveTimer = setTimeout(async () => {
+                    await callBackendAPI('saveWeekDayNotes', { semester: getEl('input-semester').value, week: w.weekLabel, notesObj: w.dayNotes });
+                    showSavedStatus('save-status-class');
                 }, 1000);
             });
         }
@@ -1395,6 +1414,15 @@
         getEl('input-class-comment').addEventListener('input', (e) => {
             weeksList.forEach(w => { w.dayNotes['classComment'] = e.target.value; });
             updatePreview();
+            showSavingStatus('save-status-class');
+            clearTimeout(noteSaveTimer);
+            noteSaveTimer = setTimeout(async () => {
+                const w = weeksList[activeDayNoteWeekIdx] || weeksList[0];
+                if (w) {
+                    await callBackendAPI('saveWeekDayNotes', { semester: getEl('input-semester').value, week: w.weekLabel, notesObj: w.dayNotes });
+                    showSavedStatus('save-status-class');
+                }
+            }, 1000);
         });
 
         let cmtTimer;
@@ -1404,17 +1432,19 @@
                 if (w.students[seat]) w.students[seat].comment = e.target.value;
             });
             updatePreview();
+            showSavingStatus('save-status-personal');
             clearTimeout(cmtTimer);
-            cmtTimer = setTimeout(() => {
+            cmtTimer = setTimeout(async () => {
                 const lastW = weeksList[weeksList.length - 1];
                 if (seat && lastW && lastW.students[seat]) {
-                    callBackendAPI('saveWeeklyComment', {
+                    await callBackendAPI('saveWeeklyComment', {
                         semester: getEl('input-semester').value,
                         week: lastW.weekLabel,
                         seatNo: seat,
                         studentName: lastW.students[seat].name,
                         comment: e.target.value
                     });
+                    showSavedStatus('save-status-personal');
                 }
             }, 1000);
         });
