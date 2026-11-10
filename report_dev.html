@@ -171,82 +171,82 @@
     <!-- UI 主畫面 -->
     <div id="app-ui" class="flex flex-col md:flex-row w-full h-full print:hidden">
         
-        <!-- 左側面板 -->
-        <div class="w-full md:w-[400px] lg:w-[445px] flex-shrink-0 bg-white/95 backdrop-blur-md border-r border-orange-100 shadow-2xl z-20 flex flex-col h-full overflow-y-auto relative rounded-r-[2rem] custom-scrollbar">
-            <div class="p-5 bg-gradient-to-br from-rose-400 to-orange-400 text-white sticky top-0 z-10 shadow-sm rounded-br-[2rem]">
-                <div class="flex items-center justify-between">
-                    <h1 class="text-xl font-bold tracking-widest font-comfortaa flex items-center gap-2">
-                        <span class="iconify text-2xl" data-icon="ph:magic-wand-fill"></span>805 週報表產生器
+        <!-- 左側面板（縮小寬度至 310~340px，讓右側預覽空間更大） -->
+        <div class="w-full md:w-[310px] lg:w-[340px] flex-shrink-0 bg-white/95 backdrop-blur-md border-r border-orange-100 shadow-2xl z-20 flex flex-col h-full overflow-y-auto relative rounded-r-[1.75rem] custom-scrollbar">
+            <div class="p-4 bg-gradient-to-br from-rose-400 to-orange-400 text-white sticky top-0 z-10 shadow-sm rounded-br-[1.75rem]">
+                <div class="flex items-center justify-between gap-1">
+                    <h1 class="text-lg font-bold tracking-wider font-comfortaa flex items-center gap-1.5 whitespace-nowrap">
+                        <span class="iconify text-xl" data-icon="ph:magic-wand-fill"></span>805 週報表產生器
                     </h1>
-                    <span id="data-source-badge" class="text-[11px] bg-white/25 px-2.5 py-1 rounded-full font-bold backdrop-blur-sm">✨ 預覽示範模式</span>
+                    <span id="data-source-badge" class="text-[10px] bg-white/25 px-2 py-0.5 rounded-full font-bold backdrop-blur-sm whitespace-nowrap">✨ 預覽示範模式</span>
                 </div>
-                <p class="text-xs text-white/90 mt-1 font-medium ml-1">支援「1～4 週自由整合」＋「各週獨立截止總積分」✨</p>
+                <p class="text-[11px] text-white/90 mt-1 font-medium">支援「1～4 週自由整合」＋「各週獨立截止總積分」✨</p>
             </div>
 
-            <div class="p-5 space-y-5 flex-1">
+            <div class="p-3.5 space-y-3.5 flex-1">
                 <!-- 🌟 步驟 1：選擇一次要出幾週（1 週 / 2 週 / 3 週 / 4 週）＋ 分頁排版模式 -->
-                <div class="bg-rose-50/70 p-3.5 rounded-2xl border border-rose-200/70 space-y-3">
+                <div class="bg-rose-50/70 p-3 rounded-2xl border border-rose-200/70 space-y-2.5">
                     <div class="flex items-center justify-between">
                         <label class="text-xs font-bold text-rose-900 flex items-center gap-1">
-                            <span class="iconify text-base" data-icon="ph:calendar-plus-duotone"></span> 1. 本次要一次產出幾週？
+                            <span class="iconify text-sm" data-icon="ph:calendar-plus-duotone"></span> 1. 本次要一次產出幾週？
                         </label>
-                        <span class="text-[10px] text-rose-600 font-bold">最多可一次整合 4 週</span>
+                        <span class="text-[10px] text-rose-600 font-bold">最多 4 週</span>
                     </div>
-                    <div class="grid grid-cols-4 gap-1.5">
-                        <button type="button" data-week-count="1" class="week-cnt-btn py-2 rounded-xl text-xs font-extrabold border transition bg-white text-slate-600 border-rose-200">1 週</button>
-                        <button type="button" data-week-count="2" class="week-cnt-btn py-2 rounded-xl text-xs font-extrabold border transition bg-white text-slate-600 border-rose-200">2 週</button>
-                        <button type="button" data-week-count="3" class="week-cnt-btn py-2 rounded-xl text-xs font-extrabold border transition bg-white text-slate-600 border-rose-200">3 週</button>
-                        <button type="button" data-week-count="4" class="week-cnt-btn py-2 rounded-xl text-xs font-extrabold border transition bg-rose-500 text-white border-rose-500 shadow-sm">4 週</button>
+                    <div class="grid grid-cols-4 gap-1">
+                        <button type="button" data-week-count="1" class="week-cnt-btn py-1.5 rounded-xl text-xs font-extrabold border transition bg-white text-slate-600 border-rose-200">1 週</button>
+                        <button type="button" data-week-count="2" class="week-cnt-btn py-1.5 rounded-xl text-xs font-extrabold border transition bg-white text-slate-600 border-rose-200">2 週</button>
+                        <button type="button" data-week-count="3" class="week-cnt-btn py-1.5 rounded-xl text-xs font-extrabold border transition bg-white text-slate-600 border-rose-200">3 週</button>
+                        <button type="button" data-week-count="4" class="week-cnt-btn py-1.5 rounded-xl text-xs font-extrabold border transition bg-rose-500 text-white border-rose-500 shadow-sm">4 週</button>
                     </div>
 
-                    <div id="multi-page-mode-wrap" class="space-y-2 pt-1 border-t border-rose-200/60">
+                    <div id="multi-page-mode-wrap" class="space-y-1.5 pt-1 border-t border-rose-200/60">
                         <label class="block text-xs font-bold text-rose-900 flex items-center gap-1">
-                            <span class="iconify text-base" data-icon="ph:files-duotone"></span> 2. 多週排版與分頁方式
+                            <span class="iconify text-sm" data-icon="ph:files-duotone"></span> 2. 多週排版與分頁方式
                         </label>
-                        <div class="grid grid-cols-3 gap-1.5">
-                            <button type="button" data-page-mode="all_in_one" class="page-mode-btn px-2 py-2 rounded-xl text-[11px] font-bold border transition bg-rose-500 text-white border-rose-500 shadow-sm">
-                                📜 全部同張<br><span class="text-[9px] font-normal opacity-90">(共用1個簽名欄)</span>
+                        <div class="grid grid-cols-3 gap-1">
+                            <button type="button" data-page-mode="all_in_one" class="page-mode-btn px-1 py-1.5 rounded-xl text-[10px] font-bold border transition bg-rose-500 text-white border-rose-500 shadow-sm">
+                                📜 全部同張<br><span class="text-[9px] font-normal opacity-90">(共用簽名欄)</span>
                             </button>
-                            <button type="button" data-page-mode="two_per_page" class="page-mode-btn px-2 py-2 rounded-xl text-[11px] font-bold border transition bg-white text-slate-600 border-rose-200">
-                                📑 每 2 週一張<br><span class="text-[9px] font-normal opacity-80">(4週自動分2張)</span>
+                            <button type="button" data-page-mode="two_per_page" class="page-mode-btn px-1 py-1.5 rounded-xl text-[10px] font-bold border transition bg-white text-slate-600 border-rose-200">
+                                📑 每2週一張<br><span class="text-[9px] font-normal opacity-80">(4週分2張)</span>
                             </button>
-                            <button type="button" data-page-mode="one_per_page" class="page-mode-btn px-2 py-2 rounded-xl text-[11px] font-bold border transition bg-white text-slate-600 border-rose-200">
-                                🗂️ 每 1 週一張<br><span class="text-[9px] font-normal opacity-80">(一次批次印多張)</span>
+                            <button type="button" data-page-mode="one_per_page" class="page-mode-btn px-1 py-1.5 rounded-xl text-[10px] font-bold border transition bg-white text-slate-600 border-rose-200">
+                                🗂️ 每1週一張<br><span class="text-[9px] font-normal opacity-80">(批次出多張)</span>
                             </button>
                         </div>
                     </div>
 
-                    <p id="week-mode-desc" class="text-[11px] text-rose-800 leading-relaxed bg-white/85 px-2.5 py-2 rounded-xl border border-rose-100"></p>
+                    <p id="week-mode-desc" class="text-[10.5px] text-rose-800 leading-relaxed bg-white/85 px-2.5 py-1.5 rounded-xl border border-rose-100"></p>
                 </div>
 
                 <!-- 基本設定（起始週次 ＋ 自動展開各週日期區間） -->
-                <div class="bg-orange-50/50 p-4 rounded-2xl border border-orange-100/50 space-y-3">
+                <div class="bg-orange-50/50 p-3 rounded-2xl border border-orange-100/50 space-y-2.5">
                     <div class="flex justify-between items-center">
                         <label class="block text-xs font-bold text-orange-800">學期與起始週次設定</label>
-                        <button id="btn-refresh-data" class="text-[11px] bg-orange-200 text-orange-900 hover:bg-orange-300 px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1">
+                        <button id="btn-refresh-data" class="text-[10px] bg-orange-200 text-orange-900 hover:bg-orange-300 px-2 py-1 rounded-lg font-bold transition flex items-center gap-1">
                             <span class="iconify" data-icon="ph:arrows-clockwise-bold"></span> 重載試算表
                         </button>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2.5">
+                    <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="block text-[11px] font-bold text-orange-700 mb-1">學期</label>
-                            <select id="input-semester" class="w-full px-2.5 py-2 border border-orange-200 rounded-xl bg-white text-xs font-bold shadow-sm cursor-pointer outline-none focus:ring-2 focus:ring-orange-400/50">
+                            <label class="block text-[10px] font-bold text-orange-700 mb-1">學期</label>
+                            <select id="input-semester" class="w-full px-2 py-1.5 border border-orange-200 rounded-xl bg-white text-xs font-bold shadow-sm cursor-pointer outline-none focus:ring-2 focus:ring-orange-400/50">
                                 <option value="114學年度第1學期">114學年度第1學期</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-orange-700 mb-1">起始週次（自動推算後續週）</label>
-                            <input type="text" id="input-start-week" value="第 7 週" class="w-full px-3 py-2 border border-orange-200 rounded-xl bg-white text-xs font-bold shadow-sm outline-none focus:ring-2 focus:ring-orange-400/50 text-center">
+                            <label class="block text-[10px] font-bold text-orange-700 mb-1">起始週次</label>
+                            <input type="text" id="input-start-week" value="第 7 週" class="w-full px-2 py-1.5 border border-orange-200 rounded-xl bg-white text-xs font-bold shadow-sm outline-none focus:ring-2 focus:ring-orange-400/50 text-center">
                         </div>
                     </div>
 
                     <!-- 動態產生的各週日期列表 -->
-                    <div id="week-ranges-list" class="space-y-2 max-h-56 overflow-y-auto pr-1 custom-scrollbar"></div>
+                    <div id="week-ranges-list" class="space-y-1.5 max-h-52 overflow-y-auto pr-1 custom-scrollbar"></div>
                 </div>
 
                 <!-- 每日備註/放假設定（支援切換目前選取的任一週） -->
-                <div class="bg-red-50/50 p-4 rounded-2xl border border-red-100/50 space-y-2.5">
+                <div class="bg-red-50/50 p-3 rounded-2xl border border-red-100/50 space-y-2">
                     <div class="flex items-center justify-between">
                         <label class="block text-xs font-bold text-red-800 flex items-center gap-1">
                             <span class="iconify" data-icon="ph:calendar-star-duotone"></span> 每日備註 / 放假設定
@@ -256,96 +256,96 @@
                     <!-- 切換要編輯哪一週的放假備註 -->
                     <div id="day-note-week-tabs" class="flex flex-wrap gap-1"></div>
 
-                    <div class="grid grid-cols-5 gap-1 pt-1">
-                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-1">一</div><input type="text" id="note-day-1" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
-                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-1">二</div><input type="text" id="note-day-2" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
-                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-1">三</div><input type="text" id="note-day-3" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
-                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-1">四</div><input type="text" id="note-day-4" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
-                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-1">五</div><input type="text" id="note-day-5" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
+                    <div class="grid grid-cols-5 gap-1 pt-0.5">
+                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-0.5">一</div><input type="text" id="note-day-1" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
+                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-0.5">二</div><input type="text" id="note-day-2" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
+                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-0.5">三</div><input type="text" id="note-day-3" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
+                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-0.5">四</div><input type="text" id="note-day-4" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
+                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-0.5">五</div><input type="text" id="note-day-5" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
                     </div>
                 </div>
 
                 <!-- 選擇學生 -->
-                <div class="bg-gradient-to-br from-teal-50 to-emerald-50 p-4 rounded-2xl border border-teal-100 shadow-sm">
-                    <div class="flex justify-between items-center mb-2">
+                <div class="bg-gradient-to-br from-teal-50 to-emerald-50 p-3 rounded-2xl border border-teal-100 shadow-sm">
+                    <div class="flex justify-between items-center mb-1.5">
                         <label class="block text-xs font-bold text-teal-800">選擇學生</label>
-                        <button id="btn-open-edit" class="text-[11px] bg-teal-600 text-white hover:bg-teal-700 px-3 py-1 rounded-lg font-bold transition flex items-center gap-1 shadow-sm">
+                        <button id="btn-open-edit" class="text-[10px] bg-teal-600 text-white hover:bg-teal-700 px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1 shadow-sm">
                             <span class="iconify" data-icon="ph:pencil-simple-duotone"></span> 微調各週資料
                         </button>
                     </div>
-                    <select id="input-seat" class="w-full px-3 py-2 border border-teal-200 rounded-xl bg-white text-sm font-bold text-teal-900 cursor-pointer shadow-sm outline-none focus:ring-2 focus:ring-teal-400/50"></select>
+                    <select id="input-seat" class="w-full px-2.5 py-1.5 border border-teal-200 rounded-xl bg-white text-xs font-bold text-teal-900 cursor-pointer shadow-sm outline-none focus:ring-2 focus:ring-teal-400/50"></select>
                 </div>
 
                 <!-- 版面與比例設定 -->
-                <div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100/50 space-y-3">
+                <div class="bg-indigo-50/50 p-3 rounded-2xl border border-indigo-100/50 space-y-2.5">
                     <label class="block text-xs font-bold text-indigo-800 flex items-center gap-1"><span class="iconify" data-icon="ph:layout-duotone"></span> 版面與產出模式設定</label>
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-2 gap-2">
                         <div class="col-span-2">
                             <label class="block text-[10px] font-bold text-indigo-600 mb-1">產出模式 (決定 PDF 大小)</label>
-                            <select id="input-export-mode" class="w-full px-3 py-2 border border-indigo-200 rounded-xl text-sm font-bold text-indigo-900 outline-none focus:ring-2 focus:ring-indigo-400 bg-white cursor-pointer shadow-sm">
-                                <option value="dynamic_pdf">⬇️ 自適應下載 (有多長存多長，最適合多週合印)</option>
+                            <select id="input-export-mode" class="w-full px-2.5 py-1.5 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-900 outline-none focus:ring-2 focus:ring-indigo-400 bg-white cursor-pointer shadow-sm">
+                                <option value="dynamic_pdf">⬇️ 自適應下載 (有多長存多長)</option>
                                 <option value="native_print">🖨️ 傳統列印 (自動縮放符合紙張)</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-indigo-600 mb-1">預覽畫布佈局</label>
-                            <select id="input-orientation" class="w-full px-3 py-2 border border-indigo-200 rounded-xl text-sm font-bold text-indigo-900 outline-none focus:ring-2 focus:ring-indigo-400 bg-white cursor-pointer shadow-sm">
+                            <select id="input-orientation" class="w-full px-2 py-1.5 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-900 outline-none focus:ring-2 focus:ring-indigo-400 bg-white cursor-pointer shadow-sm">
                                 <option value="landscape">一般橫向佈局</option>
                                 <option value="portrait">加長直向佈局</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-indigo-600 mb-1">簽名區模式</label>
-                            <select id="input-signature-layout" class="w-full px-3 py-2 border border-indigo-200 rounded-xl text-sm font-bold text-indigo-900 outline-none focus:ring-2 focus:ring-indigo-400 bg-white cursor-pointer shadow-sm">
+                            <select id="input-signature-layout" class="w-full px-2 py-1.5 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-900 outline-none focus:ring-2 focus:ring-indigo-400 bg-white cursor-pointer shadow-sm">
                                 <option value="row">橫向並排</option>
                                 <option value="stacked">右側堆疊</option>
                             </select>
                         </div>
                     </div>
                     
-                    <div class="mt-3">
+                    <div class="mt-2">
                         <label class="block text-[10px] font-bold text-indigo-600 mb-1">簽名區比例 (師:生:家)</label>
-                        <div class="flex gap-2 items-center">
-                            <input type="number" id="input-flex-teacher" value="45" class="w-full px-2 py-1.5 border border-indigo-200 rounded-lg text-center text-sm font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
+                        <div class="flex gap-1.5 items-center">
+                            <input type="number" id="input-flex-teacher" value="45" class="w-full px-1.5 py-1 border border-indigo-200 rounded-lg text-center text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
                             <span class="text-indigo-300">:</span>
-                            <input type="number" id="input-flex-student" value="25" class="w-full px-2 py-1.5 border border-indigo-200 rounded-lg text-center text-sm font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
+                            <input type="number" id="input-flex-student" value="25" class="w-full px-1.5 py-1 border border-indigo-200 rounded-lg text-center text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
                             <span class="text-indigo-300">:</span>
-                            <input type="number" id="input-flex-parent" value="30" class="w-full px-2 py-1.5 border border-indigo-200 rounded-lg text-center text-sm font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
+                            <input type="number" id="input-flex-parent" value="30" class="w-full px-1.5 py-1 border border-indigo-200 rounded-lg text-center text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-3 mt-3">
+                    <div class="grid grid-cols-2 gap-2 mt-2">
                         <div>
                             <label class="block text-[10px] font-bold text-indigo-600 mb-1">簽名區總高度 (PX)</label>
                             <div class="flex items-center">
-                                <input type="number" id="input-signature-height" value="140" min="50" max="400" step="10" class="w-full px-2 py-1.5 border border-indigo-200 rounded-lg text-center text-sm font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
+                                <input type="number" id="input-signature-height" value="140" min="50" max="400" step="10" class="w-full px-2 py-1 border border-indigo-200 rounded-lg text-center text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
                             </div>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-rose-600 mb-1">PDF 下沉校正 (PX)</label>
                             <div class="flex items-center">
-                                <input type="number" id="input-pdf-offset" value="2" min="0" max="10" step="1" class="w-full px-2 py-1.5 border border-rose-200 text-rose-700 rounded-lg text-center text-sm font-bold bg-white outline-none focus:ring-2 focus:ring-rose-400 shadow-sm">
+                                <input type="number" id="input-pdf-offset" value="2" min="0" max="10" step="1" class="w-full px-2 py-1 border border-rose-200 text-rose-700 rounded-lg text-center text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-rose-400 shadow-sm">
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="space-y-3 pb-4">
+                <div class="space-y-2 pb-2">
                     <div class="flex justify-between items-center">
                         <span class="text-xs font-bold text-slate-600">導師的話（班級宣導＆個人評語）</span>
                         <span id="save-status-personal" class="text-[10px] font-bold opacity-0 transition"></span>
                     </div>
-                    <textarea id="input-class-comment" rows="2" placeholder="班級宣導..." class="w-full p-3 border border-indigo-200 rounded-2xl font-handwriting text-slate-800 bg-white focus:ring-2 focus:ring-indigo-400 outline-none"></textarea>
-                    <textarea id="input-comment" rows="3" placeholder="個人評語..." class="w-full p-3 border border-rose-200 rounded-2xl font-handwriting text-slate-800 bg-white focus:ring-2 focus:ring-rose-400 outline-none"></textarea>
+                    <textarea id="input-class-comment" rows="2" placeholder="班級宣導..." class="w-full p-2.5 border border-indigo-200 rounded-xl font-handwriting text-sm text-slate-800 bg-white focus:ring-2 focus:ring-indigo-400 outline-none"></textarea>
+                    <textarea id="input-comment" rows="2" placeholder="個人評語..." class="w-full p-2.5 border border-rose-200 rounded-xl font-handwriting text-sm text-slate-800 bg-white focus:ring-2 focus:ring-rose-400 outline-none"></textarea>
                 </div>
             </div>
 
-            <div class="p-5 bg-white/90 border-t border-rose-50 space-y-2.5 sticky bottom-0 z-10 rounded-tr-[2rem]">
-                <button id="btn-download-single" class="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-full shadow-lg transition flex justify-center items-center">
-                    <span class="iconify text-xl mr-1" data-icon="ph:download-simple-bold"></span> <span id="btn-single-label">執行產出 (單人 4 週報表)</span>
+            <div class="p-3.5 bg-white/90 border-t border-rose-50 space-y-2 sticky bottom-0 z-10 rounded-tr-[1.75rem]">
+                <button id="btn-download-single" class="w-full py-2.5 bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold rounded-full shadow-md transition flex justify-center items-center">
+                    <span class="iconify text-lg mr-1" data-icon="ph:download-simple-bold"></span> <span id="btn-single-label">執行產出 (單人 4 週報表)</span>
                 </button>
-                <button id="btn-download-all" class="w-full py-3 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-full shadow-lg transition flex justify-center items-center">
-                    <span class="iconify text-xl mr-1" data-icon="ph:files-bold"></span> <span id="btn-all-label">執行產出 (全班批次)</span>
+                <button id="btn-download-all" class="w-full py-2.5 bg-teal-500 hover:bg-teal-600 text-white text-sm font-bold rounded-full shadow-md transition flex justify-center items-center">
+                    <span class="iconify text-lg mr-1" data-icon="ph:files-bold"></span> <span id="btn-all-label">執行產出 (全班批次)</span>
                 </button>
             </div>
         </div>
@@ -363,26 +363,21 @@
                 
                 <!-- 報告預覽畫布 -->
                 <div id="report-template" class="report-page layout-landscape theme-bw relative z-10 shadow-2xl">
-                    <!-- 頂部標題與學生姓名列 -->
+                    <!-- 頂部標題與學生姓名列（簡潔呈現班級標題與座號姓名） -->
                     <div class="flex justify-between items-end mb-3 border-b-2 border-slate-800 pb-2.5">
                         <div>
                             <div id="prev-semester" class="adjust-baseline text-xs text-text-light font-bold mb-0.5">--</div>
                             <h1 id="prev-main-title" class="adjust-baseline text-2xl font-black text-text-main font-comfortaa tracking-wide">805 生活計點週報表</h1>
                         </div>
-                        <div class="flex items-center gap-2.5">
-                            <!-- 多週區間總覽小卡（當一張包含 >=2 週時自動顯示） -->
-                            <div id="multi-week-summary-pill" class="hidden bg-slate-800 text-white px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-3"></div>
-
-                            <div class="info-card px-4 py-1.5 flex items-center gap-3.5">
-                                <div>
-                                    <div class="adjust-baseline text-[10px] font-bold text-gray-500 leading-none mb-1">座號</div>
-                                    <div id="prev-seat" class="adjust-baseline text-xl font-black font-comfortaa leading-none">--</div>
-                                </div>
-                                <div class="h-6 w-[1.5px] bg-slate-300"></div>
-                                <div>
-                                    <div class="adjust-baseline text-[10px] font-bold text-gray-500 leading-none mb-1">姓名</div>
-                                    <div id="prev-name" class="adjust-baseline text-xl font-black leading-none">--</div>
-                                </div>
+                        <div class="info-card px-4 py-1.5 flex items-center gap-3.5 shrink-0 whitespace-nowrap">
+                            <div>
+                                <div class="adjust-baseline text-[10px] font-bold text-gray-500 leading-none mb-1">座號</div>
+                                <div id="prev-seat" class="adjust-baseline text-xl font-black font-comfortaa leading-none">--</div>
+                            </div>
+                            <div class="h-6 w-[1.5px] bg-slate-300"></div>
+                            <div>
+                                <div class="adjust-baseline text-[10px] font-bold text-gray-500 leading-none mb-1">姓名</div>
+                                <div id="prev-name" class="adjust-baseline text-xl font-black leading-none">--</div>
                             </div>
                         </div>
                     </div>
@@ -706,15 +701,15 @@
         const box = getEl('week-ranges-list');
         if (!box) return;
         box.innerHTML = weeksList.map((w, idx) => `
-            <div class="bg-white p-2.5 rounded-xl border border-orange-200/80 space-y-1.5">
+            <div class="bg-white p-2 rounded-xl border border-orange-200/80 space-y-1">
                 <div class="flex items-center justify-between">
-                    <span class="text-[11px] font-extrabold text-orange-800">📅 第 ${idx + 1} 區段：${escHtml(w.weekLabel)}</span>
-                    <input type="text" data-wk-label="${idx}" value="${escHtml(w.weekLabel)}" class="w-24 px-2 py-0.5 border border-orange-200 rounded-md bg-orange-50/40 text-xs font-bold text-center outline-none">
+                    <span class="text-[10.5px] font-extrabold text-orange-800">📅 區段 ${idx + 1}</span>
+                    <input type="text" data-wk-label="${idx}" value="${escHtml(w.weekLabel)}" class="w-20 px-1.5 py-0.5 border border-orange-200 rounded-md bg-orange-50/40 text-[11px] font-bold text-center outline-none">
                 </div>
-                <div class="flex items-center gap-1.5">
-                    <input type="date" data-wk-start="${idx}" value="${w.startDate}" class="w-full px-2 py-1 border border-orange-200 rounded-lg text-xs outline-none">
-                    <span class="text-orange-400 font-bold">~</span>
-                    <input type="date" data-wk-end="${idx}" value="${w.endDate}" class="w-full px-2 py-1 border border-orange-200 rounded-lg text-xs outline-none">
+                <div class="flex items-center gap-1">
+                    <input type="date" data-wk-start="${idx}" value="${w.startDate}" class="w-full min-w-0 px-1.5 py-1 border border-orange-200 rounded-lg text-[11px] outline-none">
+                    <span class="text-orange-400 font-bold text-xs">~</span>
+                    <input type="date" data-wk-end="${idx}" value="${w.endDate}" class="w-full min-w-0 px-1.5 py-1 border border-orange-200 rounded-lg text-[11px] outline-none">
                 </div>
             </div>
         `).join('');
@@ -1048,32 +1043,8 @@
         const chunkWeeks = currentChunk.map(i => weeksList[i]).filter(Boolean);
 
         const mainTitle = getEl('prev-main-title');
-        const summaryPill = getEl('multi-week-summary-pill');
-
-        if (chunkWeeks.length === 1) {
-            mainTitle.textContent = `805 生活計點週報表（${chunkWeeks[0].weekLabel}）`;
-            summaryPill.classList.add('hidden');
-        } else {
-            const firstLbl = chunkWeeks[0].weekLabel;
-            const lastLbl = chunkWeeks[chunkWeeks.length - 1].weekLabel;
-            mainTitle.textContent = `805 生活計點多週報表（${firstLbl} ～ ${lastLbl} · 共 ${chunkWeeks.length} 週）`;
-
-            // 計算這幾週的總結與總積分演變軌跡
-            let sumPlus = 0, sumMinus = 0;
-            const scoreTrail = [];
-            chunkWeeks.forEach(w => {
-                const st = getStudentWeekStats(w, seat);
-                sumPlus += st.plus;
-                sumMinus += st.minus;
-                scoreTrail.push(st.totalScore);
-            });
-            const sumNet = parseFloat((sumPlus - sumMinus).toFixed(1));
-            summaryPill.classList.remove('hidden');
-            summaryPill.innerHTML = `
-                <span class="adjust-baseline">區間淨分：<b class="font-comfortaa ${sumNet >= 0 ? 'text-emerald-300' : 'text-rose-300'}">${sumNet >= 0 ? '+' + sumNet : sumNet}</b></span>
-                <span class="opacity-40">|</span>
-                <span class="adjust-baseline">各週結算總分軌跡：<b class="font-comfortaa text-amber-300">${scoreTrail.join(' ➔ ')}</b></span>
-            `;
+        if (mainTitle) {
+            mainTitle.textContent = '805 生活計點週報表';
         }
 
         const container = getEl('weeks-render-container');
@@ -1096,7 +1067,7 @@
         }
 
         if (pageSplitMode === 'all_in_one') {
-            desc.innerHTML = `💡 <b>${wCount} 週全部同張整合</b>：將連續 ${wCount} 週濃縮排在同一張報表、共用最下方 1 個簽名欄（當週數 ≥ 3 週時自動切換為<b>高密度緊湊排版</b>，並顯示<b>各週結算總分軌跡</b>）！`;
+            desc.innerHTML = `💡 <b>${wCount} 週全部同張整合</b>：將連續 ${wCount} 週濃縮排在同一張報表、共用最下方 1 個簽名欄（當週數 ≥ 3 週時自動切換為<b>高密度緊湊排版</b>）！`;
             getEl('btn-single-label').textContent = `執行產出 (單人 ${wCount} 週同張)`;
             getEl('btn-all-label').textContent = `執行產出 (全班 ${wCount} 週同張)`;
         } else if (pageSplitMode === 'two_per_page') {
@@ -1115,8 +1086,8 @@
         document.querySelectorAll('.week-cnt-btn').forEach(btn => {
             const isAct = Number(btn.getAttribute('data-week-count')) === cnt;
             btn.className = isAct
-                ? 'week-cnt-btn py-2 rounded-xl text-xs font-extrabold border transition bg-rose-500 text-white border-rose-500 shadow-sm'
-                : 'week-cnt-btn py-2 rounded-xl text-xs font-extrabold border transition bg-white text-slate-600 border-rose-200 hover:bg-rose-50';
+                ? 'week-cnt-btn py-1.5 rounded-xl text-xs font-extrabold border transition bg-rose-500 text-white border-rose-500 shadow-sm'
+                : 'week-cnt-btn py-1.5 rounded-xl text-xs font-extrabold border transition bg-white text-slate-600 border-rose-200 hover:bg-rose-50';
         });
 
         const m = (getEl('input-start-week').value || '').match(/\d+/);
@@ -1139,8 +1110,8 @@
         document.querySelectorAll('.page-mode-btn').forEach(btn => {
             const isAct = btn.getAttribute('data-page-mode') === mode;
             btn.className = isAct
-                ? 'page-mode-btn px-2 py-2 rounded-xl text-[11px] font-bold border transition bg-rose-500 text-white border-rose-500 shadow-sm'
-                : 'page-mode-btn px-2 py-2 rounded-xl text-[11px] font-bold border transition bg-white text-slate-600 border-rose-200 hover:bg-rose-50';
+                ? 'page-mode-btn px-1 py-1.5 rounded-xl text-[10px] font-bold border transition bg-rose-500 text-white border-rose-500 shadow-sm'
+                : 'page-mode-btn px-1 py-1.5 rounded-xl text-[10px] font-bold border transition bg-white text-slate-600 border-rose-200 hover:bg-rose-50';
         });
         activeChunkIndex = 0;
         renderPreviewPageSwitcher();
