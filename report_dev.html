@@ -178,7 +178,7 @@
                     <h1 class="text-lg font-bold tracking-wider font-comfortaa flex items-center gap-1.5 whitespace-nowrap">
                         <span class="iconify text-xl" data-icon="ph:magic-wand-fill"></span>805 週報表產生器
                     </h1>
-                    <span id="data-source-badge" class="text-[10px] bg-white/25 px-2 py-0.5 rounded-full font-bold backdrop-blur-sm whitespace-nowrap">✨ 預覽示範模式</span>
+                    <span id="data-source-badge" onclick="promptApiUrl()" title="點擊可手動設定 Apps Script 網址" class="text-[10px] bg-white/25 hover:bg-white/35 px-2 py-0.5 rounded-full font-bold backdrop-blur-sm whitespace-nowrap cursor-pointer transition">✨ 預覽示範模式</span>
                 </div>
                 <p class="text-[11px] text-white/90 mt-1 font-medium">支援「1～4 週自由整合」＋「各週獨立截止總積分」✨</p>
             </div>
@@ -619,7 +619,29 @@
         });
     }
 
-    /* ============ 2. 連線後端（支援一次抓取 N 週資料） ============ */
+    /* ============ 2. 連線後端（支援一次抓取 N 週資料，自動偵測可用的 Apps Script 部署網址） ============ */
+    let activeReportApiUrl = localStorage.getItem('805_report_api_url') || '';
+
+    function promptApiUrl() {
+        const cur = activeReportApiUrl || (typeof CONFIG !== 'undefined' ? CONFIG.API_URL : '');
+        const next = prompt('若您有新的 Apps Script 部署網址 (/exec)，可貼在下方儲存並立即連線：', cur);
+        if (next && next.trim()) {
+            activeReportApiUrl = next.trim();
+            localStorage.setItem('805_report_api_url', activeReportApiUrl);
+            fetchAllData(true);
+        }
+    }
+
+    function getCandidateApiUrls() {
+        const list = [];
+        if (activeReportApiUrl) list.push(activeReportApiUrl);
+        if (typeof CONFIG !== 'undefined' && CONFIG.API_URL) list.push(CONFIG.API_URL);
+        // 自動涵蓋老師兩個 Apps Script 專案的既有部署網址
+        list.push('https://script.google.com/macros/s/AKfycbw6REHI2aQ5vZKduROEucLeBBJwEdGfDJ1kUe10NZmKQujsjLzWnuuZTybYsv8QZ9h8jQ/exec');
+        list.push('https://script.google.com/macros/s/AKfycbwYPrpAC4GNxezCr-nUNNYOzcfu4J0na2CaK9XZm_9hi3RsVDulcSb65nw4MS3LSgNt/exec');
+        return [...new Set(list.filter(Boolean))];
+    }
+
     async function callBackendAPI(action, payload) {
         if (typeof google !== 'undefined' && google.script && google.script.run) {
             return new Promise((resolve, reject) => {
@@ -631,12 +653,20 @@
                 else resolve(null);
             });
         }
-        if (typeof CONFIG !== 'undefined' && CONFIG.API_URL) {
-            const resp = await fetch(CONFIG.API_URL, {
-                method: 'POST',
-                body: JSON.stringify(Object.assign({ action: action }, payload))
-            });
-            return await resp.json();
+        const urls = getCandidateApiUrls();
+        for (const url of urls) {
+            try {
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    body: JSON.stringify(Object.assign({ action: action }, payload))
+                });
+                const json = await resp.json();
+                if (json && json.success === true) {
+                    activeReportApiUrl = url;
+                    localStorage.setItem('805_report_api_url', url);
+                    return json;
+                }
+            } catch (e) {}
         }
         return null;
     }
