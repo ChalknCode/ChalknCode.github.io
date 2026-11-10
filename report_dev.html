@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>805 週報表產生器（支援雙週整合＆當週累計總積分）</title>
+    <title>805 週報表產生器（支援 1~4 週多週整合＆當週累計總積分）</title>
     <link rel="icon" href="images/logo.png" type="image/jpeg">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
@@ -41,7 +41,7 @@
         .report-page { 
             background-color: #ffffff; 
             height: auto; 
-            padding: 28px 38px 42px 38px; 
+            padding: 26px 36px 38px 36px; 
             box-sizing: border-box; 
             display: block; 
             transform-origin: top left; 
@@ -97,16 +97,16 @@
         }
         .record-table td { 
             background-color: #ffffff; 
-            padding: 8px;
+            padding: 7px 8px;
             vertical-align: top !important;
-            height: 40px; 
+            height: 36px; 
         }
         .record-table th:last-child, .record-table td:last-child { border-right: none; }
         .record-table tr:last-child td { border-bottom: none; }
 
         /* ================================================================ */
 
-        .record-item { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; line-height: 1.4; align-items: flex-start; }
+        .record-item { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px; line-height: 1.35; align-items: flex-start; }
         .record-item .desc { width: 80%; text-align: left; }
         .record-item .score { width: 20%; text-align: right; font-family: 'Comfortaa', sans-serif; font-weight: 700; }
         
@@ -114,13 +114,22 @@
         .theme-bw .stat-box { border: 2px dashed #9ca3af; background-color: #ffffff; border-radius: 6px; }
         .theme-bw .stat-box-total { border: 2px solid #374151; background-color: #f3f4f6; }
 
-        /* 雙週合併時每一週的小標題外框 */
+        /* 多週合併時每一週的區塊外框 */
         .week-section-block {
             border: 2px solid #cbd5e1;
-            border-radius: 12px;
-            padding: 14px 16px 12px 16px;
+            border-radius: 10px;
+            padding: 10px 12px 10px 12px;
             background-color: #fafaf9;
-            margin-bottom: 14px;
+            margin-bottom: 10px;
+        }
+        /* 3~4 週超緊湊模式 */
+        .week-section-block.ultra-compact {
+            padding: 8px 10px;
+            margin-bottom: 8px;
+        }
+        .week-section-block.ultra-compact .record-table td {
+            padding: 5px 7px;
+            height: 28px;
         }
         
         .loader { border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 3px solid #fff; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
@@ -140,7 +149,7 @@
                 max-width: 971px !important;
                 min-height: auto !important; 
                 height: auto !important;
-                padding: 28px 38px 42px 38px !important; 
+                padding: 26px 36px 38px 36px !important; 
                 box-shadow: none !important; 
                 margin: 0 auto !important;
                 transform: none !important; 
@@ -163,7 +172,7 @@
     <div id="app-ui" class="flex flex-col md:flex-row w-full h-full print:hidden">
         
         <!-- 左側面板 -->
-        <div class="w-full md:w-[390px] lg:w-[435px] flex-shrink-0 bg-white/95 backdrop-blur-md border-r border-orange-100 shadow-2xl z-20 flex flex-col h-full overflow-y-auto relative rounded-r-[2rem] custom-scrollbar">
+        <div class="w-full md:w-[400px] lg:w-[445px] flex-shrink-0 bg-white/95 backdrop-blur-md border-r border-orange-100 shadow-2xl z-20 flex flex-col h-full overflow-y-auto relative rounded-r-[2rem] custom-scrollbar">
             <div class="p-5 bg-gradient-to-br from-rose-400 to-orange-400 text-white sticky top-0 z-10 shadow-sm rounded-br-[2rem]">
                 <div class="flex items-center justify-between">
                     <h1 class="text-xl font-bold tracking-widest font-comfortaa flex items-center gap-2">
@@ -171,109 +180,88 @@
                     </h1>
                     <span id="data-source-badge" class="text-[11px] bg-white/25 px-2.5 py-1 rounded-full font-bold backdrop-blur-sm">✨ 預覽示範模式</span>
                 </div>
-                <p class="text-xs text-white/90 mt-1 font-medium ml-1">支援「當週截止累計總積分」＋「雙週整合產出」✨</p>
+                <p class="text-xs text-white/90 mt-1 font-medium ml-1">支援「1～4 週自由整合」＋「各週獨立截止總積分」✨</p>
             </div>
 
             <div class="p-5 space-y-5 flex-1">
-                <!-- 🌟 新增：單週 vs 雙週整合模式切換 -->
-                <div class="bg-rose-50/70 p-3.5 rounded-2xl border border-rose-200/70 space-y-2.5">
-                    <label class="block text-xs font-bold text-rose-900 flex items-center justify-between">
-                        <span class="flex items-center gap-1"><span class="iconify text-base" data-icon="ph:Rows-duotone"></span> 報表週數與整合模式</span>
-                        <span class="text-[10px] text-rose-600 font-semibold">兩週出一次超方便！</span>
-                    </label>
-                    <div class="grid grid-cols-3 gap-1.5">
-                        <button type="button" data-week-mode="single" class="week-mode-btn px-2 py-2 rounded-xl text-xs font-bold border transition bg-white text-slate-600 border-rose-200">
-                            📄 單週標準
-                        </button>
-                        <button type="button" data-week-mode="dual_merged" class="week-mode-btn px-2 py-2 rounded-xl text-xs font-bold border transition bg-rose-500 text-white border-rose-500 shadow-sm">
-                            📑 雙週同張整合
-                        </button>
-                        <button type="button" data-week-mode="dual_separate" class="week-mode-btn px-2 py-2 rounded-xl text-xs font-bold border transition bg-white text-slate-600 border-rose-200">
-                            🗂️ 雙週分開兩張
-                        </button>
+                <!-- 🌟 步驟 1：選擇一次要出幾週（1 週 / 2 週 / 3 週 / 4 週）＋ 分頁排版模式 -->
+                <div class="bg-rose-50/70 p-3.5 rounded-2xl border border-rose-200/70 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold text-rose-900 flex items-center gap-1">
+                            <span class="iconify text-base" data-icon="ph:calendar-plus-duotone"></span> 1. 本次要一次產出幾週？
+                        </label>
+                        <span class="text-[10px] text-rose-600 font-bold">最多可一次整合 4 週</span>
                     </div>
-                    <p id="week-mode-desc" class="text-[11px] text-rose-700 leading-relaxed bg-white/80 px-2.5 py-1.5 rounded-lg border border-rose-100">
-                        💡 <b>雙週同張整合</b>：將連續兩週合併在同一張報表、共用底部簽名欄；且<b>第一週與第二週會分別計算截至該週末的「當週累計總積分」</b>，不會兩週顯示同一個最終總分！
-                    </p>
+                    <div class="grid grid-cols-4 gap-1.5">
+                        <button type="button" data-week-count="1" class="week-cnt-btn py-2 rounded-xl text-xs font-extrabold border transition bg-white text-slate-600 border-rose-200">1 週</button>
+                        <button type="button" data-week-count="2" class="week-cnt-btn py-2 rounded-xl text-xs font-extrabold border transition bg-white text-slate-600 border-rose-200">2 週</button>
+                        <button type="button" data-week-count="3" class="week-cnt-btn py-2 rounded-xl text-xs font-extrabold border transition bg-white text-slate-600 border-rose-200">3 週</button>
+                        <button type="button" data-week-count="4" class="week-cnt-btn py-2 rounded-xl text-xs font-extrabold border transition bg-rose-500 text-white border-rose-500 shadow-sm">4 週</button>
+                    </div>
+
+                    <div id="multi-page-mode-wrap" class="space-y-2 pt-1 border-t border-rose-200/60">
+                        <label class="block text-xs font-bold text-rose-900 flex items-center gap-1">
+                            <span class="iconify text-base" data-icon="ph:files-duotone"></span> 2. 多週排版與分頁方式
+                        </label>
+                        <div class="grid grid-cols-3 gap-1.5">
+                            <button type="button" data-page-mode="all_in_one" class="page-mode-btn px-2 py-2 rounded-xl text-[11px] font-bold border transition bg-rose-500 text-white border-rose-500 shadow-sm">
+                                📜 全部同張<br><span class="text-[9px] font-normal opacity-90">(共用1個簽名欄)</span>
+                            </button>
+                            <button type="button" data-page-mode="two_per_page" class="page-mode-btn px-2 py-2 rounded-xl text-[11px] font-bold border transition bg-white text-slate-600 border-rose-200">
+                                📑 每 2 週一張<br><span class="text-[9px] font-normal opacity-80">(4週自動分2張)</span>
+                            </button>
+                            <button type="button" data-page-mode="one_per_page" class="page-mode-btn px-2 py-2 rounded-xl text-[11px] font-bold border transition bg-white text-slate-600 border-rose-200">
+                                🗂️ 每 1 週一張<br><span class="text-[9px] font-normal opacity-80">(一次批次印多張)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <p id="week-mode-desc" class="text-[11px] text-rose-800 leading-relaxed bg-white/85 px-2.5 py-2 rounded-xl border border-rose-100"></p>
                 </div>
 
-                <!-- 基本設定（支援第一週 ＆ 第二週） -->
-                <div class="bg-orange-50/50 p-4 rounded-2xl border border-orange-100/50 space-y-3.5">
+                <!-- 基本設定（起始週次 ＋ 自動展開各週日期區間） -->
+                <div class="bg-orange-50/50 p-4 rounded-2xl border border-orange-100/50 space-y-3">
                     <div class="flex justify-between items-center">
-                        <label class="block text-xs font-bold text-orange-800">學期與週次區間</label>
+                        <label class="block text-xs font-bold text-orange-800">學期與起始週次設定</label>
                         <button id="btn-refresh-data" class="text-[11px] bg-orange-200 text-orange-900 hover:bg-orange-300 px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1">
-                            <span class="iconify" data-icon="ph:arrows-clockwise-bold"></span> 重載試算表資料
+                            <span class="iconify" data-icon="ph:arrows-clockwise-bold"></span> 重載試算表
                         </button>
                     </div>
 
-                    <div>
-                        <label class="block text-[11px] font-bold text-orange-700 mb-1">學期</label>
-                        <select id="input-semester" class="w-full px-3 py-2 border border-orange-200 rounded-xl bg-white text-xs font-bold shadow-sm cursor-pointer outline-none focus:ring-2 focus:ring-orange-400/50">
-                            <option value="114學年度第1學期">114學年度第1學期</option>
-                        </select>
-                    </div>
-
-                    <!-- 第一週設定 -->
-                    <div class="bg-white p-3 rounded-xl border border-orange-200/80 space-y-2">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-extrabold text-orange-800" id="label-week-a">📅 第一週（較早週次）</span>
-                            <input type="text" id="input-week" value="第 9 週" class="w-28 px-2.5 py-1 border border-orange-200 rounded-lg bg-orange-50/40 text-xs font-bold text-center outline-none focus:ring-2 focus:ring-orange-400/50">
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-[11px] font-bold text-orange-700 mb-1">學期</label>
+                            <select id="input-semester" class="w-full px-2.5 py-2 border border-orange-200 rounded-xl bg-white text-xs font-bold shadow-sm cursor-pointer outline-none focus:ring-2 focus:ring-orange-400/50">
+                                <option value="114學年度第1學期">114學年度第1學期</option>
+                            </select>
                         </div>
-                        <div class="flex items-center gap-1.5">
-                            <input type="date" id="input-date-start" class="w-full px-2 py-1.5 border border-orange-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-orange-400/50">
-                            <span class="text-orange-400 font-bold">~</span>
-                            <input type="date" id="input-date-end" class="w-full px-2 py-1.5 border border-orange-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-orange-400/50">
+                        <div>
+                            <label class="block text-[11px] font-bold text-orange-700 mb-1">起始週次（自動推算後續週）</label>
+                            <input type="text" id="input-start-week" value="第 7 週" class="w-full px-3 py-2 border border-orange-200 rounded-xl bg-white text-xs font-bold shadow-sm outline-none focus:ring-2 focus:ring-orange-400/50 text-center">
                         </div>
                     </div>
 
-                    <!-- 第二週設定（雙週模式時顯示） -->
-                    <div id="week-b-config-box" class="bg-white p-3 rounded-xl border border-rose-200/90 space-y-2">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-extrabold text-rose-800">📅 第二週（接續週次）</span>
-                            <input type="text" id="input-week-b" value="第 10 週" class="w-28 px-2.5 py-1 border border-rose-200 rounded-lg bg-rose-50/40 text-xs font-bold text-center outline-none focus:ring-2 focus:ring-rose-400/50">
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <input type="date" id="input-date-start-b" class="w-full px-2 py-1.5 border border-rose-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-rose-400/50">
-                            <span class="text-rose-400 font-bold">~</span>
-                            <input type="date" id="input-date-end-b" class="w-full px-2 py-1.5 border border-rose-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-rose-400/50">
-                        </div>
-                        <!-- 當選擇「雙週分開兩張」時，可切換右側預覽哪一週 -->
-                        <div id="separate-preview-switch" class="hidden pt-1 flex items-center justify-between border-t border-rose-100">
-                            <span class="text-[11px] font-bold text-slate-500">右側畫布目前預覽：</span>
-                            <div class="flex gap-1">
-                                <button type="button" data-sep-view="A" class="sep-view-btn px-2.5 py-1 rounded-md text-[11px] font-bold bg-rose-500 text-white">第一週</button>
-                                <button type="button" data-sep-view="B" class="sep-view-btn px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 text-slate-600">第二週</button>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- 動態產生的各週日期列表 -->
+                    <div id="week-ranges-list" class="space-y-2 max-h-56 overflow-y-auto pr-1 custom-scrollbar"></div>
                 </div>
 
-                <!-- 每日備註/放假設定 -->
-                <div class="bg-red-50/50 p-4 rounded-2xl border border-red-100/50 space-y-3">
+                <!-- 每日備註/放假設定（支援切換目前選取的任一週） -->
+                <div class="bg-red-50/50 p-4 rounded-2xl border border-red-100/50 space-y-2.5">
                     <div class="flex items-center justify-between">
                         <label class="block text-xs font-bold text-red-800 flex items-center gap-1">
                             <span class="iconify" data-icon="ph:calendar-star-duotone"></span> 每日備註 / 放假設定
                         </label>
                         <span id="save-status-class" class="text-[10px] font-bold opacity-0 transition"></span>
                     </div>
-                    <div class="text-[11px] font-bold text-red-700" id="day-note-label-a">第一週（一 ～ 五）</div>
-                    <div class="grid grid-cols-5 gap-1">
+                    <!-- 切換要編輯哪一週的放假備註 -->
+                    <div id="day-note-week-tabs" class="flex flex-wrap gap-1"></div>
+
+                    <div class="grid grid-cols-5 gap-1 pt-1">
                         <div class="text-center"><div class="text-[10px] text-slate-500 mb-1">一</div><input type="text" id="note-day-1" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
                         <div class="text-center"><div class="text-[10px] text-slate-500 mb-1">二</div><input type="text" id="note-day-2" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
                         <div class="text-center"><div class="text-[10px] text-slate-500 mb-1">三</div><input type="text" id="note-day-3" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
                         <div class="text-center"><div class="text-[10px] text-slate-500 mb-1">四</div><input type="text" id="note-day-4" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
                         <div class="text-center"><div class="text-[10px] text-slate-500 mb-1">五</div><input type="text" id="note-day-5" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
-                    </div>
-
-                    <div id="day-note-box-b" class="pt-2 border-t border-red-100 space-y-1.5">
-                        <div class="text-[11px] font-bold text-rose-700">第二週（一 ～ 五）</div>
-                        <div class="grid grid-cols-5 gap-1">
-                            <div class="text-center"><input type="text" id="note-b-day-1" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-rose-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-400 bg-white"></div>
-                            <div class="text-center"><input type="text" id="note-b-day-2" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-rose-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-400 bg-white"></div>
-                            <div class="text-center"><input type="text" id="note-b-day-3" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-rose-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-400 bg-white"></div>
-                            <div class="text-center"><input type="text" id="note-b-day-4" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-rose-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-400 bg-white"></div>
-                            <div class="text-center"><input type="text" id="note-b-day-5" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-rose-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-400 bg-white"></div>
-                        </div>
                     </div>
                 </div>
 
@@ -282,7 +270,7 @@
                     <div class="flex justify-between items-center mb-2">
                         <label class="block text-xs font-bold text-teal-800">選擇學生</label>
                         <button id="btn-open-edit" class="text-[11px] bg-teal-600 text-white hover:bg-teal-700 px-3 py-1 rounded-lg font-bold transition flex items-center gap-1 shadow-sm">
-                            <span class="iconify" data-icon="ph:pencil-simple-duotone"></span> 微調資料
+                            <span class="iconify" data-icon="ph:pencil-simple-duotone"></span> 微調各週資料
                         </button>
                     </div>
                     <select id="input-seat" class="w-full px-3 py-2 border border-teal-200 rounded-xl bg-white text-sm font-bold text-teal-900 cursor-pointer shadow-sm outline-none focus:ring-2 focus:ring-teal-400/50"></select>
@@ -295,7 +283,7 @@
                         <div class="col-span-2">
                             <label class="block text-[10px] font-bold text-indigo-600 mb-1">產出模式 (決定 PDF 大小)</label>
                             <select id="input-export-mode" class="w-full px-3 py-2 border border-indigo-200 rounded-xl text-sm font-bold text-indigo-900 outline-none focus:ring-2 focus:ring-indigo-400 bg-white cursor-pointer shadow-sm">
-                                <option value="dynamic_pdf">⬇️ 自適應下載 (有多長存多長)</option>
+                                <option value="dynamic_pdf">⬇️ 自適應下載 (有多長存多長，最適合多週合印)</option>
                                 <option value="native_print">🖨️ 傳統列印 (自動縮放符合紙張)</option>
                             </select>
                         </div>
@@ -330,7 +318,7 @@
                         <div>
                             <label class="block text-[10px] font-bold text-indigo-600 mb-1">簽名區總高度 (PX)</label>
                             <div class="flex items-center">
-                                <input type="number" id="input-signature-height" value="150" min="50" max="400" step="10" class="w-full px-2 py-1.5 border border-indigo-200 rounded-lg text-center text-sm font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
+                                <input type="number" id="input-signature-height" value="140" min="50" max="400" step="10" class="w-full px-2 py-1.5 border border-indigo-200 rounded-lg text-center text-sm font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
                             </div>
                         </div>
                         <div>
@@ -354,7 +342,7 @@
 
             <div class="p-5 bg-white/90 border-t border-rose-50 space-y-2.5 sticky bottom-0 z-10 rounded-tr-[2rem]">
                 <button id="btn-download-single" class="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-full shadow-lg transition flex justify-center items-center">
-                    <span class="iconify text-xl mr-1" data-icon="ph:download-simple-bold"></span> <span id="btn-single-label">執行產出 (單人雙週整合)</span>
+                    <span class="iconify text-xl mr-1" data-icon="ph:download-simple-bold"></span> <span id="btn-single-label">執行產出 (單人 4 週報表)</span>
                 </button>
                 <button id="btn-download-all" class="w-full py-3 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-full shadow-lg transition flex justify-center items-center">
                     <span class="iconify text-xl mr-1" data-icon="ph:files-bold"></span> <span id="btn-all-label">執行產出 (全班批次)</span>
@@ -363,25 +351,34 @@
         </div>
 
         <!-- 右側：即時預覽區 -->
-        <div class="flex-1 bg-cute-pattern h-full overflow-auto p-4 md:p-8 flex justify-center items-start relative">
+        <div class="flex-1 bg-cute-pattern h-full overflow-auto p-4 md:p-8 flex flex-col items-center justify-start relative">
+            <!-- 當分頁模式為「每2週一張」或「每1週一張」時，頂部顯示預覽頁切換器 -->
+            <div id="preview-page-switcher" class="hidden mb-4 bg-white/95 px-4 py-2 rounded-full shadow-md border border-rose-200 flex items-center gap-2 z-20">
+                <span class="text-xs font-bold text-slate-600">📄 切換預覽分頁：</span>
+                <div id="preview-page-btns" class="flex gap-1.5"></div>
+            </div>
+
             <div id="preview-scale-wrapper" class="relative" style="transform-origin: top center; transition: transform 0.2s;">
                 <div class="absolute inset-0 bg-black/5 blur-xl rounded-sm transform translate-y-4 translate-x-2 pointer-events-none"></div>
                 
                 <!-- 報告預覽畫布 -->
                 <div id="report-template" class="report-page layout-landscape theme-bw relative z-10 shadow-2xl">
                     <!-- 頂部標題與學生姓名列 -->
-                    <div class="flex justify-between items-end mb-4 border-b-2 border-slate-800 pb-3">
+                    <div class="flex justify-between items-end mb-3 border-b-2 border-slate-800 pb-2.5">
                         <div>
                             <div id="prev-semester" class="adjust-baseline text-xs text-text-light font-bold mb-0.5">--</div>
-                            <h1 id="prev-main-title" class="adjust-baseline text-2xl font-black text-text-main font-comfortaa tracking-wide">805 生活計點週報表（雙週整合）</h1>
+                            <h1 id="prev-main-title" class="adjust-baseline text-2xl font-black text-text-main font-comfortaa tracking-wide">805 生活計點週報表</h1>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <div class="info-card px-4 py-2 flex items-center gap-4">
+                        <div class="flex items-center gap-2.5">
+                            <!-- 多週區間總覽小卡（當一張包含 >=2 週時自動顯示） -->
+                            <div id="multi-week-summary-pill" class="hidden bg-slate-800 text-white px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-3"></div>
+
+                            <div class="info-card px-4 py-1.5 flex items-center gap-3.5">
                                 <div>
                                     <div class="adjust-baseline text-[10px] font-bold text-gray-500 leading-none mb-1">座號</div>
                                     <div id="prev-seat" class="adjust-baseline text-xl font-black font-comfortaa leading-none">--</div>
                                 </div>
-                                <div class="h-7 w-[1.5px] bg-slate-300"></div>
+                                <div class="h-6 w-[1.5px] bg-slate-300"></div>
                                 <div>
                                     <div class="adjust-baseline text-[10px] font-bold text-gray-500 leading-none mb-1">姓名</div>
                                     <div id="prev-name" class="adjust-baseline text-xl font-black leading-none">--</div>
@@ -390,20 +387,20 @@
                         </div>
                     </div>
 
-                    <!-- 🌟 動態週次內容容器（單週時渲染 1 組，雙週同張整合時上下渲染第 1 週 ＋ 第 2 週！） -->
+                    <!-- 🌟 動態週次內容容器（可渲染 1 週、2 週、3 週、或 4 週！） -->
                     <div id="weeks-render-container"></div>
                     
-                    <!-- 底部簽名與評語區（單週或雙週同張皆共用此簽名區） -->
-                    <div id="signature-container" class="grid gap-3 mt-3 w-full items-stretch">
+                    <!-- 底部簽名與評語區 -->
+                    <div id="signature-container" class="grid gap-3 mt-2.5 w-full items-stretch">
                         <div id="box-teacher" class="box-wrapper h-full shadow-sm flex flex-col">
                             <div class="box-inner flex flex-col h-full">
                                 <div class="border-b border-slate-300 w-full flex-none bg-gray-100" style="display: table;">
-                                    <div style="display: table-cell; vertical-align: middle;" class="text-center h-[32px]">
-                                        <span class="adjust-baseline block font-bold text-xs tracking-widest text-gray-700 leading-[32px]">導師的話</span>
+                                    <div style="display: table-cell; vertical-align: middle;" class="text-center h-[30px]">
+                                        <span class="adjust-baseline block font-bold text-xs tracking-widest text-gray-700 leading-[30px]">導師的話</span>
                                     </div>
                                 </div>
                                 <div class="box-body items-start justify-start flex-1 overflow-hidden w-full p-3">
-                                    <div id="prev-teacher-comment" class="adjust-baseline text-[14px] leading-relaxed font-handwriting text-gray-800 whitespace-pre-wrap text-left w-full block"></div>
+                                    <div id="prev-teacher-comment" class="adjust-baseline text-[13.5px] leading-relaxed font-handwriting text-gray-800 whitespace-pre-wrap text-left w-full block"></div>
                                 </div>
                             </div>
                         </div>
@@ -411,8 +408,8 @@
                         <div id="box-student" class="box-wrapper h-full shadow-sm flex flex-col">
                             <div class="box-inner flex flex-col h-full">
                                 <div class="border-b border-slate-300 w-full flex-none bg-gray-100" style="display: table;">
-                                    <div style="display: table-cell; vertical-align: middle;" class="text-center h-[32px]">
-                                        <span class="adjust-baseline block font-bold text-xs tracking-widest text-gray-700 leading-[32px]">學生確認</span>
+                                    <div style="display: table-cell; vertical-align: middle;" class="text-center h-[30px]">
+                                        <span class="adjust-baseline block font-bold text-xs tracking-widest text-gray-700 leading-[30px]">學生確認</span>
                                     </div>
                                 </div>
                                 <div class="box-body items-start justify-start flex-1 w-full p-3"></div>
@@ -422,13 +419,13 @@
                         <div id="box-parent" class="box-wrapper h-full shadow-sm flex flex-col">
                             <div class="box-inner flex flex-col h-full">
                                 <div class="border-b border-slate-300 w-full flex-none bg-gray-100" style="display: table;">
-                                    <div style="display: table-cell; vertical-align: middle;" class="text-center h-[32px]">
-                                        <span class="adjust-baseline block font-bold text-xs tracking-widest text-gray-700 leading-[32px]">家長的話</span>
+                                    <div style="display: table-cell; vertical-align: middle;" class="text-center h-[30px]">
+                                        <span class="adjust-baseline block font-bold text-xs tracking-widest text-gray-700 leading-[30px]">家長的話</span>
                                     </div>
                                 </div>
                                 <div class="box-body flex flex-col justify-end w-full p-3 h-full">
                                     <div class="flex-1 mb-2"></div>
-                                    <div class="text-[12px] font-bold border-t border-dashed border-gray-400 pt-3 text-gray-600 flex items-end w-full">
+                                    <div class="text-[12px] font-bold border-t border-dashed border-gray-400 pt-2.5 text-gray-600 flex items-end w-full">
                                         <span class="adjust-baseline">簽名：</span>
                                     </div>
                                 </div>
@@ -448,8 +445,8 @@
         <div class="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl">
             <div class="p-5 border-b flex justify-between items-center bg-teal-50 rounded-t-2xl">
                 <div>
-                    <h3 class="font-bold text-lg text-teal-800 flex items-center gap-2"><span class="iconify" data-icon="ph:pencil-circle-duotone"></span> 微調本週畫面資料</h3>
-                    <p class="text-xs text-teal-600 mt-1">此處修改僅限本次預覽與匯出有效，不會覆寫試算表；修改第一週分數也會自動連動更新第二週累計總積分！</p>
+                    <h3 class="font-bold text-lg text-teal-800 flex items-center gap-2"><span class="iconify" data-icon="ph:pencil-circle-duotone"></span> 微調各週畫面資料</h3>
+                    <p class="text-xs text-teal-600 mt-1">此處修改僅限本次預覽與匯出有效；修改前面週次的分數時，後面週次的「當週結算總分」會自動往後連動更新！</p>
                 </div>
                 <button onclick="closeEditModal()" class="text-slate-400 hover:text-red-500 text-2xl">&times;</button>
             </div>
@@ -462,113 +459,154 @@
     </div>
 
 <script>
-    // 🏆 全域狀態與資料庫
+    // 🏆 全域狀態與多週資料庫（支援 1 ～ 4 週動態擴充）
     window.isExporting = false;
-    let weekMode = 'dual_merged';       // 'single' | 'dual_merged' | 'dual_separate'
-    let separatePreviewTarget = 'A';    // 當 weekMode === 'dual_separate' 時，預覽 'A' 或 'B'
+    let selectedWeekCount = 4;          // 1 | 2 | 3 | 4（預設展示 4 週一起出的效果！）
+    let pageSplitMode = 'all_in_one';   // 'all_in_one' (全部同張) | 'two_per_page' (每2週一張) | 'one_per_page' (每1週一張)
+    let activeChunkIndex = 0;           // 分頁預覽時目前看第幾張
+    let activeDayNoteWeekIdx = 0;       // 左側「每日備註」目前正在編輯哪一週 (0..selectedWeekCount-1)
+
     let globalSemesterList = [
-        { name: '114學年度第1學期', isActive: true, startDate: new Date(2026, 8, 1).getTime() }
+        { name: '114學年度第1學期', isActive: true, startDate: new Date(2026, 8, 7).getTime() } // 2026-09-07 第一週週一
     ];
 
-    // 支援兩週各自獨立的資料結構（含當週截止的 totalScore、當週明細、當週淨分、當週放假備註）
-    let weekStateA = {
-        weekLabel: '第 9 週',
-        startDate: '2026-10-26',
-        endDate: '2026-11-01',
-        dayNotes: { 1: '', 2: '', 3: '', 4: '', 5: '', classComment: '下週四、五為第二次定期評量，請同學提早溫習功課、作息正常！' },
-        students: {},       // { [seatNo]: { seatNo, name, totalScore, records: {1..5}, comment } }
-        netScores: {}       // { [seatNo]: number }
-    };
-
-    let weekStateB = {
-        weekLabel: '第 10 週',
-        startDate: '2026-11-02',
-        endDate: '2026-11-08',
-        dayNotes: { 1: '', 2: '', 3: '', 4: '', 5: '運動會補假' },
-        students: {},       // { [seatNo]: { seatNo, name, totalScore, records: {1..5}, comment } }
-        netScores: {}
-    };
-
-    let tempEditWeekA = null;
-    let tempEditWeekB = null;
+    // weeksList 儲存每一週的完整狀態：[{ weekLabel, startDate, endDate, dayNotes, students, netScores }]
+    let weeksList = [];
+    let tempEditRecordsByWeek = [];
 
     function getEl(id) { return document.getElementById(id); }
     const escHtml = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-    /* ============ 1. 內建示範資料（展現「第 9 週總積分 ≠ 第 10 週總積分」的真實推進效果） ============ */
-    function loadBuiltInDemoData() {
+    function toIsoDate(d) {
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function formatShortDate(ds) {
+        if (!ds) return '--/--';
+        const parts = ds.split('-');
+        if (parts.length < 3) return ds;
+        return `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
+    }
+
+    /* ============ 1. 內建 4 週示範資料（展現第 7、8、9、10 週各自獨立推進的「當週結算總分」） ============ */
+    function initDemoWeeksData(startWeekNum, count) {
         const demoRoster = [
-            { seatNo: '1', name: '林宥辰', baseBeforeW9: 101 },
-            { seatNo: '2', name: '陳品言', baseBeforeW9: 100 },
-            { seatNo: '3', name: '張宇翔', baseBeforeW9: 98.5 },
-            { seatNo: '4', name: '黃子軒', baseBeforeW9: 100 },
-            { seatNo: '5', name: '李承恩', baseBeforeW9: 99 },
-            { seatNo: '6', name: '王宥翔', baseBeforeW9: 102 },
-            { seatNo: '7', name: '吳冠廷', baseBeforeW9: 97 },
-            { seatNo: '8', name: '劉品希', baseBeforeW9: 103 }
+            { seatNo: '1', name: '林宥辰', baseScore: 100 },
+            { seatNo: '2', name: '陳品言', baseScore: 100 },
+            { seatNo: '3', name: '張宇翔', baseScore: 100 },
+            { seatNo: '4', name: '黃子軒', baseScore: 100 },
+            { seatNo: '5', name: '李承恩', baseScore: 100 },
+            { seatNo: '6', name: '王宥翔', baseScore: 100 },
+            { seatNo: '7', name: '吳冠廷', baseScore: 100 },
+            { seatNo: '8', name: '劉品希', baseScore: 100 }
         ];
 
-        const w9Recs = {
-            '1': { 1: [{ reason: '早自習秩序優良', points: 1, remarks: '' }], 2: [], 3: [{ reason: '熱心班級事務', points: 1, remarks: '協助搬運器材' }], 4: [], 5: [] },
-            '2': { 1: [], 2: [{ reason: '聯絡簿家長未簽名', points: -1, remarks: '' }], 3: [], 4: [{ reason: '聯絡簿書寫優良', points: 1, remarks: '' }], 5: [] },
-            '3': { 1: [{ reason: '聯絡簿未交', points: -1, remarks: '' }], 2: [], 3: [{ reason: '作業未交／遲交', points: -1, remarks: '數學習作' }], 4: [{ reason: '打掃工作認真', points: 1, remarks: '' }], 5: [] },
-            '5': { 1: [], 2: [], 3: [{ reason: '聯絡簿札記未寫', points: -1, remarks: '' }], 4: [], 5: [] },
-            '7': { 1: [{ reason: '服儀／物品未帶', points: -1, remarks: '' }], 2: [{ reason: '聯絡簿未交', points: -1, remarks: '' }], 3: [], 4: [], 5: [] },
-            '8': { 1: [], 2: [{ reason: '聯絡簿書寫優良', points: 1, remarks: '心得深刻' }], 3: [], 4: [{ reason: '抽屜座位整潔優良', points: 1, remarks: '' }], 5: [] }
-        };
-
-        const w10Recs = {
-            '1': { 1: [], 2: [{ reason: '聯絡簿書寫優良', points: 1, remarks: '' }], 3: [], 4: [{ reason: '打掃工作認真', points: 1, remarks: '' }], 5: [] },
-            '2': { 1: [{ reason: '打掃工作認真', points: 1, remarks: '' }], 2: [], 3: [], 4: [], 5: [] },
-            '3': { 1: [], 2: [{ reason: '聯絡簿遲交', points: -0.5, remarks: '第一節下課補交' }], 3: [], 4: [{ reason: '聯絡簿未交', points: -1, remarks: '' }, { reason: '週報表未交', points: -1, remarks: '' }], 5: [] },
-            '5': { 1: [{ reason: '聯絡簿家長未簽名', points: -1, remarks: '' }], 2: [], 3: [], 4: [{ reason: '熱心班級事務', points: 1, remarks: '' }], 5: [] },
-            '7': { 1: [], 2: [], 3: [{ reason: '聯絡簿家長未簽名', points: -1, remarks: '' }], 4: [], 5: [] },
-            '8': { 1: [{ reason: '熱心班級事務', points: 1, remarks: '' }], 2: [], 3: [{ reason: '早自習秩序優良', points: 1, remarks: '' }], 4: [], 5: [] }
-        };
+        // 4 個示範週的每日紀錄模板
+        const demoRecordsPerWeek = [
+            // Week offset 0 (例如第 7 週)
+            {
+                dayNotes: { 1: '', 2: '', 3: '', 4: '', 5: '', classComment: '本月份週報表彙整了近幾週的生活常規與聯絡簿表現，請家長參閱並簽名！' },
+                recs: {
+                    '1': { 1: [], 2: [{ reason: '早自習秩序優良', points: 1, remarks: '' }], 3: [], 4: [], 5: [] },
+                    '2': { 1: [{ reason: '聯絡簿家長未簽名', points: -1, remarks: '' }], 2: [], 3: [], 4: [], 5: [] },
+                    '3': { 1: [], 2: [{ reason: '聯絡簿未交', points: -1, remarks: '' }], 3: [], 4: [{ reason: '聯絡簿遲交', points: -0.5, remarks: '' }], 5: [] },
+                    '5': { 1: [], 2: [], 3: [{ reason: '打掃工作認真', points: 1, remarks: '' }], 4: [], 5: [] },
+                    '7': { 1: [{ reason: '聯絡簿未交', points: -1, remarks: '' }], 2: [], 3: [], 4: [], 5: [] },
+                    '8': { 1: [{ reason: '聯絡簿書寫優良', points: 1, remarks: '' }], 2: [], 3: [], 4: [{ reason: '熱心班級事務', points: 1, remarks: '' }], 5: [] }
+                }
+            },
+            // Week offset 1 (例如第 8 週)
+            {
+                dayNotes: { 1: '校慶補假', 2: '', 3: '', 4: '', 5: '' },
+                recs: {
+                    '1': { 1: [], 2: [], 3: [{ reason: '抽屜座位整潔優良', points: 1, remarks: '' }], 4: [], 5: [] },
+                    '2': { 1: [], 2: [], 3: [{ reason: '聯絡簿書寫優良', points: 1, remarks: '札記用心' }], 4: [], 5: [] },
+                    '3': { 1: [], 2: [], 3: [{ reason: '週報表未交', points: -1, remarks: '' }], 4: [], 5: [{ reason: '打掃工作認真', points: 1, remarks: '' }] },
+                    '5': { 1: [], 2: [{ reason: '聯絡簿札記未寫', points: -1, remarks: '' }], 3: [], 4: [], 5: [] },
+                    '7': { 1: [], 2: [{ reason: '作業未交／遲交', points: -1, remarks: '英習' }], 3: [], 4: [], 5: [] },
+                    '8': { 1: [], 2: [], 3: [], 4: [{ reason: '打掃工作認真', points: 1, remarks: '' }], 5: [] }
+                }
+            },
+            // Week offset 2 (例如第 9 週)
+            {
+                dayNotes: { 1: '', 2: '', 3: '', 4: '', 5: '' },
+                recs: {
+                    '1': { 1: [{ reason: '早自習秩序優良', points: 1, remarks: '' }], 2: [], 3: [{ reason: '熱心班級事務', points: 1, remarks: '搬運器材' }], 4: [], 5: [] },
+                    '2': { 1: [], 2: [{ reason: '聯絡簿家長未簽名', points: -1, remarks: '' }], 3: [], 4: [{ reason: '聯絡簿書寫優良', points: 1, remarks: '' }], 5: [] },
+                    '3': { 1: [{ reason: '聯絡簿未交', points: -1, remarks: '' }], 2: [], 3: [{ reason: '作業未交／遲交', points: -1, remarks: '數習' }], 4: [{ reason: '打掃工作認真', points: 1, remarks: '' }], 5: [] },
+                    '5': { 1: [], 2: [], 3: [{ reason: '聯絡簿札記未寫', points: -1, remarks: '' }], 4: [], 5: [] },
+                    '7': { 1: [{ reason: '服儀／物品未帶', points: -1, remarks: '' }], 2: [{ reason: '聯絡簿未交', points: -1, remarks: '' }], 3: [], 4: [], 5: [] },
+                    '8': { 1: [], 2: [{ reason: '聯絡簿書寫優良', points: 1, remarks: '' }], 3: [], 4: [{ reason: '抽屜座位整潔優良', points: 1, remarks: '' }], 5: [] }
+                }
+            },
+            // Week offset 3 (例如第 10 週)
+            {
+                dayNotes: { 1: '', 2: '', 3: '', 4: '', 5: '運動會補假' },
+                recs: {
+                    '1': { 1: [], 2: [{ reason: '聯絡簿書寫優良', points: 1, remarks: '' }], 3: [], 4: [{ reason: '打掃工作認真', points: 1, remarks: '' }], 5: [] },
+                    '2': { 1: [{ reason: '打掃工作認真', points: 1, remarks: '' }], 2: [], 3: [], 4: [], 5: [] },
+                    '3': { 1: [], 2: [{ reason: '聯絡簿遲交', points: -0.5, remarks: '第一節補交' }], 3: [], 4: [{ reason: '聯絡簿未交', points: -1, remarks: '' }, { reason: '週報表未交', points: -1, remarks: '' }], 5: [] },
+                    '5': { 1: [{ reason: '聯絡簿家長未簽名', points: -1, remarks: '' }], 2: [], 3: [], 4: [{ reason: '熱心班級事務', points: 1, remarks: '' }], 5: [] },
+                    '7': { 1: [], 2: [], 3: [{ reason: '聯絡簿家長未簽名', points: -1, remarks: '' }], 4: [], 5: [] },
+                    '8': { 1: [{ reason: '熱心班級事務', points: 1, remarks: '' }], 2: [], 3: [{ reason: '早自習秩序優良', points: 1, remarks: '' }], 4: [], 5: [] }
+                }
+            }
+        ];
 
         const demoComments = {
-            '1': '宥辰這兩週表現非常穩定，還主動幫忙搬器材，繼續保持！',
-            '2': '品言第二週完全沒有缺簽聯絡簿了，進步看得見！',
-            '3': '宇翔這兩週聯絡簿常忘記帶來或遲交，請養成睡前檢查書包的好習慣喔！'
+            '1': '宥辰這幾週表現非常穩定，常主動幫忙班務，繼續保持！',
+            '2': '品言近期聯絡簿簽名與札記越來越穩定，進步看得見！',
+            '3': '宇翔這幾週聯絡簿與作業較常遲交或未交，請養成睡前檢查書包的好習慣喔！'
         };
 
-        weekStateA.students = {};
-        weekStateB.students = {};
+        const semStartMs = (globalSemesterList[0] && globalSemesterList[0].startDate) || new Date(2026, 8, 7).getTime();
+        const runningScoreMap = {};
+        demoRoster.forEach(s => { runningScoreMap[s.seatNo] = s.baseScore; });
 
-        demoRoster.forEach((stu) => {
-            const rA = w9Recs[stu.seatNo] || { 1: [], 2: [], 3: [], 4: [], 5: [] };
-            const rB = w10Recs[stu.seatNo] || { 1: [], 2: [], 3: [], 4: [], 5: [] };
+        weeksList = [];
+        for (let idx = 0; idx < count; idx++) {
+            const wNum = startWeekNum + idx;
+            const mon = new Date(semStartMs);
+            mon.setDate(mon.getDate() + (wNum - 1) * 7);
+            const sun = new Date(mon);
+            sun.setDate(mon.getDate() + 6);
 
-            let sumA = 0;
-            Object.values(rA).forEach(arr => arr.forEach(item => { sumA += item.points; }));
-            const totalEndW9 = parseFloat((stu.baseBeforeW9 + sumA).toFixed(1));
+            const tpl = demoRecordsPerWeek[idx % demoRecordsPerWeek.length];
+            const studentsMap = {};
 
-            let sumB = 0;
-            Object.values(rB).forEach(arr => arr.forEach(item => { sumB += item.points; }));
-            // ★ 第 10 週的總積分 = 第 9 週結算總積分 + 第 10 週淨分！
-            const totalEndW10 = parseFloat((totalEndW9 + sumB).toFixed(1));
+            demoRoster.forEach(stu => {
+                const rawR = (tpl.recs && tpl.recs[stu.seatNo]) || { 1: [], 2: [], 3: [], 4: [], 5: [] };
+                const rCopy = { 1: [], 2: [], 3: [], 4: [], 5: [] };
+                let weekDelta = 0;
+                for (let d = 1; d <= 5; d++) {
+                    rCopy[d] = (rawR[d] || []).map(item => {
+                        weekDelta += item.points;
+                        return Object.assign({}, item);
+                    });
+                }
+                // ★ 每一週的 totalScore 都是累加至「該週末」的當週結算總分！
+                runningScoreMap[stu.seatNo] = parseFloat((runningScoreMap[stu.seatNo] + weekDelta).toFixed(1));
 
-            weekStateA.students[stu.seatNo] = {
-                seatNo: stu.seatNo,
-                name: stu.name,
-                baseBeforeWeek: stu.baseBeforeW9,
-                totalScore: totalEndW9,
-                records: JSON.parse(JSON.stringify(rA)),
-                comment: demoComments[stu.seatNo] || ''
+                studentsMap[stu.seatNo] = {
+                    seatNo: stu.seatNo,
+                    name: stu.name,
+                    totalScore: runningScoreMap[stu.seatNo],
+                    records: rCopy,
+                    comment: demoComments[stu.seatNo] || ''
+                };
+            });
+
+            const wObj = {
+                weekLabel: `第 ${wNum} 週`,
+                startDate: toIsoDate(mon),
+                endDate: toIsoDate(sun),
+                dayNotes: Object.assign({ 1: '', 2: '', 3: '', 4: '', 5: '' }, tpl.dayNotes),
+                students: studentsMap,
+                netScores: {}
             };
-
-            weekStateB.students[stu.seatNo] = {
-                seatNo: stu.seatNo,
-                name: stu.name,
-                baseBeforeWeek: totalEndW9,
-                totalScore: totalEndW10,
-                records: JSON.parse(JSON.stringify(rB)),
-                comment: demoComments[stu.seatNo] || ''
-            };
-        });
-
-        recalculateNetScores(weekStateA);
-        recalculateNetScores(weekStateB);
+            recalculateNetScores(wObj);
+            weeksList.push(wObj);
+        }
     }
 
     function recalculateNetScores(wState) {
@@ -586,9 +624,8 @@
         });
     }
 
-    /* ============ 2. 連線後端（支援 Apps Script 內部環境 與 GitHub Pages Fetch API） ============ */
+    /* ============ 2. 連線後端（支援一次抓取 N 週資料） ============ */
     async function callBackendAPI(action, payload) {
-        // 1. 若在 Google Apps Script iframe 內執行
         if (typeof google !== 'undefined' && google.script && google.script.run) {
             return new Promise((resolve, reject) => {
                 const runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
@@ -599,7 +636,6 @@
                 else resolve(null);
             });
         }
-        // 2. 若在 GitHub Pages 獨立網頁執行，透過 fetch 呼叫 CONFIG.API_URL
         if (typeof CONFIG !== 'undefined' && CONFIG.API_URL) {
             const resp = await fetch(CONFIG.API_URL, {
                 method: 'POST',
@@ -614,22 +650,16 @@
         const loader = getEl('global-loader');
         if (loader) loader.style.display = 'flex';
 
-        const startA = getEl('input-date-start').value;
-        const endA = getEl('input-date-end').value;
-        const startB = getEl('input-date-start-b').value;
-        const endB = getEl('input-date-end-b').value;
         const semName = getEl('input-semester').value;
+        const ranges = weeksList.map(w => ({ startDateStr: w.startDate, endDateStr: w.endDate }));
 
         try {
             const res = await callBackendAPI('getMultiWeekReportData', {
-                ranges: [
-                    { startDateStr: startA, endDateStr: endA },
-                    { startDateStr: startB, endDateStr: endB }
-                ],
+                ranges: ranges,
                 semesterName: semName
             });
 
-            if (res && res.success && Array.isArray(res.weeks) && res.weeks.length >= 2) {
+            if (res && res.success && Array.isArray(res.weeks) && res.weeks.length === weeksList.length) {
                 globalSemesterList = res.semesterList || globalSemesterList;
                 const semSelect = getEl('input-semester');
                 if (semSelect && globalSemesterList.length) {
@@ -642,68 +672,168 @@
                     });
                 }
 
-                applyBackendWeekData(weekStateA, res.weeks[0]);
-                applyBackendWeekData(weekStateB, res.weeks[1]);
-
-                getEl('input-week').value = weekStateA.weekLabel;
-                getEl('input-week-b').value = weekStateB.weekLabel;
-                syncDayNoteInputsFromState();
+                res.weeks.forEach((wRes, idx) => {
+                    if (!wRes || !wRes.success) return;
+                    weeksList[idx].weekLabel = wRes.currentWeek || weeksList[idx].weekLabel;
+                    weeksList[idx].startDate = wRes.startDateStr || weeksList[idx].startDate;
+                    weeksList[idx].endDate = wRes.endDateStr || weeksList[idx].endDate;
+                    weeksList[idx].dayNotes = wRes.dayNotes || { 1: '', 2: '', 3: '', 4: '', 5: '' };
+                    weeksList[idx].students = {};
+                    (wRes.students || []).forEach(s => {
+                        if (s && s.seatNo) weeksList[idx].students[s.seatNo] = s;
+                    });
+                    recalculateNetScores(weeksList[idx]);
+                });
 
                 const badge = getEl('data-source-badge');
                 if (badge) {
                     badge.textContent = '🟢 已連線試算表';
                     badge.className = 'text-[11px] bg-emerald-600/90 text-white px-2.5 py-1 rounded-full font-bold';
                 }
-            } else {
-                // 後端尚未部署 getMultiWeekReportData 時，自動使用內建示範資料，保證預覽順暢
-                weekStateA.startDate = startA;
-                weekStateA.endDate = endA;
-                weekStateB.startDate = startB;
-                weekStateB.endDate = endB;
-                weekStateA.weekLabel = getEl('input-week').value || '第 9 週';
-                weekStateB.weekLabel = getEl('input-week-b').value || '第 10 週';
-                syncDayNoteInputsFromState();
             }
         } catch (err) {
             console.warn('目前使用內建預覽示範資料：', err);
-            syncDayNoteInputsFromState();
         }
 
+        renderWeekRangesListUI();
+        renderDayNoteWeekTabs();
         updateSeatDropdown();
         if (loader) loader.style.display = 'none';
     }
 
-    function applyBackendWeekData(targetState, wRes) {
-        if (!wRes || !wRes.success) return;
-        targetState.weekLabel = wRes.currentWeek || targetState.weekLabel;
-        targetState.startDate = wRes.startDateStr || targetState.startDate;
-        targetState.endDate = wRes.endDateStr || targetState.endDate;
-        targetState.dayNotes = wRes.dayNotes || {};
-        targetState.students = {};
-        (wRes.students || []).forEach(s => {
-            if (s && s.seatNo) targetState.students[s.seatNo] = s;
+    /* ============ 3. 左側各週區間清單 ＆ 每日放假備註頁籤 ============ */
+    function renderWeekRangesListUI() {
+        const box = getEl('week-ranges-list');
+        if (!box) return;
+        box.innerHTML = weeksList.map((w, idx) => `
+            <div class="bg-white p-2.5 rounded-xl border border-orange-200/80 space-y-1.5">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-extrabold text-orange-800">📅 第 ${idx + 1} 區段：${escHtml(w.weekLabel)}</span>
+                    <input type="text" data-wk-label="${idx}" value="${escHtml(w.weekLabel)}" class="w-24 px-2 py-0.5 border border-orange-200 rounded-md bg-orange-50/40 text-xs font-bold text-center outline-none">
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <input type="date" data-wk-start="${idx}" value="${w.startDate}" class="w-full px-2 py-1 border border-orange-200 rounded-lg text-xs outline-none">
+                    <span class="text-orange-400 font-bold">~</span>
+                    <input type="date" data-wk-end="${idx}" value="${w.endDate}" class="w-full px-2 py-1 border border-orange-200 rounded-lg text-xs outline-none">
+                </div>
+            </div>
+        `).join('');
+
+        box.querySelectorAll('[data-wk-label]').forEach(inp => {
+            inp.addEventListener('change', (e) => {
+                const i = Number(e.target.getAttribute('data-wk-label'));
+                weeksList[i].weekLabel = e.target.value;
+                renderDayNoteWeekTabs();
+                updatePreview();
+            });
         });
-        recalculateNetScores(targetState);
+        box.querySelectorAll('[data-wk-start]').forEach(inp => {
+            inp.addEventListener('change', (e) => {
+                const i = Number(e.target.getAttribute('data-wk-start'));
+                weeksList[i].startDate = e.target.value;
+                updatePreview();
+            });
+        });
+        box.querySelectorAll('[data-wk-end]').forEach(inp => {
+            inp.addEventListener('change', (e) => {
+                const i = Number(e.target.getAttribute('data-wk-end'));
+                weeksList[i].endDate = e.target.value;
+                updatePreview();
+            });
+        });
     }
 
-    function syncDayNoteInputsFromState() {
+    function renderDayNoteWeekTabs() {
+        if (activeDayNoteWeekIdx >= weeksList.length) activeDayNoteWeekIdx = 0;
+        const wrap = getEl('day-note-week-tabs');
+        if (!wrap) return;
+        wrap.innerHTML = weeksList.map((w, idx) => {
+            const hasNote = [1, 2, 3, 4, 5].some(d => w.dayNotes && String(w.dayNotes[d] || '').trim() !== '');
+            const isAct = idx === activeDayNoteWeekIdx;
+            return `<button type="button" data-note-wk="${idx}" class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${isAct ? 'bg-red-500 text-white shadow-sm' : 'bg-white text-red-800 border border-red-200'}">
+                <span>${escHtml(w.weekLabel)}</span>
+                ${hasNote ? '<span class="w-1.5 h-1.5 rounded-full bg-amber-300 inline-block"></span>' : ''}
+            </button>`;
+        }).join('');
+
+        wrap.querySelectorAll('[data-note-wk]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                activeDayNoteWeekIdx = Number(btn.getAttribute('data-note-wk'));
+                renderDayNoteWeekTabs();
+                syncDayNoteInputsFromActiveWeek();
+            });
+        });
+
+        syncDayNoteInputsFromActiveWeek();
+    }
+
+    function syncDayNoteInputsFromActiveWeek() {
+        const w = weeksList[activeDayNoteWeekIdx];
+        if (!w) return;
         for (let i = 1; i <= 5; i++) {
-            if (getEl(`note-day-${i}`)) getEl(`note-day-${i}`).value = weekStateA.dayNotes[i] || '';
-            if (getEl(`note-b-day-${i}`)) getEl(`note-b-day-${i}`).value = weekStateB.dayNotes[i] || '';
+            if (getEl(`note-day-${i}`)) getEl(`note-day-${i}`).value = (w.dayNotes && w.dayNotes[i]) || '';
         }
-        const clsCmt = weekStateB.dayNotes['classComment'] || weekStateA.dayNotes['classComment'] || '';
-        if (getEl('input-class-comment')) getEl('input-class-comment').value = clsCmt;
+        const firstWithCls = weeksList.find(x => x.dayNotes && x.dayNotes.classComment);
+        if (getEl('input-class-comment') && !getEl('input-class-comment').value && firstWithCls) {
+            getEl('input-class-comment').value = firstWithCls.dayNotes.classComment;
+        }
     }
 
-    /* ============ 3. 學生選單與畫面渲染 ============ */
+    /* ============ 4. 分頁切片邏輯（全部同張 vs 每2週一張 vs 每1週一張） ============ */
+    function getPageChunks() {
+        const indices = weeksList.map((_, i) => i);
+        if (pageSplitMode === 'all_in_one' || indices.length <= 1) {
+            return [indices];
+        }
+        if (pageSplitMode === 'two_per_page') {
+            const chunks = [];
+            for (let i = 0; i < indices.length; i += 2) {
+                chunks.push(indices.slice(i, i + 2));
+            }
+            return chunks;
+        }
+        // 'one_per_page'
+        return indices.map(i => [i]);
+    }
+
+    function renderPreviewPageSwitcher() {
+        const chunks = getPageChunks();
+        if (activeChunkIndex >= chunks.length) activeChunkIndex = 0;
+        const bar = getEl('preview-page-switcher');
+        const btnsBox = getEl('preview-page-btns');
+
+        if (chunks.length <= 1) {
+            bar.classList.add('hidden');
+            return;
+        }
+        bar.classList.remove('hidden');
+        btnsBox.innerHTML = chunks.map((chunk, cIdx) => {
+            const labels = chunk.map(i => weeksList[i].weekLabel).join('＋');
+            const isAct = cIdx === activeChunkIndex;
+            return `<button type="button" data-chunk-idx="${cIdx}" class="px-3 py-1 rounded-full text-xs font-bold transition ${isAct ? 'bg-rose-500 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-rose-50'}">
+                第 ${cIdx + 1} 張（${escHtml(labels)}）
+            </button>`;
+        }).join('');
+
+        btnsBox.querySelectorAll('[data-chunk-idx]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                activeChunkIndex = Number(btn.getAttribute('data-chunk-idx'));
+                renderPreviewPageSwitcher();
+                updatePreview();
+            });
+        });
+    }
+
+    /* ============ 5. 學生統計與單週區塊 HTML 建構 ============ */
     function updateSeatDropdown() {
         const select = getEl('input-seat');
-        if (!select) return;
+        if (!select || !weeksList.length) return;
 
         const currentSelected = select.value;
         select.innerHTML = '';
 
-        const seats = Object.keys(weekStateA.students).sort((a, b) => parseInt(a) - parseInt(b));
+        const firstWeekStudents = weeksList[0].students || {};
+        const seats = Object.keys(firstWeekStudents).sort((a, b) => parseInt(a) - parseInt(b));
         if (seats.length === 0) {
             select.innerHTML = '<option value="">無學生資料</option>';
             updatePreview();
@@ -713,7 +843,7 @@
         seats.forEach(seat => {
             const opt = document.createElement('option');
             opt.value = seat;
-            opt.textContent = `${seat}號 - ${weekStateA.students[seat].name}`;
+            opt.textContent = `${seat}號 - ${firstWeekStudents[seat].name}`;
             select.appendChild(opt);
         });
 
@@ -725,18 +855,10 @@
 
     function loadStudentData() {
         const seat = getEl('input-seat') ? getEl('input-seat').value : null;
-        const sB = seat ? weekStateB.students[seat] : null;
-        const sA = seat ? weekStateA.students[seat] : null;
-        const cmt = (sB && sB.comment) ? sB.comment : (sA && sA.comment ? sA.comment : '');
-        if (getEl('input-comment')) getEl('input-comment').value = cmt;
+        const lastW = weeksList[weeksList.length - 1];
+        const s = (lastW && seat && lastW.students[seat]) ? lastW.students[seat] : null;
+        if (getEl('input-comment')) getEl('input-comment').value = (s && s.comment) || '';
         updatePreview();
-    }
-
-    function formatShortDate(ds) {
-        if (!ds) return '--/--';
-        const parts = ds.split('-');
-        if (parts.length < 3) return ds;
-        return `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
     }
 
     function getStudentWeekStats(wState, seat) {
@@ -756,14 +878,12 @@
         const net = parseFloat((p - m).toFixed(1));
         const totalScore = parseFloat((s.totalScore || 0).toFixed(1));
 
-        // 計算當週名次（依本週淨分）
         let weekRank = 1;
         const myNet = wState.netScores[seat] ?? net;
         Object.keys(wState.netScores).forEach(otherSeat => {
             if (wState.netScores[otherSeat] > myNet) weekRank++;
         });
 
-        // ★ 計算截至該週末的「當週總班排」（依截至該週末的 totalScore）
         let totalRank = 1;
         Object.values(wState.students).forEach(other => {
             if (other.totalScore > s.totalScore) totalRank++;
@@ -772,12 +892,13 @@
         return { plus: p, minus: m, net, weekRank, totalScore, totalRank, hasRecord, records: s.records };
     }
 
-    function buildWeekBlockHTML(wState, seat, isCompactDual) {
+    function buildWeekBlockHTML(wState, seat, weeksOnThisPage) {
         const st = getStudentWeekStats(wState, seat);
         const startD = wState.startDate;
         const endD = wState.endDate;
+        const isMulti = weeksOnThisPage >= 2;
+        const isUltraCompact = weeksOnThisPage >= 3;
 
-        // 計算週一～週五表頭日期
         const dayHeaders = [];
         if (startD) {
             const parts = startD.split('-');
@@ -791,27 +912,26 @@
             for (let i = 1; i <= 5; i++) dayHeaders.push('--/--');
         }
 
-        // 每日紀錄列 HTML
         let rowCells = '<tr>';
         for (let i = 1; i <= 5; i++) {
             rowCells += '<td>';
             if (wState.dayNotes[i] && String(wState.dayNotes[i]).trim() !== '') {
-                rowCells += `<div class="w-full mb-2 mt-0.5 bg-red-50 rounded border border-red-100" style="display: table;">
-                    <div style="display: table-cell; vertical-align: middle;" class="text-center px-1 py-1 h-[26px]">
-                        <span class="adjust-baseline block font-bold text-red-600 text-[12px] leading-[26px] break-words">${escHtml(wState.dayNotes[i])}</span>
+                rowCells += `<div class="w-full mb-1.5 mt-0.5 bg-red-50 rounded border border-red-100" style="display: table;">
+                    <div style="display: table-cell; vertical-align: middle;" class="text-center px-1 py-0.5 h-[22px]">
+                        <span class="adjust-baseline block font-bold text-red-600 text-[11px] leading-[22px] break-words">${escHtml(wState.dayNotes[i])}</span>
                     </div>
                 </div>`;
             }
             if (i === 3 && !st.hasRecord) {
-                rowCells += `<div class="flex items-center justify-center h-full opacity-40 py-2"><span class="adjust-baseline text-slate-400 font-bold text-sm">本週無加扣分紀錄 👍</span></div>`;
+                rowCells += `<div class="flex items-center justify-center h-full opacity-40 py-1"><span class="adjust-baseline text-slate-400 font-bold text-xs">本週無加扣分紀錄 👍</span></div>`;
             }
             (st.records[i] || []).forEach(r => {
                 const color = r.points > 0 ? 'text-emerald-600' : 'text-red-600';
                 const sign = r.points > 0 ? '+' : '';
-                rowCells += `<div class="record-item items-start"><span class="adjust-baseline desc text-[13px] font-medium text-slate-800 whitespace-pre-wrap">${escHtml(r.reason)}</span><span class="adjust-baseline score text-[14px] ${color}">${sign}${r.points}</span></div>`;
+                rowCells += `<div class="record-item items-start"><span class="adjust-baseline desc text-[12.5px] font-medium text-slate-800 whitespace-pre-wrap">${escHtml(r.reason)}</span><span class="adjust-baseline score text-[13px] ${color}">${sign}${r.points}</span></div>`;
                 if (r.remarks) {
                     const formatted = String(r.remarks).split('\n').map(line => `└ ${escHtml(line)}`).join('\n');
-                    rowCells += `<div class="adjust-baseline text-[11px] text-gray-500 whitespace-pre-wrap mt-0 pt-0 leading-snug mb-[5px] text-left">${formatted}</div>`;
+                    rowCells += `<div class="adjust-baseline text-[10.5px] text-gray-500 whitespace-pre-wrap mt-0 pt-0 leading-snug mb-[4px] text-left">${formatted}</div>`;
                 }
             });
             rowCells += '</td>';
@@ -819,21 +939,37 @@
         rowCells += '</tr>';
 
         const dayNames = ['星期一', '星期二', '星期三', '星期四', '星期五'];
+        const thHeight = isUltraCompact ? 'h-[30px]' : 'h-[34px]';
+        const thLine = isUltraCompact ? 'leading-[30px]' : 'leading-[34px]';
         const thHtml = dayNames.map((dName, idx) => `
-            <th class="text-center align-middle w-1/5 h-[36px]">
-                <div class="adjust-baseline leading-[36px] inline-block w-full">
+            <th class="text-center align-middle w-1/5 ${thHeight}">
+                <div class="adjust-baseline ${thLine} inline-block w-full">
                     <span class="text-xs text-slate-700 font-bold">${dName}</span>
-                    <span class="text-[11px] font-bold text-gray-500 font-raleway ml-1">${dayHeaders[idx]}</span>
+                    <span class="text-[10.5px] font-bold text-gray-500 font-raleway ml-1">${dayHeaders[idx]}</span>
                 </div>
             </th>
         `).join('');
 
-        return `
-        <div class="${isCompactDual ? 'week-section-block' : 'mb-4'}">
-            <!-- 該週統計數據橫列 -->
-            <div class="flex gap-2 mb-3 w-full items-stretch">
-                <div class="info-card w-[26%] p-2.5 flex flex-col justify-between">
-                    <div class="flex justify-between w-full mb-1.5">
+        // 當一次放 3~4 週在同一張時，使用緊湊型單行數據列，節省垂直高度！
+        const statsHeaderHtml = isUltraCompact
+            ? `<div class="flex items-center justify-between gap-2 mb-2 bg-white border border-slate-300 rounded-lg px-3 py-1.5">
+                <div class="flex items-center gap-2">
+                    <span class="adjust-baseline text-sm font-black text-slate-900 bg-slate-200 px-2.5 py-0.5 rounded">${escHtml(wState.weekLabel)}</span>
+                    <span class="adjust-baseline text-xs font-bold text-slate-600 font-comfortaa">${formatShortDate(startD)} ~ ${formatShortDate(endD)}</span>
+                </div>
+                <div class="flex items-center gap-3 text-xs font-bold">
+                    <span class="adjust-baseline text-slate-600">加分 <b class="font-comfortaa text-emerald-700">+${st.plus}</b></span>
+                    <span class="text-slate-300">|</span>
+                    <span class="adjust-baseline text-slate-600">扣分 <b class="font-comfortaa text-red-600">${st.minus === 0 ? '0' : '-' + st.minus}</b></span>
+                    <span class="text-slate-300">|</span>
+                    <span class="adjust-baseline text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">本週淨分 <b class="font-comfortaa">${st.net >= 0 ? '+' + st.net : st.net}</b> (週排 <b>#${st.weekRank}</b>)</span>
+                    <span class="adjust-baseline text-slate-900 bg-gray-100 px-2.5 py-0.5 rounded border-2 border-slate-700">截至${formatShortDate(endD)}結算總分：<b class="font-comfortaa text-sm">${st.totalScore}</b></span>
+                    <span class="adjust-baseline text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-500">當週總班排 <b>#${st.totalRank}</b></span>
+                </div>
+            </div>`
+            : `<div class="flex gap-2 mb-2.5 w-full items-stretch">
+                <div class="info-card w-[25%] p-2.5 flex flex-col justify-between">
+                    <div class="flex justify-between w-full mb-1">
                         <span class="adjust-baseline text-[10px] font-bold text-gray-500 leading-none">週次</span>
                         <span class="adjust-baseline text-[10px] font-bold text-gray-500 leading-none">統計區間</span>
                     </div>
@@ -842,7 +978,6 @@
                         <span class="adjust-baseline text-[13px] font-bold font-comfortaa leading-none text-slate-700">${formatShortDate(startD)} ~ ${formatShortDate(endD)}</span>
                     </div>
                 </div>
-
                 <div class="flex flex-1 gap-1.5 items-stretch">
                     <div class="stat-box flex-1 p-2 flex flex-col justify-between">
                         <div class="adjust-baseline text-[10px] font-bold text-text-light mb-1 leading-none">本週加分</div>
@@ -872,9 +1007,11 @@
                         <div class="adjust-baseline text-lg font-black font-comfortaa text-emerald-600 leading-none">${st.totalRank}</div>
                     </div>
                 </div>
-            </div>
+            </div>`;
 
-            <!-- 該週五日紀錄表格 -->
+        return `
+        <div class="${isMulti ? ('week-section-block' + (isUltraCompact ? ' ultra-compact' : '')) : 'mb-4'}">
+            ${statsHeaderHtml}
             <div class="box-wrapper w-full">
                 <div class="box-inner">
                     <table class="record-table">
@@ -886,17 +1023,10 @@
         </div>`;
     }
 
-    function updatePreview(overrideSingleTarget) {
+    function updatePreview(overrideChunkIdx) {
+        if (!weeksList.length) return;
         const seat = getEl('input-seat') ? getEl('input-seat').value : '1';
-        const stu = weekStateA.students[seat] || weekStateB.students[seat];
-
-        weekStateA.weekLabel = getEl('input-week') ? getEl('input-week').value : '第 9 週';
-        weekStateA.startDate = getEl('input-date-start') ? getEl('input-date-start').value : '';
-        weekStateA.endDate = getEl('input-date-end') ? getEl('input-date-end').value : '';
-
-        weekStateB.weekLabel = getEl('input-week-b') ? getEl('input-week-b').value : '第 10 週';
-        weekStateB.startDate = getEl('input-date-start-b') ? getEl('input-date-start-b').value : '';
-        weekStateB.endDate = getEl('input-date-end-b') ? getEl('input-date-end-b').value : '';
+        const stu = weeksList[0].students[seat];
 
         const classCommentText = getEl('input-class-comment') ? getEl('input-class-comment').value : '';
         const personalCommentText = getEl('input-comment') ? getEl('input-comment').value : '';
@@ -912,68 +1042,121 @@
         if (getEl('prev-seat')) getEl('prev-seat').textContent = seat || '--';
         if (getEl('prev-name')) getEl('prev-name').textContent = stu ? stu.name : '--';
 
-        const container = getEl('weeks-render-container');
+        const chunks = getPageChunks();
+        const cIdx = overrideChunkIdx !== undefined ? overrideChunkIdx : Math.min(activeChunkIndex, chunks.length - 1);
+        const currentChunk = chunks[cIdx] || [0];
+        const chunkWeeks = currentChunk.map(i => weeksList[i]).filter(Boolean);
+
         const mainTitle = getEl('prev-main-title');
+        const summaryPill = getEl('multi-week-summary-pill');
 
-        const activeTarget = overrideSingleTarget || separatePreviewTarget;
-
-        if (weekMode === 'dual_merged') {
-            mainTitle.textContent = `805 生活計點雙週報表（${weekStateA.weekLabel} ＆ ${weekStateB.weekLabel}）`;
-            container.innerHTML =
-                buildWeekBlockHTML(weekStateA, seat, true) +
-                buildWeekBlockHTML(weekStateB, seat, true);
-        } else if (weekMode === 'dual_separate') {
-            const targetState = activeTarget === 'B' ? weekStateB : weekStateA;
-            mainTitle.textContent = `805 生活計點週報表（${targetState.weekLabel}）`;
-            container.innerHTML = buildWeekBlockHTML(targetState, seat, false);
+        if (chunkWeeks.length === 1) {
+            mainTitle.textContent = `805 生活計點週報表（${chunkWeeks[0].weekLabel}）`;
+            summaryPill.classList.add('hidden');
         } else {
-            mainTitle.textContent = `805 生活計點週報表（${weekStateA.weekLabel}）`;
-            container.innerHTML = buildWeekBlockHTML(weekStateA, seat, false);
+            const firstLbl = chunkWeeks[0].weekLabel;
+            const lastLbl = chunkWeeks[chunkWeeks.length - 1].weekLabel;
+            mainTitle.textContent = `805 生活計點多週報表（${firstLbl} ～ ${lastLbl} · 共 ${chunkWeeks.length} 週）`;
+
+            // 計算這幾週的總結與總積分演變軌跡
+            let sumPlus = 0, sumMinus = 0;
+            const scoreTrail = [];
+            chunkWeeks.forEach(w => {
+                const st = getStudentWeekStats(w, seat);
+                sumPlus += st.plus;
+                sumMinus += st.minus;
+                scoreTrail.push(st.totalScore);
+            });
+            const sumNet = parseFloat((sumPlus - sumMinus).toFixed(1));
+            summaryPill.classList.remove('hidden');
+            summaryPill.innerHTML = `
+                <span class="adjust-baseline">區間淨分：<b class="font-comfortaa ${sumNet >= 0 ? 'text-emerald-300' : 'text-rose-300'}">${sumNet >= 0 ? '+' + sumNet : sumNet}</b></span>
+                <span class="opacity-40">|</span>
+                <span class="adjust-baseline">各週結算總分軌跡：<b class="font-comfortaa text-amber-300">${scoreTrail.join(' ➔ ')}</b></span>
+            `;
+        }
+
+        const container = getEl('weeks-render-container');
+        container.innerHTML = chunkWeeks.map(w => buildWeekBlockHTML(w, seat, chunkWeeks.length)).join('');
+    }
+
+    /* ============ 6. 切換週數 (1~4週) 與分頁方式 ============ */
+    function updateModeDescriptions() {
+        const desc = getEl('week-mode-desc');
+        const chunks = getPageChunks();
+        const wCount = weeksList.length;
+
+        getEl('multi-page-mode-wrap').classList.toggle('hidden', wCount === 1);
+
+        if (wCount === 1) {
+            desc.innerHTML = '💡 <b>單週模式</b>：產出 1 週報表，「當週結算總分」已修正為<b>只累加到該週結束日為止</b>，回頭補印舊週次也不會印出未來總分！';
+            getEl('btn-single-label').textContent = '執行產出 (單人單週)';
+            getEl('btn-all-label').textContent = '執行產出 (全班單週)';
+            return;
+        }
+
+        if (pageSplitMode === 'all_in_one') {
+            desc.innerHTML = `💡 <b>${wCount} 週全部同張整合</b>：將連續 ${wCount} 週濃縮排在同一張報表、共用最下方 1 個簽名欄（當週數 ≥ 3 週時自動切換為<b>高密度緊湊排版</b>，並顯示<b>各週結算總分軌跡</b>）！`;
+            getEl('btn-single-label').textContent = `執行產出 (單人 ${wCount} 週同張)`;
+            getEl('btn-all-label').textContent = `執行產出 (全班 ${wCount} 週同張)`;
+        } else if (pageSplitMode === 'two_per_page') {
+            desc.innerHTML = `💡 <b>每 2 週合印一張</b>：您選了 ${wCount} 週，系統已自動拆成 <b>${chunks.length} 張雙週報表</b>，字體大小最剛好、又省一半紙張！上方可切換預覽各張。`;
+            getEl('btn-single-label').textContent = `執行產出 (單人共 ${chunks.length} 張)`;
+            getEl('btn-all-label').textContent = `執行產出 (全班每人 ${chunks.length} 張)`;
+        } else {
+            desc.innerHTML = `💡 <b>每 1 週獨立一張</b>：按一次產出，系統會自動幫每位學生一次產出 <b>${wCount} 張獨立單週報表</b>（每一張各自帶當週截止的累計總積分）！`;
+            getEl('btn-single-label').textContent = `執行產出 (單人一次出 ${wCount} 張)`;
+            getEl('btn-all-label').textContent = `執行產出 (全班每人 ${wCount} 張)`;
         }
     }
 
-    /* ============ 4. 模式切換（單週 / 雙週同張 / 雙週分開兩張） ============ */
-    function setWeekMode(mode) {
-        weekMode = mode;
-        document.querySelectorAll('.week-mode-btn').forEach(btn => {
-            const isAct = btn.getAttribute('data-week-mode') === mode;
+    function setWeekCount(cnt) {
+        selectedWeekCount = cnt;
+        document.querySelectorAll('.week-cnt-btn').forEach(btn => {
+            const isAct = Number(btn.getAttribute('data-week-count')) === cnt;
             btn.className = isAct
-                ? 'week-mode-btn px-2 py-2 rounded-xl text-xs font-bold border transition bg-rose-500 text-white border-rose-500 shadow-sm'
-                : 'week-mode-btn px-2 py-2 rounded-xl text-xs font-bold border transition bg-white text-slate-600 border-rose-200 hover:bg-rose-50';
+                ? 'week-cnt-btn py-2 rounded-xl text-xs font-extrabold border transition bg-rose-500 text-white border-rose-500 shadow-sm'
+                : 'week-cnt-btn py-2 rounded-xl text-xs font-extrabold border transition bg-white text-slate-600 border-rose-200 hover:bg-rose-50';
         });
 
-        const isDual = mode !== 'single';
-        getEl('week-b-config-box').classList.toggle('hidden', !isDual);
-        getEl('day-note-box-b').classList.toggle('hidden', !isDual);
-        getEl('separate-preview-switch').classList.toggle('hidden', mode !== 'dual_separate');
-        getEl('label-week-a').textContent = isDual ? '📅 第一週（較早週次）' : '📅 選擇週次與日期區間';
+        const m = (getEl('input-start-week').value || '').match(/\d+/);
+        const startW = m ? parseInt(m[0], 10) : 7;
+        getEl('input-start-week').value = `第 ${startW} 週`;
 
-        const desc = getEl('week-mode-desc');
-        if (mode === 'dual_merged') {
-            desc.innerHTML = '💡 <b>雙週同張整合</b>：將連續兩週合併在同一張報表、共用底部簽名欄；且<b>第一週與第二週分別顯示截至該週末的「當週結算總分」</b>，帳目一目了然！';
-            getEl('btn-single-label').textContent = '執行產出 (單人雙週同張)';
-            getEl('btn-all-label').textContent = '執行產出 (全班雙週同張)';
-        } else if (mode === 'dual_separate') {
-            desc.innerHTML = '💡 <b>雙週分開兩張</b>：維持一週一張格式，但按一次產出就會<b>自動連續產出第一週與第二週共 2 張報表</b>（各自帶當週截止的累計總積分）！';
-            getEl('btn-single-label').textContent = '執行產出 (單人一次出2週)';
-            getEl('btn-all-label').textContent = '執行產出 (全班一次出2週)';
-        } else {
-            desc.innerHTML = '💡 <b>單週標準模式</b>：產出單一週次報表，「當週結算總分」已修正為<b>只累加到該週結束日為止</b>，回頭補印舊週次也不會印出未來總分！';
-            getEl('btn-single-label').textContent = '執行產出 (單張)';
-            getEl('btn-all-label').textContent = '執行產出 (全班批次)';
-        }
+        initDemoWeeksData(startW, cnt);
+        activeChunkIndex = 0;
+        activeDayNoteWeekIdx = 0;
+        renderWeekRangesListUI();
+        renderDayNoteWeekTabs();
+        renderPreviewPageSwitcher();
+        updateModeDescriptions();
+        updateSeatDropdown();
+        fetchAllData();
+    }
 
+    function setPageSplitMode(mode) {
+        pageSplitMode = mode;
+        document.querySelectorAll('.page-mode-btn').forEach(btn => {
+            const isAct = btn.getAttribute('data-page-mode') === mode;
+            btn.className = isAct
+                ? 'page-mode-btn px-2 py-2 rounded-xl text-[11px] font-bold border transition bg-rose-500 text-white border-rose-500 shadow-sm'
+                : 'page-mode-btn px-2 py-2 rounded-xl text-[11px] font-bold border transition bg-white text-slate-600 border-rose-200 hover:bg-rose-50';
+        });
+        activeChunkIndex = 0;
+        renderPreviewPageSwitcher();
+        updateModeDescriptions();
         updatePreview();
         adjustScale();
     }
 
-    /* ============ 5. 微調資料彈窗（支援同時微調第一週與第二週，並自動連動總分！） ============ */
+    /* ============ 7. 微調各週資料彈窗（支援 1~4 週跨週自動連動總積分！） ============ */
     function openEditModal() {
         const seat = getEl('input-seat').value;
-        const sA = weekStateA.students[seat];
-        if (!sA) return alert('目前沒有選擇學生');
-        tempEditWeekA = JSON.parse(JSON.stringify(sA.records));
-        tempEditWeekB = weekStateB.students[seat] ? JSON.parse(JSON.stringify(weekStateB.students[seat].records)) : {1:[],2:[],3:[],4:[],5:[]};
+        if (!seat || !weeksList.length) return alert('目前沒有選擇學生');
+        tempEditRecordsByWeek = weeksList.map(w => {
+            const s = w.students[seat];
+            return s ? JSON.parse(JSON.stringify(s.records)) : { 1: [], 2: [], 3: [], 4: [], 5: [] };
+        });
         renderModalBody();
         getEl('edit-modal').classList.remove('hidden');
     }
@@ -984,23 +1167,24 @@
         const container = getEl('edit-modal-body');
         const days = ['星期一', '星期二', '星期三', '星期四', '星期五'];
 
-        const renderWeekSection = (title, tagKey, recObj) => {
-            let html = `<div class="mb-6"><h4 class="font-black text-base text-slate-800 mb-3 pb-1 border-b-2 border-teal-500 inline-block">${escHtml(title)}</h4>`;
+        container.innerHTML = weeksList.map((w, wIdx) => {
+            const recObj = tempEditRecordsByWeek[wIdx];
+            let html = `<div class="mb-6"><h4 class="font-black text-base text-slate-800 mb-3 pb-1 border-b-2 border-teal-500 inline-block">📅 ${escHtml(w.weekLabel)} (${w.startDate} ~ ${w.endDate})</h4>`;
             for (let i = 1; i <= 5; i++) {
-                html += `<div class="mb-3 bg-white p-3 rounded-xl shadow-sm border border-gray-200">
-                    <div class="flex justify-between mb-2">
+                html += `<div class="mb-2.5 bg-white p-3 rounded-xl shadow-sm border border-gray-200">
+                    <div class="flex justify-between mb-1.5">
                         <b class="text-sm text-teal-700">${days[i - 1]}</b>
-                        <button type="button" onclick="addTempRecord('${tagKey}', ${i})" class="text-xs bg-teal-100 text-teal-800 px-2.5 py-1 rounded-lg font-bold">+ 新增紀錄</button>
+                        <button type="button" onclick="addTempRecord(${wIdx}, ${i})" class="text-xs bg-teal-100 text-teal-800 px-2.5 py-1 rounded-lg font-bold">+ 新增紀錄</button>
                     </div>`;
                 if (!recObj[i] || recObj[i].length === 0) {
                     html += `<div class="text-xs text-gray-400 text-center py-1">無紀錄</div>`;
                 } else {
                     recObj[i].forEach((r, idx) => {
-                        html += `<div class="flex gap-2 mb-2 items-center bg-gray-50 p-2 rounded-lg">
-                            <input type="text" value="${escHtml(r.reason)}" onchange="updateTempRecord('${tagKey}', ${i}, ${idx}, 'reason', this.value)" class="flex-1 border p-1.5 text-sm rounded">
-                            <input type="number" step="0.5" value="${r.points}" onchange="updateTempRecord('${tagKey}', ${i}, ${idx}, 'points', this.value)" class="w-20 border p-1.5 text-sm rounded text-center font-bold">
-                            <input type="text" value="${escHtml(r.remarks)}" onchange="updateTempRecord('${tagKey}', ${i}, ${idx}, 'remarks', this.value)" placeholder="備註" class="flex-1 border p-1.5 text-sm rounded">
-                            <button type="button" onclick="removeTempRecord('${tagKey}', ${i}, ${idx})" class="text-red-500 font-bold px-2">✕</button>
+                        html += `<div class="flex gap-2 mb-1.5 items-center bg-gray-50 p-2 rounded-lg">
+                            <input type="text" value="${escHtml(r.reason)}" onchange="updateTempRecord(${wIdx}, ${i}, ${idx}, 'reason', this.value)" class="flex-1 border p-1.5 text-sm rounded">
+                            <input type="number" step="0.5" value="${r.points}" onchange="updateTempRecord(${wIdx}, ${i}, ${idx}, 'points', this.value)" class="w-20 border p-1.5 text-sm rounded text-center font-bold">
+                            <input type="text" value="${escHtml(r.remarks)}" onchange="updateTempRecord(${wIdx}, ${i}, ${idx}, 'remarks', this.value)" placeholder="備註" class="flex-1 border p-1.5 text-sm rounded">
+                            <button type="button" onclick="removeTempRecord(${wIdx}, ${i}, ${idx})" class="text-red-500 font-bold px-2">✕</button>
                         </div>`;
                     });
                 }
@@ -1008,64 +1192,45 @@
             }
             html += `</div>`;
             return html;
-        };
-
-        let out = renderWeekSection(`📅 ${weekStateA.weekLabel} (${weekStateA.startDate} ~ ${weekStateA.endDate})`, 'A', tempEditWeekA);
-        if (weekMode !== 'single') {
-            out += renderWeekSection(`📅 ${weekStateB.weekLabel} (${weekStateB.startDate} ~ ${weekStateB.endDate})`, 'B', tempEditWeekB);
-        }
-        container.innerHTML = out;
+        }).join('');
     }
 
-    window.addTempRecord = function(wkKey, day) {
-        const target = wkKey === 'B' ? tempEditWeekB : tempEditWeekA;
-        target[day].push({ date: '', reason: '手動新增', points: -1, remarks: '' });
+    window.addTempRecord = function(wIdx, day) {
+        tempEditRecordsByWeek[wIdx][day].push({ date: '', reason: '手動新增', points: -1, remarks: '' });
         renderModalBody();
     };
-    window.updateTempRecord = function(wkKey, day, idx, field, val) {
-        const target = wkKey === 'B' ? tempEditWeekB : tempEditWeekA;
-        target[day][idx][field] = field === 'points' ? (parseFloat(val) || 0) : val;
+    window.updateTempRecord = function(wIdx, day, idx, field, val) {
+        tempEditRecordsByWeek[wIdx][day][idx][field] = field === 'points' ? (parseFloat(val) || 0) : val;
     };
-    window.removeTempRecord = function(wkKey, day, idx) {
-        const target = wkKey === 'B' ? tempEditWeekB : tempEditWeekA;
-        target[day].splice(idx, 1);
+    window.removeTempRecord = function(wIdx, day, idx) {
+        tempEditRecordsByWeek[wIdx][day].splice(idx, 1);
         renderModalBody();
     };
 
     window.saveEditModal = function() {
         const seat = getEl('input-seat').value;
-        const sA = weekStateA.students[seat];
-        const sB = weekStateB.students[seat];
-        if (sA) {
-            let oldPtsA = 0, newPtsA = 0;
+        let cumulativeDiff = 0;
+
+        weeksList.forEach((w, wIdx) => {
+            const s = w.students[seat];
+            if (!s) return;
+            let oldPts = 0, newPts = 0;
             for (let i = 1; i <= 5; i++) {
-                (sA.records[i] || []).forEach(r => { oldPtsA += r.points; });
-                (tempEditWeekA[i] || []).forEach(r => { newPtsA += r.points; });
+                (s.records[i] || []).forEach(r => { oldPts += r.points; });
+                (tempEditRecordsByWeek[wIdx][i] || []).forEach(r => { newPts += r.points; });
             }
-            const diffA = newPtsA - oldPtsA;
-            sA.totalScore = parseFloat((sA.totalScore + diffA).toFixed(1));
-            sA.records = tempEditWeekA;
+            cumulativeDiff += (newPts - oldPts);
+            // ★ 前面週次的加減分變動，會自動往後累加到後面每一週的當週結算總分！
+            s.totalScore = parseFloat((s.totalScore + cumulativeDiff).toFixed(1));
+            s.records = tempEditRecordsByWeek[wIdx];
+            recalculateNetScores(w);
+        });
 
-            if (sB) {
-                let oldPtsB = 0, newPtsB = 0;
-                for (let i = 1; i <= 5; i++) {
-                    (sB.records[i] || []).forEach(r => { oldPtsB += r.points; });
-                    (tempEditWeekB[i] || []).forEach(r => { newPtsB += r.points; });
-                }
-                const diffB = newPtsB - oldPtsB;
-                // ★ 第一週分數變動時，第二週的累計總積分也會同步加上 diffA + diffB！
-                sB.totalScore = parseFloat((sB.totalScore + diffA + diffB).toFixed(1));
-                sB.records = tempEditWeekB;
-            }
-
-            recalculateNetScores(weekStateA);
-            recalculateNetScores(weekStateB);
-            updatePreview();
-        }
+        updatePreview();
         closeEditModal();
     };
 
-    /* ============ 6. 版面彈性比例與縮放 ============ */
+    /* ============ 8. 版面比例與匯出 PDF / 列印 ============ */
     function updateFlex() {
         const template = getEl('report-template');
         const orientation = getEl('input-orientation') ? getEl('input-orientation').value : 'landscape';
@@ -1081,7 +1246,7 @@
         const wT = parseFloat(getEl('input-flex-teacher') ? getEl('input-flex-teacher').value : 45) || 45;
         const wS = parseFloat(getEl('input-flex-student') ? getEl('input-flex-student').value : 25) || 25;
         const wP = parseFloat(getEl('input-flex-parent') ? getEl('input-flex-parent').value : 30) || 30;
-        const sigHeight = parseFloat(getEl('input-signature-height') ? getEl('input-signature-height').value : 150) || 150;
+        const sigHeight = parseFloat(getEl('input-signature-height') ? getEl('input-signature-height').value : 140) || 140;
 
         container.style.minHeight = `${sigHeight}px`;
         container.style.height = `auto`;
@@ -1114,7 +1279,6 @@
 
     window.addEventListener('resize', adjustScale);
 
-    /* ============ 7. PDF 與列印匯出（支援單週、雙週同張整合、雙週分開兩張批次匯出） ============ */
     async function performExport(all = false) {
         const mode = getEl('input-export-mode').value;
         window.isExporting = true;
@@ -1125,7 +1289,7 @@
         printArea.innerHTML = '';
 
         const currentSeat = getEl('input-seat').value;
-        const seats = all ? Object.keys(weekStateA.students).sort((a, b) => parseInt(a) - parseInt(b)) : [currentSeat];
+        const seats = all ? Object.keys(weeksList[0].students).sort((a, b) => parseInt(a) - parseInt(b)) : [currentSeat];
         const { jsPDF } = window.jspdf;
         let pdf = null;
 
@@ -1138,18 +1302,17 @@
         }
         styleTag.innerHTML = `.exporting-pdf .adjust-baseline { top: -${offsetPx}px !important; }`;
 
-        // 若為「雙週分開兩張」，每位學生依序產出 ['A', 'B'] 兩頁；否則每位學生產出 1 頁
-        const subPages = weekMode === 'dual_separate' ? ['A', 'B'] : [null];
-        const totalSteps = seats.length * subPages.length;
+        const chunks = getPageChunks();
+        const totalSteps = seats.length * chunks.length;
         let stepCount = 0;
 
         for (let i = 0; i < seats.length; i++) {
             getEl('input-seat').value = seats[i];
             loadStudentData();
 
-            for (let pIdx = 0; pIdx < subPages.length; pIdx++) {
+            for (let cIdx = 0; cIdx < chunks.length; cIdx++) {
                 stepCount++;
-                updatePreview(subPages[pIdx]);
+                updatePreview(cIdx);
                 await new Promise(r => setTimeout(r, 90));
 
                 const clone = getEl('report-template').cloneNode(true);
@@ -1190,9 +1353,9 @@
 
         if (styleTag) styleTag.innerHTML = '';
 
-        const fileTitle = weekMode === 'single'
-            ? weekStateA.weekLabel
-            : `${weekStateA.weekLabel}+${weekStateB.weekLabel}`;
+        const firstLbl = weeksList[0].weekLabel;
+        const lastLbl = weeksList[weeksList.length - 1].weekLabel;
+        const fileTitle = weeksList.length === 1 ? firstLbl : `${firstLbl}~${lastLbl}`;
 
         if (mode === 'native_print') {
             window.print();
@@ -1207,64 +1370,32 @@
         window.isExporting = false;
     }
 
-    /* ============ 8. 日期與週次自動換算輔助 ============ */
-    function toIsoDate(d) {
-        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    }
-
-    function syncWeekBFromWeekA() {
-        const wMatch = (getEl('input-week').value || '').match(/\d+/);
-        if (wMatch) {
-            const wNum = parseInt(wMatch[0], 10);
-            getEl('input-week').value = `第 ${wNum} 週`;
-            getEl('input-week-b').value = `第 ${wNum + 1} 週`;
-        }
-        const sVal = getEl('input-date-start').value;
-        if (sVal) {
-            const parts = sVal.split('-');
-            const monA = new Date(parts[0], parts[1] - 1, parts[2]);
-            const sunA = new Date(monA); sunA.setDate(monA.getDate() + 6);
-            const monB = new Date(monA); monB.setDate(monA.getDate() + 7);
-            const sunB = new Date(monA); sunB.setDate(monA.getDate() + 13);
-            getEl('input-date-end').value = toIsoDate(sunA);
-            getEl('input-date-start-b').value = toIsoDate(monB);
-            getEl('input-date-end-b').value = toIsoDate(sunB);
-        }
-    }
-
     /* ============ 9. 初始化與事件綁定 ============ */
     window.addEventListener('DOMContentLoaded', () => {
-        getEl('input-date-start').value = weekStateA.startDate;
-        getEl('input-date-end').value = weekStateA.endDate;
-        getEl('input-date-start-b').value = weekStateB.startDate;
-        getEl('input-date-end-b').value = weekStateB.endDate;
-
-        loadBuiltInDemoData();
-        syncDayNoteInputsFromState();
+        initDemoWeeksData(7, 4);
+        renderWeekRangesListUI();
+        renderDayNoteWeekTabs();
+        renderPreviewPageSwitcher();
+        updateModeDescriptions();
         updateSeatDropdown();
-        setWeekMode('dual_merged');
         updateFlex();
 
-        // 同時嘗試連線後端試算表
+        // 嘗試連線真實試算表
         fetchAllData();
 
-        // 切換報表模式（單週 / 雙週同張 / 雙週分開）
-        document.querySelectorAll('.week-mode-btn').forEach(btn => {
-            btn.addEventListener('click', () => setWeekMode(btn.getAttribute('data-week-mode')));
+        // 點選 1 週 / 2 週 / 3 週 / 4 週
+        document.querySelectorAll('.week-cnt-btn').forEach(btn => {
+            btn.addEventListener('click', () => setWeekCount(Number(btn.getAttribute('data-week-count'))));
         });
 
-        // 雙週分開模式下，切換預覽第一週／第二週
-        document.querySelectorAll('.sep-view-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                separatePreviewTarget = btn.getAttribute('data-sep-view');
-                document.querySelectorAll('.sep-view-btn').forEach(b => {
-                    const act = b === btn;
-                    b.className = act
-                        ? 'sep-view-btn px-2.5 py-1 rounded-md text-[11px] font-bold bg-rose-500 text-white'
-                        : 'sep-view-btn px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 text-slate-600';
-                });
-                updatePreview();
-            });
+        // 點選分頁方式（全部同張 / 每2週一張 / 每1週一張）
+        document.querySelectorAll('.page-mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => setPageSplitMode(btn.getAttribute('data-page-mode')));
+        });
+
+        // 修改起始週次時，自動重算連續 N 週的區間
+        getEl('input-start-week').addEventListener('change', () => {
+            setWeekCount(selectedWeekCount);
         });
 
         getEl('input-seat').addEventListener('change', loadStudentData);
@@ -1273,33 +1404,6 @@
         getEl('btn-download-single').addEventListener('click', () => performExport(false));
         getEl('btn-download-all').addEventListener('click', () => performExport(true));
 
-        // 修改第一週週次時，自動推算第一週與第二週日期
-        getEl('input-week').addEventListener('change', () => {
-            const sem = getEl('input-semester').value;
-            const semObj = globalSemesterList.find(s => s.name === sem) || globalSemesterList[0];
-            const m = (getEl('input-week').value || '').match(/\d+/);
-            const w = m ? parseInt(m[0], 10) : 1;
-            getEl('input-week').value = `第 ${w} 週`;
-            getEl('input-week-b').value = `第 ${w + 1} 週`;
-            if (semObj && semObj.startDate) {
-                const d = new Date(semObj.startDate);
-                d.setDate(d.getDate() + (w - 1) * 7);
-                getEl('input-date-start').value = toIsoDate(d);
-                syncWeekBFromWeekA();
-                fetchAllData();
-            } else {
-                updatePreview();
-            }
-        });
-
-        getEl('input-date-start').addEventListener('change', () => {
-            syncWeekBFromWeekA();
-            updatePreview();
-        });
-        ['input-date-end', 'input-week-b', 'input-date-start-b', 'input-date-end-b'].forEach(id => {
-            getEl(id).addEventListener('change', () => updatePreview());
-        });
-
         getEl('input-orientation').addEventListener('change', updateFlex);
         getEl('input-signature-layout').addEventListener('change', updateFlex);
         ['teacher', 'student', 'parent'].forEach(k => {
@@ -1307,47 +1411,43 @@
         });
         getEl('input-signature-height').addEventListener('input', updateFlex);
 
-        // 每日放假備註與評語輸入即時預覽＋雲端儲存
+        // 每日放假備註（針對目前選取的 activeDayNoteWeekIdx 週次）
         let noteSaveTimer;
         for (let i = 1; i <= 5; i++) {
             getEl(`note-day-${i}`).addEventListener('input', (e) => {
-                weekStateA.dayNotes[i] = e.target.value;
+                const w = weeksList[activeDayNoteWeekIdx];
+                if (!w) return;
+                w.dayNotes[i] = e.target.value;
+                renderDayNoteWeekTabs();
                 updatePreview();
                 clearTimeout(noteSaveTimer);
                 noteSaveTimer = setTimeout(() => {
-                    callBackendAPI('saveWeekDayNotes', { semester: getEl('input-semester').value, week: weekStateA.weekLabel, notesObj: weekStateA.dayNotes });
-                }, 1000);
-            });
-            getEl(`note-b-day-${i}`).addEventListener('input', (e) => {
-                weekStateB.dayNotes[i] = e.target.value;
-                updatePreview();
-                clearTimeout(noteSaveTimer);
-                noteSaveTimer = setTimeout(() => {
-                    callBackendAPI('saveWeekDayNotes', { semester: getEl('input-semester').value, week: weekStateB.weekLabel, notesObj: weekStateB.dayNotes });
+                    callBackendAPI('saveWeekDayNotes', { semester: getEl('input-semester').value, week: w.weekLabel, notesObj: w.dayNotes });
                 }, 1000);
             });
         }
 
         getEl('input-class-comment').addEventListener('input', (e) => {
-            weekStateA.dayNotes['classComment'] = e.target.value;
-            weekStateB.dayNotes['classComment'] = e.target.value;
+            weeksList.forEach(w => { w.dayNotes['classComment'] = e.target.value; });
             updatePreview();
         });
 
         let cmtTimer;
         getEl('input-comment').addEventListener('input', (e) => {
             const seat = getEl('input-seat').value;
-            if (weekStateA.students[seat]) weekStateA.students[seat].comment = e.target.value;
-            if (weekStateB.students[seat]) weekStateB.students[seat].comment = e.target.value;
+            weeksList.forEach(w => {
+                if (w.students[seat]) w.students[seat].comment = e.target.value;
+            });
             updatePreview();
             clearTimeout(cmtTimer);
             cmtTimer = setTimeout(() => {
-                if (seat && weekStateB.students[seat]) {
+                const lastW = weeksList[weeksList.length - 1];
+                if (seat && lastW && lastW.students[seat]) {
                     callBackendAPI('saveWeeklyComment', {
                         semester: getEl('input-semester').value,
-                        week: weekMode === 'single' ? weekStateA.weekLabel : weekStateB.weekLabel,
+                        week: lastW.weekLabel,
                         seatNo: seat,
-                        studentName: weekStateB.students[seat].name,
+                        studentName: lastW.students[seat].name,
                         comment: e.target.value
                     });
                 }
