@@ -625,9 +625,9 @@
             return new Promise((resolve, reject) => {
                 const runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
                 if (action === 'getMultiWeekReportData') runner.getMultiWeekReportData(payload.ranges, payload.semesterName, payload.startWeekNum, payload.weekCount);
-                else if (action === 'getCompleteReportData') runner.getCompleteReportData(payload.startDateStr, payload.endDateStr, payload.semesterName);
-                else if (action === 'saveWeekDayNotes') runner.saveWeekDayNotes(payload.semester, payload.week, payload.notesObj);
-                else if (action === 'saveWeeklyComment') runner.saveWeeklyComment(payload.semester, payload.week, payload.seatNo, payload.studentName, payload.comment);
+                else if (action === 'getCompleteReportData') runner.getReportWeekDataV2(payload.startDateStr, payload.endDateStr, payload.semesterName);
+                else if (action === 'saveWeekDayNotes') runner.saveWeekDayNotesV2(payload.semester, payload.week, payload.notesObj);
+                else if (action === 'saveWeeklyComment') runner.saveWeeklyCommentV2(payload.semester, payload.week, payload.seatNo, payload.studentName, payload.comment);
                 else resolve(null);
             });
         }
