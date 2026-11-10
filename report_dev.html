@@ -945,25 +945,26 @@
             </th>
         `).join('');
 
-        // 當一次放 3~4 週在同一張時，使用緊湊型單行數據列，節省垂直高度！
+        // 統一顯示「第X週加分、第X週扣分、第X週淨分、第X週總積分、第X週排名（使用截止至該週之班排，不顯示截止字樣）」
+        const wName = escHtml(String(wState.weekLabel || '').replace(/\s+/g, ''));
         const statsHeaderHtml = isUltraCompact
             ? `<div class="flex items-center justify-between gap-2 mb-2 bg-white border border-slate-300 rounded-lg px-3 py-1.5">
                 <div class="flex items-center gap-2">
                     <span class="adjust-baseline text-sm font-black text-slate-900 bg-slate-200 px-2.5 py-0.5 rounded">${escHtml(wState.weekLabel)}</span>
                     <span class="adjust-baseline text-xs font-bold text-slate-600 font-comfortaa">${formatShortDate(startD)} ~ ${formatShortDate(endD)}</span>
                 </div>
-                <div class="flex items-center gap-3 text-xs font-bold">
-                    <span class="adjust-baseline text-slate-600">加分 <b class="font-comfortaa text-emerald-700">+${st.plus}</b></span>
+                <div class="flex items-center gap-2.5 text-xs font-bold">
+                    <span class="adjust-baseline text-slate-600">${wName}加分 <b class="font-comfortaa text-emerald-700">+${st.plus}</b></span>
                     <span class="text-slate-300">|</span>
-                    <span class="adjust-baseline text-slate-600">扣分 <b class="font-comfortaa text-red-600">${st.minus === 0 ? '0' : '-' + st.minus}</b></span>
+                    <span class="adjust-baseline text-slate-600">${wName}扣分 <b class="font-comfortaa text-red-600">${st.minus === 0 ? '0' : '-' + st.minus}</b></span>
                     <span class="text-slate-300">|</span>
-                    <span class="adjust-baseline text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">本週淨分 <b class="font-comfortaa">${st.net >= 0 ? '+' + st.net : st.net}</b> (週排 <b>#${st.weekRank}</b>)</span>
-                    <span class="adjust-baseline text-slate-900 bg-gray-100 px-2.5 py-0.5 rounded border-2 border-slate-700">截至${formatShortDate(endD)}結算總分：<b class="font-comfortaa text-sm">${st.totalScore}</b></span>
-                    <span class="adjust-baseline text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-500">當週總班排 <b>#${st.totalRank}</b></span>
+                    <span class="adjust-baseline text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">${wName}淨分 <b class="font-comfortaa">${st.net >= 0 ? '+' + st.net : st.net}</b></span>
+                    <span class="adjust-baseline text-slate-900 bg-gray-100 px-2.5 py-0.5 rounded border-2 border-slate-700">${wName}總積分 <b class="font-comfortaa text-sm">${st.totalScore}</b></span>
+                    <span class="adjust-baseline text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-500">${wName}排名 <b class="font-comfortaa">#${st.totalRank}</b></span>
                 </div>
             </div>`
             : `<div class="flex gap-2 mb-2.5 w-full items-stretch">
-                <div class="info-card w-[25%] p-2.5 flex flex-col justify-between">
+                <div class="info-card w-[26%] p-2.5 flex flex-col justify-between">
                     <div class="flex justify-between w-full mb-1">
                         <span class="adjust-baseline text-[10px] font-bold text-gray-500 leading-none">週次</span>
                         <span class="adjust-baseline text-[10px] font-bold text-gray-500 leading-none">統計區間</span>
@@ -975,30 +976,23 @@
                 </div>
                 <div class="flex flex-1 gap-1.5 items-stretch">
                     <div class="stat-box flex-1 p-2 flex flex-col justify-between">
-                        <div class="adjust-baseline text-[10px] font-bold text-text-light mb-1 leading-none">本週加分</div>
+                        <div class="adjust-baseline text-[10px] font-bold text-text-light mb-1 leading-none">${wName}加分</div>
                         <div class="adjust-baseline text-lg font-black font-comfortaa text-emerald-700 leading-none">+${st.plus}</div>
                     </div>
                     <div class="stat-box flex-1 p-2 flex flex-col justify-between">
-                        <div class="adjust-baseline text-[10px] font-bold text-text-light mb-1 leading-none">本週扣分</div>
+                        <div class="adjust-baseline text-[10px] font-bold text-text-light mb-1 leading-none">${wName}扣分</div>
                         <div class="adjust-baseline text-lg font-black font-comfortaa text-red-600 leading-none">${st.minus === 0 ? '0' : '-' + st.minus}</div>
                     </div>
                     <div class="stat-box flex-1 p-2 flex flex-col justify-between border-blue-200 bg-blue-50">
-                        <div class="adjust-baseline text-[10px] font-bold text-blue-800 mb-1 leading-none">本週淨分</div>
+                        <div class="adjust-baseline text-[10px] font-bold text-blue-800 mb-1 leading-none">${wName}淨分</div>
                         <div class="adjust-baseline text-lg font-black font-comfortaa text-blue-700 leading-none">${st.net >= 0 ? '+' + st.net : st.net}</div>
                     </div>
-                    <div class="stat-box flex-1 p-2 flex flex-col justify-between border-blue-500 bg-blue-100 border-[2px]">
-                        <div class="adjust-baseline text-[10px] font-bold text-blue-800 mb-1 leading-none">本週名次</div>
-                        <div class="adjust-baseline text-lg font-black font-comfortaa text-blue-700 leading-none">${st.weekRank}</div>
-                    </div>
-                    <div class="stat-box stat-box-total flex-[1.35] p-2 border-[2px] border-[#374151] bg-[#f3f4f6] flex flex-col justify-between">
-                        <div class="flex justify-between items-baseline mb-1 leading-none">
-                            <div class="adjust-baseline text-[10px] font-extrabold text-slate-800">當週結算總分</div>
-                            <div class="adjust-baseline text-[8px] text-gray-500 font-bold">累計至${formatShortDate(endD)}</div>
-                        </div>
+                    <div class="stat-box stat-box-total flex-[1.2] p-2 border-[2px] border-[#374151] bg-[#f3f4f6] flex flex-col justify-between">
+                        <div class="adjust-baseline text-[10px] font-extrabold text-slate-800 mb-1 leading-none">${wName}總積分</div>
                         <div class="adjust-baseline text-lg font-black font-comfortaa text-text-main leading-none">${st.totalScore}</div>
                     </div>
                     <div class="stat-box flex-1 p-2 border-emerald-600 bg-emerald-50 border-[2px] flex flex-col justify-between">
-                        <div class="adjust-baseline text-[10px] font-bold text-emerald-800 mb-1 leading-none">當週總班排</div>
+                        <div class="adjust-baseline text-[10px] font-bold text-emerald-800 mb-1 leading-none">${wName}排名</div>
                         <div class="adjust-baseline text-lg font-black font-comfortaa text-emerald-600 leading-none">${st.totalRank}</div>
                     </div>
                 </div>
