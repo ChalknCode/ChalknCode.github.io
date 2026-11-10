@@ -197,7 +197,7 @@
     }
     .stamp-grid {
       display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 6px; margin-bottom: 8px;
+      gap: 6px; margin-bottom: 8px; max-height: 112px; overflow-y: auto; padding-right: 2px;
     }
     @media (max-width: 720px) {
       .stamp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -520,6 +520,9 @@
     </nav>
 
     <div class="role-switch">
+      <button type="button" class="role-chip" id="syncBtn" title="點擊重新從 Google 試算表同步最新名單與紀錄" style="background:var(--emerald-soft);color:var(--emerald);border-color:#a7f3d0;">
+        ☁️ <span id="syncStatusText">連線試算表中...</span>
+      </button>
       <button type="button" class="role-chip cadre" id="roleToggleBtn" title="點擊切換預覽「小老師平板模式」與「導師電腦模式」">
         📱 目前身分：小老師模式（可標註／不可直接刪改）
       </button>
@@ -677,8 +680,15 @@
   (function () {
     'use strict';
 
-    /* ============ 1. 預設項目表（開頭為「聯絡簿」與「週報表」自動歸為第一類） ============ */
-    const LIFE_ITEMS = [
+    /* ============ 0. Google 試算表 Apps Script 連線設定 ============ */
+    const REPORT_API_URL = 'https://script.google.com/macros/s/AKfycbxPC3r0836yP89Hem_IcaSw4cMZWnm3nKk7YQ-VX3DL3WvwLw8rQh3tcCfWGln7wJa0Ow/exec';
+    let isCloudConnected = false;
+    let isWriteSupported = false;
+    let semesterStartDateStr = '2026-09-01';
+    let currentWeekNum = 10;
+
+    /* ============ 1. 預設項目表（連線後自動由試算表「生活計點項目表」覆蓋） ============ */
+    let LIFE_ITEMS = [
       // 聯絡簿＆週報表類
       { name: '聯絡簿未交', defaultPts: -1, cat: 'contact' },
       { name: '聯絡簿遲交', defaultPts: -0.5, cat: 'contact' },
@@ -699,8 +709,8 @@
       { name: '服儀／物品未帶', defaultPts: -1, cat: 'other' }
     ];
 
-    /* ============ 2. 805 班學生名單（預設初始分數 100 分） ============ */
-    const STUDENTS = [
+    /* ============ 2. 805 班學生名單（連線後自動由試算表「學生基本資料」覆蓋） ============ */
+    let STUDENTS = [
       { seatNo: '1', name: '林宥辰', init: 100 },
       { seatNo: '2', name: '陳品言', init: 100 },
       { seatNo: '3', name: '張宇翔', init: 100 },
@@ -731,29 +741,14 @@
       { seatNo: '28', name: '洪子晴', init: 100 }
     ];
 
-    /* ============ 3. 示範週次與歷史紀錄（含聯絡簿、週報表與 📌 標註範例） ============ */
-    const WEEKS = [
+    /* ============ 3. 週次與歷史紀錄（連線後自動由試算表「生活計點」覆蓋） ============ */
+    let WEEKS = [
       { week: 10, label: '第 10 週 (11/03 ~ 11/07 · 本週)', days: ['2026-11-03', '2026-11-04', '2026-11-05', '2026-11-06', '2026-11-07'] },
       { week: 9,  label: '第 9 週 (10/27 ~ 10/31)',        days: ['2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30', '2026-10-31'] },
       { week: 8,  label: '第 8 週 (10/20 ~ 10/24)',        days: ['2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23', '2026-10-24'] }
     ];
 
-    let records = [
-      { id: 101, seatNo: '3',  date: '2026-11-07', week: 10, reason: '聯絡簿未交', points: -1, remarks: '', flagTag: '已補交', flagNote: '第一節下課已補交給小老師' },
-      { id: 102, seatNo: '7',  date: '2026-11-07', week: 10, reason: '聯絡簿家長未簽名', points: -1, remarks: '', flagTag: '', flagNote: '' },
-      { id: 103, seatNo: '12', date: '2026-11-07', week: 10, reason: '週報表未交', points: -1, remarks: '', flagTag: '誤記請撤銷', flagNote: '小老師看錯行，12號其實有交' },
-      { id: 104, seatNo: '16', date: '2026-11-07', week: 10, reason: '聯絡簿書寫優良', points: 1, remarks: '札記寫得很用心', flagTag: '', flagNote: '' },
-      { id: 105, seatNo: '3',  date: '2026-11-06', week: 10, reason: '聯絡簿遲交', points: -0.5, remarks: '早自習後補交', flagTag: '', flagNote: '' },
-      { id: 106, seatNo: '5',  date: '2026-11-06', week: 10, reason: '聯絡簿家長未簽名', points: -1, remarks: '', flagTag: '', flagNote: '' },
-      { id: 107, seatNo: '19', date: '2026-11-05', week: 10, reason: '聯絡簿未交', points: -1, remarks: '', flagTag: '', flagNote: '' },
-      { id: 108, seatNo: '3',  date: '2026-11-04', week: 10, reason: '聯絡簿未交', points: -1, remarks: '', flagTag: '', flagNote: '' },
-      { id: 109, seatNo: '8',  date: '2026-11-04', week: 10, reason: '打掃工作認真', points: 1, remarks: '主動幫忙倒垃圾', flagTag: '', flagNote: '' },
-      { id: 110, seatNo: '12', date: '2026-11-03', week: 10, reason: '週報表家長未簽', points: -1, remarks: '', flagTag: '', flagNote: '' },
-      { id: 111, seatNo: '3',  date: '2026-10-30', week: 9,  reason: '聯絡簿未交', points: -1, remarks: '', flagTag: '', flagNote: '' },
-      { id: 112, seatNo: '7',  date: '2026-10-29', week: 9,  reason: '聯絡簿札記未寫', points: -1, remarks: '', flagTag: '', flagNote: '' },
-      { id: 113, seatNo: '16', date: '2026-10-28', week: 9,  reason: '熱心班級事務', points: 1, remarks: '協助運動會道具', flagTag: '', flagNote: '' },
-      { id: 114, seatNo: '21', date: '2026-10-23', week: 8,  reason: '聯絡簿書寫優良', points: 1, remarks: '', flagTag: '', flagNote: '' }
-    ];
+    let records = [];
 
     /* ============ 狀態變數 ============ */
     let currentRole = 'cadre';          // 'cadre' (小老師平板) | 'teacher' (導師電腦)
@@ -766,11 +761,200 @@
     LIFE_ITEMS.forEach((it) => { customPtsMap[it.name] = it.defaultPts; });
     let hasStampedSinceReasonPick = false; // 點過座號後，再點新事由會自動切換為新事由（舊座號保留在暫存區）
     let pendingDrafts = [];             // [{ draftId, seatNo, date, reason, points, remarks }]
-    let personalSeat = '3';
+    let personalSeat = '1';
     let personalWeek = 'all';
     let activeStatView = 'matrix';      // 'matrix' | 'ranking' | 'flags'
     let editingFlagRecId = null;
     let selectedFlagPreset = '已補交';
+    let hasInitializedDate = false;
+
+    async function callGasApi(payload) {
+      const resp = await fetch(REPORT_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      return await resp.json();
+    }
+
+    function setSyncStatus(text, tone) {
+      const el = $('syncStatusText');
+      const btn = $('syncBtn');
+      if (!el || !btn) return;
+      el.textContent = text;
+      if (tone === 'ok') {
+        btn.style.background = 'var(--emerald-soft)';
+        btn.style.color = 'var(--emerald)';
+        btn.style.borderColor = '#a7f3d0';
+      } else if (tone === 'warn') {
+        btn.style.background = 'var(--amber-soft)';
+        btn.style.color = '#9a5b13';
+        btn.style.borderColor = '#f5d491';
+      } else {
+        btn.style.background = 'var(--indigo-soft)';
+        btn.style.color = 'var(--indigo)';
+        btn.style.borderColor = '#c7d2fe';
+      }
+    }
+
+    function parseRemarkAndFlagClient(rawRemark) {
+      const s = String(rawRemark == null ? '' : rawRemark).trim();
+      const m = s.match(/^【📌([^｜】]+)(?:｜([^】]*))?】\s*(.*)$/);
+      if (m) {
+        return { flagTag: m[1].trim(), flagNote: (m[2] || '').trim(), remarks: (m[3] || '').trim() };
+      }
+      return { flagTag: '', flagNote: '', remarks: s };
+    }
+
+    async function loadFromSpreadsheet(silent) {
+      try {
+        setSyncStatus('同步試算表中...', 'loading');
+        const res = await callGasApi({ action: 'getLifeCheckinInitData' });
+
+        if (res && res.success) {
+          isCloudConnected = true;
+          isWriteSupported = true;
+          if (res.activeSemester) {
+            $('semesterLabel').textContent = res.activeSemester + ' · 已連線 Google 試算表';
+          }
+          if (res.semesterStartDate) semesterStartDateStr = res.semesterStartDate;
+          if (res.currentWeek) currentWeekNum = Number(res.currentWeek) || 10;
+
+          if (Array.isArray(res.students) && res.students.length > 0) {
+            STUDENTS = res.students;
+            if (!STUDENTS.some((s) => s.seatNo === personalSeat)) {
+              personalSeat = STUDENTS[0].seatNo;
+            }
+          }
+          if (Array.isArray(res.items) && res.items.length > 0) {
+            // 若試算表「生活計點項目表」有項目，合併／採用試算表項目；若試算表還沒建聯絡簿項目則自動保留預設聯絡簿項目方便直接點選
+            const hasContactInSheet = res.items.some((it) => isContactOrWeekly(it.name));
+            if (hasContactInSheet) {
+              LIFE_ITEMS = res.items;
+            } else {
+              const defaultContacts = LIFE_ITEMS.filter((it) => isContactOrWeekly(it.name));
+              LIFE_ITEMS = [...defaultContacts, ...res.items];
+            }
+            customPtsMap = {};
+            LIFE_ITEMS.forEach((it) => { customPtsMap[it.name] = it.defaultPts; });
+            const curCatItems = LIFE_ITEMS.filter((it) => (activeCat === 'contact' ? isContactOrWeekly(it.name) : !isContactOrWeekly(it.name)));
+            if (curCatItems.length > 0 && !selectedReasons.some((r) => LIFE_ITEMS.some((it) => it.name === r))) {
+              selectedReasons = [curCatItems[0].name];
+            }
+          }
+          if (Array.isArray(res.weeks) && res.weeks.length > 0) {
+            WEEKS = res.weeks;
+            const weekSel = $('matrixWeekSelect');
+            if (weekSel) {
+              weekSel.innerHTML = WEEKS.map((w) => '<option value="' + w.week + '">' + esc(w.label) + '</option>').join('');
+            }
+          }
+          if (Array.isArray(res.records)) {
+            records = res.records;
+          }
+          if (!hasInitializedDate && res.todayStr) {
+            $('checkinDate').value = res.todayStr;
+            hasInitializedDate = true;
+          }
+          setSyncStatus('已連線試算表 (' + STUDENTS.length + '人) · 點擊重整', 'ok');
+          renderAll();
+          if (!silent) showToast('☁️ 已從 Google 試算表同步最新名單與計點紀錄！');
+          return;
+        }
+
+        // 若使用者尚未更新 MultiWeekReport.gs，自動退回呼叫既有的 getMultiWeekReportData 讀取真實學生名單與近期週次紀錄
+        const fb = await callGasApi({ action: 'getMultiWeekReportData', startWeekNum: 1, weekCount: 8 });
+        const fb2 = await callGasApi({ action: 'getMultiWeekReportData', startWeekNum: 9, weekCount: 8 });
+        const allWeeksRaw = [
+          ...((fb && fb.weeks) ? fb.weeks : []),
+          ...((fb2 && fb2.weeks) ? fb2.weeks : [])
+        ].filter((w) => w && w.success);
+
+        if (allWeeksRaw.length > 0) {
+          isCloudConnected = true;
+          isWriteSupported = false;
+          const firstW = allWeeksRaw[0];
+          if (firstW.activeSemester) {
+            $('semesterLabel').textContent = firstW.activeSemester + ' · 試算表名單已載入';
+          }
+          if (Array.isArray(firstW.students) && firstW.students.length > 0) {
+            STUDENTS = firstW.students.map((s) => ({
+              seatNo: String(s.seatNo),
+              name: String(s.name),
+              init: Number(s.initialScore) || 100
+            }));
+            if (!STUDENTS.some((s) => s.seatNo === personalSeat)) {
+              personalSeat = STUDENTS[0].seatNo;
+            }
+          }
+
+          const builtWeeks = [];
+          const builtRecords = [];
+          let recSeq = 1000;
+          const todayIso = new Date().toLocaleDateString('sv-SE');
+
+          allWeeksRaw.forEach((wData) => {
+            const wMatch = String(wData.currentWeek || '').match(/(\d+)/);
+            const wNum = wMatch ? Number(wMatch[1]) : 1;
+            const sParts = String(wData.startDateStr).split('-');
+            const monD = new Date(Number(sParts[0]), Number(sParts[1]) - 1, Number(sParts[2]));
+            const days = [];
+            for (let d = 0; d < 5; d++) {
+              const cur = new Date(monD);
+              cur.setDate(monD.getDate() + d);
+              const ymd = cur.getFullYear() + '-' + String(cur.getMonth() + 1).padStart(2, '0') + '-' + String(cur.getDate()).padStart(2, '0');
+              days.push(ymd);
+            }
+            if (days[0] <= todayIso && todayIso <= String(wData.endDateStr)) {
+              currentWeekNum = wNum;
+            }
+            builtWeeks.push({
+              week: wNum,
+              label: '第 ' + wNum + ' 週 (' + days[0].slice(5).replace('-', '/') + ' ~ ' + days[4].slice(5).replace('-', '/') + ')',
+              days: days
+            });
+
+            (wData.students || []).forEach((stu) => {
+              const recsByDay = stu.records || {};
+              Object.keys(recsByDay).forEach((dayKey) => {
+                (recsByDay[dayKey] || []).forEach((r) => {
+                  const parsed = parseRemarkAndFlagClient(r.remarks);
+                  builtRecords.push({
+                    id: recSeq++,
+                    seatNo: String(stu.seatNo),
+                    date: r.date,
+                    week: wNum,
+                    reason: r.reason,
+                    points: Number(r.points) || 0,
+                    remarks: parsed.remarks,
+                    flagTag: parsed.flagTag,
+                    flagNote: parsed.flagNote
+                  });
+                });
+              });
+            });
+          });
+
+          // 只留到目前週次或有紀錄的週次，並由新到舊排列
+          builtWeeks.sort((a, b) => b.week - a.week);
+          WEEKS = builtWeeks;
+          records = builtRecords.reverse();
+          const weekSel = $('matrixWeekSelect');
+          if (weekSel) {
+            weekSel.innerHTML = WEEKS.map((w) => '<option value="' + w.week + '">' + esc(w.label) + '</option>').join('');
+          }
+          if (!hasInitializedDate) {
+            $('checkinDate').value = todayIso;
+            hasInitializedDate = true;
+          }
+          setSyncStatus('已載入名單 (請更新GS啟用寫入)', 'warn');
+          renderAll();
+        }
+      } catch (err) {
+        console.error('載入試算表失敗:', err);
+        setSyncStatus('離線預覽模式 (點擊重試)', 'warn');
+      }
+    }
 
     function getReasonPts(reasonName) {
       if (customPtsMap[reasonName] !== undefined) return customPtsMap[reasonName];
@@ -794,7 +978,14 @@
       for (const w of WEEKS) {
         if (w.days.includes(dateStr)) return w.week;
       }
-      return 10;
+      if (semesterStartDateStr && dateStr) {
+        const sD = new Date(semesterStartDateStr + 'T00:00:00');
+        const cD = new Date(dateStr + 'T00:00:00');
+        if (!isNaN(sD.getTime()) && !isNaN(cD.getTime()) && cD >= sD) {
+          return Math.floor((cD.getTime() - sD.getTime()) / (1000 * 60 * 60 * 24 * 7)) + 1;
+        }
+      }
+      return currentWeekNum || 1;
     }
 
     function formatWeekday(dateStr) {
@@ -1010,16 +1201,16 @@
       const stu = getStudent(personalSeat);
       const myRecs = records.filter((r) => r.seatNo === personalSeat);
       const sumPts = myRecs.reduce((acc, r) => acc + r.points, 0);
-      const totalScore = stu.init + sumPts;
-      const wk10Pts = myRecs.filter((r) => r.week === 10).reduce((acc, r) => acc + r.points, 0);
+      const totalScore = parseFloat((stu.init + sumPts).toFixed(1));
+      const wkCurPts = parseFloat(myRecs.filter((r) => r.week === currentWeekNum).reduce((acc, r) => acc + r.points, 0).toFixed(1));
       const contactMiss = myRecs.filter((r) => r.reason.startsWith('聯絡簿') && r.points < 0).length;
       const weeklyMiss = myRecs.filter((r) => r.reason.startsWith('週報表') && r.points < 0).length;
 
       $('personalSummaryBar').innerHTML =
-        '<div class="stat-box"><div class="stat-label">學生姓名</div><div class="stat-val" style="font-size:1.35rem;">#' + stu.seatNo.padStart(2, '0') + ' ' + esc(stu.name) + '</div></div>' +
-        '<div class="stat-box"><div class="stat-label">目前總積分（初始 100）</div><div class="stat-val" style="color:' + (totalScore >= 100 ? 'var(--emerald)' : 'var(--primary)') + ';">' + totalScore + '</div></div>' +
-        '<div class="stat-box"><div class="stat-label">本週 (第10週) 增減</div><div class="stat-val" style="color:' + (wk10Pts >= 0 ? 'var(--emerald)' : 'var(--red)') + ';">' + (wk10Pts > 0 ? '+' : '') + wk10Pts + '</div></div>' +
-        '<div class="stat-box"><div class="stat-label">聯絡簿／週報表異常</div><div class="stat-val" style="font-size:1.3rem;">聯絡簿 ' + contactMiss + ' 次 · 週報 ' + weeklyMiss + ' 次</div></div>';
+        '<div class="stat-box"><div class="stat-label">學生姓名</div><div class="stat-val" style="font-size:1.25rem;">#' + stu.seatNo.padStart(2, '0') + ' ' + esc(stu.name) + '</div></div>' +
+        '<div class="stat-box"><div class="stat-label">目前總積分（初始 ' + stu.init + '）</div><div class="stat-val" style="color:' + (totalScore >= stu.init ? 'var(--emerald)' : 'var(--primary)') + ';">' + totalScore + '</div></div>' +
+        '<div class="stat-box"><div class="stat-label">本週 (第' + currentWeekNum + '週) 增減</div><div class="stat-val" style="color:' + (wkCurPts >= 0 ? 'var(--emerald)' : 'var(--red)') + ';">' + (wkCurPts > 0 ? '+' : '') + wkCurPts + '</div></div>' +
+        '<div class="stat-box"><div class="stat-label">聯絡簿／週報表異常</div><div class="stat-val" style="font-size:1.18rem;">聯絡簿 ' + contactMiss + ' 次 · 週報 ' + weeklyMiss + ' 次</div></div>';
 
       // 3. 週次篩選按鈕
       $('personalWeekFilter').innerHTML =
@@ -1030,7 +1221,7 @@
       const targetWeeks = personalWeek === 'all' ? WEEKS : WEEKS.filter((w) => String(w.week) === String(personalWeek));
       $('personalWeekList').innerHTML = targetWeeks.map((w) => {
         const wRecs = myRecs.filter((r) => r.week === w.week);
-        const wSum = wRecs.reduce((acc, r) => acc + r.points, 0);
+        const wSum = parseFloat(wRecs.reduce((acc, r) => acc + r.points, 0).toFixed(1));
         const rowsHtml = wRecs.length
           ? wRecs.map((r) => {
               const ptsStr = (r.points > 0 ? '+' : '') + r.points;
@@ -1070,7 +1261,7 @@
       const box = $('statsTableContainer');
 
       if (activeStatView === 'matrix') {
-        const wkNum = Number(weekSel.value || 10);
+        const wkNum = Number(weekSel.value || currentWeekNum);
         const wkObj = WEEKS.find((w) => w.week === wkNum) || WEEKS[0];
         const catFilter = $('matrixCategoryFilter').value;
         const dayLabels = ['週一', '週二', '週三', '週四', '週五'];
@@ -1084,9 +1275,9 @@
 
         STUDENTS.forEach((s) => {
           const allStuRecs = records.filter((r) => r.seatNo === s.seatNo);
-          const totalScore = s.init + allStuRecs.reduce((a, r) => a + r.points, 0);
+          const totalScore = parseFloat((s.init + allStuRecs.reduce((a, r) => a + r.points, 0)).toFixed(1));
           const wkRecs = allStuRecs.filter((r) => r.week === wkNum && (catFilter === 'all' || isContactOrWeekly(r.reason)));
-          const wkSum = wkRecs.reduce((a, r) => a + r.points, 0);
+          const wkSum = parseFloat(wkRecs.reduce((a, r) => a + r.points, 0).toFixed(1));
 
           html += '<tr>' +
             '<td><button type="button" data-jump-student="' + s.seatNo + '" style="font-weight:800;color:var(--ink);text-align:left;">#' + s.seatNo.padStart(2, '0') + ' ' + esc(s.name) + '</button></td>' +
@@ -1115,12 +1306,12 @@
         const sortBy = $('rankingSortSelect').value;
         const stats = STUDENTS.map((s) => {
           const myRecs = records.filter((r) => r.seatNo === s.seatNo);
-          const totalScore = s.init + myRecs.reduce((a, r) => a + r.points, 0);
-          const wk10 = myRecs.filter((r) => r.week === 10).reduce((a, r) => a + r.points, 0);
+          const totalScore = parseFloat((s.init + myRecs.reduce((a, r) => a + r.points, 0)).toFixed(1));
+          const wkCur = parseFloat(myRecs.filter((r) => r.week === currentWeekNum).reduce((a, r) => a + r.points, 0).toFixed(1));
           const contactCnt = myRecs.filter((r) => r.reason.startsWith('聯絡簿') && r.points < 0).length;
           const weeklyCnt = myRecs.filter((r) => r.reason.startsWith('週報表') && r.points < 0).length;
           const flagCnt = myRecs.filter((r) => r.flagTag).length;
-          return { ...s, totalScore, wk10, contactCnt, weeklyCnt, flagCnt };
+          return { ...s, totalScore, wkCur, contactCnt, weeklyCnt, flagCnt };
         });
 
         // 計算總分排名
@@ -1129,18 +1320,18 @@
 
         if (sortBy === 'scoreDesc') stats.sort((a, b) => b.totalScore - a.totalScore || Number(a.seatNo) - Number(b.seatNo));
         else if (sortBy === 'contactDesc') stats.sort((a, b) => (b.contactCnt + b.weeklyCnt) - (a.contactCnt + a.weeklyCnt));
-        else if (sortBy === 'weekAsc') stats.sort((a, b) => a.wk10 - b.wk10);
+        else if (sortBy === 'weekAsc') stats.sort((a, b) => a.wkCur - b.wkCur);
         else stats.sort((a, b) => Number(a.seatNo) - Number(b.seatNo));
 
         box.innerHTML = '<table class="stat-table"><thead><tr>' +
-          '<th>座號</th><th>姓名</th><th>目前總分 (初始100)</th><th>班級排名</th><th>本週增減</th><th>聯絡簿異常累計</th><th>週報表異常累計</th><th>📌 待處理標註</th><th>明細</th>' +
+          '<th>座號</th><th>姓名</th><th>目前總分 (初始100)</th><th>班級排名</th><th>本週 (第' + currentWeekNum + '週) 增減</th><th>聯絡簿異常累計</th><th>週報表異常累計</th><th>📌 待處理標註</th><th>明細</th>' +
         '</tr></thead><tbody>' +
         stats.map((st) => '<tr>' +
           '<td style="font-family:monospace;font-weight:800;">#' + st.seatNo.padStart(2, '0') + '</td>' +
           '<td style="font-weight:800;">' + esc(st.name) + '</td>' +
           '<td style="font-family:monospace;font-weight:900;font-size:1rem;color:' + (st.totalScore >= 100 ? 'var(--emerald)' : 'var(--primary)') + ';">' + st.totalScore + '</td>' +
           '<td style="font-family:monospace;font-weight:700;">第 ' + st.rank + ' 名</td>' +
-          '<td style="font-family:monospace;font-weight:800;color:' + (st.wk10 < 0 ? 'var(--red)' : (st.wk10 > 0 ? 'var(--emerald)' : 'var(--muted)')) + ';">' + (st.wk10 > 0 ? '+' : '') + st.wk10 + '</td>' +
+          '<td style="font-family:monospace;font-weight:800;color:' + (st.wkCur < 0 ? 'var(--red)' : (st.wkCur > 0 ? 'var(--emerald)' : 'var(--muted)')) + ';">' + (st.wkCur > 0 ? '+' : '') + st.wkCur + '</td>' +
           '<td>' + (st.contactCnt ? '<span class="cell-chip">' + st.contactCnt + ' 次</span>' : '<span style="color:#ccc;">0</span>') + '</td>' +
           '<td>' + (st.weeklyCnt ? '<span class="cell-chip">' + st.weeklyCnt + ' 次</span>' : '<span style="color:#ccc;">0</span>') + '</td>' +
           '<td>' + (st.flagCnt ? '<span class="cell-chip flagged">📌 ' + st.flagCnt + ' 筆</span>' : '-') + '</td>' +
@@ -1190,7 +1381,12 @@
 
     /* ============ 事件綁定 ============ */
     function initEvents() {
-      $('checkinDate').value = '2026-11-07';
+      const todayIso = new Date().toLocaleDateString('sv-SE');
+      $('checkinDate').value = todayIso;
+
+      if ($('syncBtn')) {
+        $('syncBtn').addEventListener('click', () => loadFromSpreadsheet(false));
+      }
 
       // 登入表單
       $('gateForm').addEventListener('submit', (e) => {
@@ -1366,8 +1562,8 @@
         showToast('已清空當日待送出暫存清單');
       });
 
-      // 一次送出所有暫存登記
-      $('submitCheckinBtn').addEventListener('click', () => {
+      // 一次送出所有暫存登記（同步寫入 Google 試算表「生活計點」）
+      $('submitCheckinBtn').addEventListener('click', async () => {
         const dateStr = $('checkinDate').value;
         const dayDrafts = pendingDrafts.filter((d) => d.date === dateStr);
         if (!dayDrafts.length) return;
@@ -1375,20 +1571,31 @@
         const wk = getWeekFromDate(dateStr);
         const fallbackRem = ($('checkinRemark').value || '').trim();
         let added = 0, skipped = 0;
+        const batchItems = [];
 
         dayDrafts.forEach((d) => {
           const dup = records.some((r) => r.date === dateStr && r.seatNo === d.seatNo && r.reason === d.reason);
           if (dup) { skipped++; return; }
+          const finalRem = d.remarks || fallbackRem;
+          const tempId = Date.now() + Math.floor(Math.random() * 100000);
           records.unshift({
-            id: Date.now() + Math.floor(Math.random() * 100000),
+            id: tempId,
             seatNo: d.seatNo,
             date: dateStr,
             week: wk,
             reason: d.reason,
             points: d.points,
-            remarks: d.remarks || fallbackRem,
+            remarks: finalRem,
             flagTag: '',
             flagNote: ''
+          });
+          batchItems.push({
+            tempId: tempId,
+            seatNo: d.seatNo,
+            date: dateStr,
+            reason: d.reason,
+            points: d.points,
+            remarks: finalRem
           });
           added++;
         });
@@ -1397,10 +1604,35 @@
         hasStampedSinceReasonPick = false;
         $('checkinRemark').value = '';
         renderAll();
-        if (skipped > 0) {
-          showToast('✅ 已一次送出 ' + added + ' 筆（另有 ' + skipped + ' 筆今日已登記過相同事由，自動防重複略過！）');
-        } else {
-          showToast('✅ 成功一次送出 ' + added + ' 筆生活計點紀錄！');
+
+        if (!batchItems.length) {
+          showToast('⚠️ 所選項目今日皆已登記過，自動防重複略過！');
+          return;
+        }
+
+        try {
+          setSyncStatus('正在寫入試算表...', 'loading');
+          const res = await callGasApi({ action: 'addLifePointRecordsBatch', items: batchItems });
+          if (res && res.success) {
+            if (Array.isArray(res.addedRecords)) {
+              res.addedRecords.forEach((srvRec) => {
+                const matchLocal = records.find((r) => r.seatNo === String(srvRec.seatNo) && r.date === srvRec.date && r.reason === srvRec.reason);
+                if (matchLocal) {
+                  matchLocal.id = srvRec.id;
+                  matchLocal.sheetRow = srvRec.sheetRow;
+                }
+              });
+            }
+            setSyncStatus('已同步寫入試算表 · 點擊重整', 'ok');
+            showToast('☁️ 成功寫入 Google 試算表共 ' + (res.addedCount || added) + ' 筆紀錄！' + (skipped ? '（略過重複 ' + skipped + ' 筆）' : ''));
+            renderAll();
+          } else {
+            setSyncStatus('試算表尚未更新寫入函式', 'warn');
+            showToast('⚠️ 畫面已更新，但試算表尚未更新 MultiWeekReport.gs：' + (res && (res.error || res.message) ? (res.error || res.message) : '請更新 Apps Script'));
+          }
+        } catch (err) {
+          setSyncStatus('寫入失敗 (點擊重試)', 'warn');
+          showToast('⚠️ 寫入試算表失敗，請確認網路或 Apps Script 部署');
         }
       });
 
@@ -1431,7 +1663,7 @@
       $('rankingSortSelect').addEventListener('change', renderStatsTab);
 
       // 全域委派：開啟 📌 標註彈窗、跳轉學生個人頁、導師核准刪除
-      document.body.addEventListener('click', (e) => {
+      document.body.addEventListener('click', async (e) => {
         const flagBtn = e.target.closest('[data-open-flag]');
         if (flagBtn) {
           const rid = Number(flagBtn.getAttribute('data-open-flag'));
@@ -1462,9 +1694,18 @@
         const delBtn = e.target.closest('[data-del-rec]');
         if (delBtn) {
           const rid = Number(delBtn.getAttribute('data-del-rec'));
+          const rec = records.find((r) => r.id === rid);
           records = records.filter((r) => r.id !== rid);
-          showToast('🗑️ 導師已刪除該筆紀錄');
+          showToast('🗑️ 正在從試算表刪除該筆紀錄...');
           renderAll();
+          if (rec) {
+            try {
+              const res = await callGasApi({ action: 'deleteLifePointRecord', id: rec.id, seatNo: rec.seatNo, date: rec.date, reason: rec.reason });
+              if (res && res.success) {
+                showToast('☁️ 已從 Google 試算表刪除該筆紀錄！');
+              }
+            } catch (err) {}
+          }
           return;
         }
 
@@ -1473,12 +1714,16 @@
           const rid = Number(clrBtn.getAttribute('data-clear-flag'));
           const rec = records.find((r) => r.id === rid);
           if (rec) {
+            const origReason = rec.reason;
             rec.remarks = (rec.remarks ? rec.remarks + ' · ' : '') + '[已確認標註：' + rec.flagTag + ']';
             rec.flagTag = '';
             rec.flagNote = '';
+            renderAll();
+            try {
+              const res = await callGasApi({ action: 'resolveLifePointFlag', id: rec.id, seatNo: rec.seatNo, date: rec.date, reason: origReason, mode: 'clearFlag' });
+              if (res && res.success) showToast('☁️ 已確認標註並同步寫入試算表備註！');
+            } catch (err) {}
           }
-          showToast('👌 已確認並轉入一般備註');
-          renderAll();
           return;
         }
 
@@ -1487,14 +1732,18 @@
           const rid = Number(lateBtn.getAttribute('data-change-late'));
           const rec = records.find((r) => r.id === rid);
           if (rec) {
-            rec.reason = '聯絡簿遲交';
+            const origReason = rec.reason;
+            rec.reason = origReason.startsWith('週報表') ? '週報表遲交' : '聯絡簿遲交';
             rec.points = -0.5;
             rec.remarks = '補交改列遲交';
             rec.flagTag = '';
             rec.flagNote = '';
+            renderAll();
+            try {
+              const res = await callGasApi({ action: 'resolveLifePointFlag', id: rec.id, seatNo: rec.seatNo, date: rec.date, reason: origReason, mode: 'changeLate' });
+              if (res && res.success) showToast('☁️ 已將試算表紀錄改為「' + rec.reason + ' (-0.5)」！');
+            } catch (err) {}
           }
-          showToast('✅ 已將該筆紀錄改為「聯絡簿遲交 (-0.5)」');
-          renderAll();
           return;
         }
       });
@@ -1507,19 +1756,38 @@
         document.querySelectorAll('#flagPresetGrid .flag-preset-btn').forEach((btn) => btn.classList.toggle('active', btn === b));
       });
       $('closeFlagModalBtn').addEventListener('click', () => $('flagModal').classList.add('hidden'));
-      $('saveFlagModalBtn').addEventListener('click', () => {
+      $('saveFlagModalBtn').addEventListener('click', async () => {
         const rec = records.find((r) => r.id === editingFlagRecId);
         if (rec) {
           rec.flagTag = selectedFlagPreset;
           rec.flagNote = ($('flagModalNote').value || '').trim();
+          $('flagModal').classList.add('hidden');
+          renderAll();
+          try {
+            const res = await callGasApi({
+              action: 'updateLifePointFlag',
+              id: rec.id,
+              seatNo: rec.seatNo,
+              date: rec.date,
+              reason: rec.reason,
+              flagTag: rec.flagTag,
+              flagNote: rec.flagNote
+            });
+            if (res && res.success) {
+              showToast('☁️ 已將標註「' + selectedFlagPreset + '」同步寫入 Google 試算表！');
+            } else {
+              showToast('📌 已加上標註「' + selectedFlagPreset + '」（請更新 GS 以同步回試算表）');
+            }
+          } catch (err) {
+            showToast('📌 已加上標註「' + selectedFlagPreset + '」');
+          }
         }
-        $('flagModal').classList.add('hidden');
-        showToast('📌 已加上標註「' + selectedFlagPreset + '」，將提醒導師確認！');
-        renderAll();
       });
     }
 
     initEvents();
+    renderAll();
+    loadFromSpreadsheet(true);
   })();
   </script>
 </body>
