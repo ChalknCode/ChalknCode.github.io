@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>805 週報表產生器（支援雙週整合＆當週累計總積分）</title>
+    <link rel="icon" href="images/logo.png" type="image/jpeg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&family=LXGW+WenKai+TC&family=Noto+Sans+TC:wght@400;500;700;900&family=Raleway:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="js/config.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', 'sans-serif'],
+                        comfortaa: ['"Comfortaa"', '"Noto Sans TC"', 'sans-serif'],
+                        raleway: ['"Raleway"', 'sans-serif'],
+                        handwriting: ['"LXGW WenKai TC"', 'cursive', 'sans-serif'], 
+                    },
+                    colors: { 'text-main': '#111827', 'text-light': '#4b5563' }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { color: #111827; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-thumb { background: #fca5a5; border-radius: 10px; }
+        .bg-cute-pattern { background-color: #fff9f0; background-image: radial-gradient(#fecaca 1.5px, transparent 1.5px); background-size: 24px 24px; }
+        #global-loader { backdrop-filter: blur(4px); transition: opacity 0.3s; }
+        
+        .report-page { 
+            background-color: #ffffff; 
+            height: auto; 
+            padding: 28px 38px 42px 38px; 
+            box-sizing: border-box; 
+            display: block; 
+            transform-origin: top left; 
+            width: 971px; 
+        }
+        .layout-landscape { min-height: 688px; }
+        .layout-portrait { min-height: 1371px; }
+
+        .page-break { page-break-after: always; clear: both; }
+
+        /* ================================================================ */
+        /* 🏆 終極防裁切與防白邊系統 (Box-in-Box 背景同色法) */
+        /* ================================================================ */
+        
+        .box-wrapper {
+            background-color: #94a3b8;
+            padding: 2px;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .box-inner {
+            background-color: #f3f4f6;
+            border-radius: 6px;
+            overflow: hidden;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .box-body {
+            background-color: #ffffff;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-start;
+            padding: 12px;
+        }
+
+        .record-table { 
+            width: 100%; 
+            table-layout: fixed; 
+            border-collapse: collapse; 
+        }
+        .record-table th, .record-table td {
+            border-right: 1px solid #94a3b8; 
+            border-bottom: 1px solid #94a3b8;
+        }
+        .record-table th { 
+            border-bottom: 2px solid #94a3b8; 
+            padding: 0; 
+        }
+        .record-table td { 
+            background-color: #ffffff; 
+            padding: 8px;
+            vertical-align: top !important;
+            height: 40px; 
+        }
+        .record-table th:last-child, .record-table td:last-child { border-right: none; }
+        .record-table tr:last-child td { border-bottom: none; }
+
+        /* ================================================================ */
+
+        .record-item { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; line-height: 1.4; align-items: flex-start; }
+        .record-item .desc { width: 80%; text-align: left; }
+        .record-item .score { width: 20%; text-align: right; font-family: 'Comfortaa', sans-serif; font-weight: 700; }
+        
+        .theme-bw .info-card { background-color: #f3f4f6; border: 2px solid #374151; color: #111827; border-radius: 8px; box-shadow: 3px 3px 0px rgba(55, 65, 81, 0.2); }
+        .theme-bw .stat-box { border: 2px dashed #9ca3af; background-color: #ffffff; border-radius: 6px; }
+        .theme-bw .stat-box-total { border: 2px solid #374151; background-color: #f3f4f6; }
+
+        /* 雙週合併時每一週的小標題外框 */
+        .week-section-block {
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 14px 16px 12px 16px;
+            background-color: #fafaf9;
+            margin-bottom: 14px;
+        }
+        
+        .loader { border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 3px solid #fff; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .exporting-pdf .adjust-baseline {
+            position: relative;
+        }
+
+        @media print {
+            @page { margin: 10mm; }
+            body { margin: 0; padding: 0; background: white !important; }
+            #app-ui, #global-loader, .no-print { display: none !important; }
+            #print-area { display: block !important; width: 100%; position: static !important; left: auto !important; }
+            .report-page { 
+                width: 971px !important; 
+                max-width: 971px !important;
+                min-height: auto !important; 
+                height: auto !important;
+                padding: 28px 38px 42px 38px !important; 
+                box-shadow: none !important; 
+                margin: 0 auto !important;
+                transform: none !important; 
+            }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+    </style>
+</head>
+<body class="h-screen overflow-hidden bg-orange-50/30 relative">
+
+    <div id="global-loader" onclick="if(!window.isExporting) this.style.display='none'" class="fixed inset-0 bg-white/80 z-50 flex flex-col items-center justify-center cursor-pointer" style="display:none;">
+        <div class="loader w-12 h-12 mb-4 border-4 !border-orange-200 !border-t-orange-600"></div>
+        <div class="text-orange-600 font-bold tracking-widest text-center">
+            <span id="loader-text" class="animate-pulse text-lg">正在同步原始資料與學期設定中...</span><br>
+            <span id="loader-hint" class="text-[11px] text-gray-500 mt-3 block font-normal px-4 py-1.5 bg-orange-50 rounded-full border border-orange-100">💡 提示：若卡住轉圈圈，點擊畫面任意處即可強制關閉</span>
+        </div>
+    </div>
+
+    <!-- UI 主畫面 -->
+    <div id="app-ui" class="flex flex-col md:flex-row w-full h-full print:hidden">
+        
+        <!-- 左側面板 -->
+        <div class="w-full md:w-[390px] lg:w-[435px] flex-shrink-0 bg-white/95 backdrop-blur-md border-r border-orange-100 shadow-2xl z-20 flex flex-col h-full overflow-y-auto relative rounded-r-[2rem] custom-scrollbar">
+            <div class="p-5 bg-gradient-to-br from-rose-400 to-orange-400 text-white sticky top-0 z-10 shadow-sm rounded-br-[2rem]">
+                <div class="flex items-center justify-between">
+                    <h1 class="text-xl font-bold tracking-widest font-comfortaa flex items-center gap-2">
+                        <span class="iconify text-2xl" data-icon="ph:magic-wand-fill"></span>805 週報表產生器
+                    </h1>
+                    <span id="data-source-badge" class="text-[11px] bg-white/25 px-2.5 py-1 rounded-full font-bold backdrop-blur-sm">✨ 預覽示範模式</span>
+                </div>
+                <p class="text-xs text-white/90 mt-1 font-medium ml-1">支援「當週截止累計總積分」＋「雙週整合產出」✨</p>
+            </div>
+
+            <div class="p-5 space-y-5 flex-1">
+                <!-- 🌟 新增：單週 vs 雙週整合模式切換 -->
+                <div class="bg-rose-50/70 p-3.5 rounded-2xl border border-rose-200/70 space-y-2.5">
+                    <label class="block text-xs font-bold text-rose-900 flex items-center justify-between">
+                        <span class="flex items-center gap-1"><span class="iconify text-base" data-icon="ph:Rows-duotone"></span> 報表週數與整合模式</span>
+                        <span class="text-[10px] text-rose-600 font-semibold">兩週出一次超方便！</span>
+                    </label>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <button type="button" data-week-mode="single" class="week-mode-btn px-2 py-2 rounded-xl text-xs font-bold border transition bg-white text-slate-600 border-rose-200">
+                            📄 單週標準
+                        </button>
+                        <button type="button" data-week-mode="dual_merged" class="week-mode-btn px-2 py-2 rounded-xl text-xs font-bold border transition bg-rose-500 text-white border-rose-500 shadow-sm">
+                            📑 雙週同張整合
+                        </button>
+                        <button type="button" data-week-mode="dual_separate" class="week-mode-btn px-2 py-2 rounded-xl text-xs font-bold border transition bg-white text-slate-600 border-rose-200">
+                            🗂️ 雙週分開兩張
+                        </button>
+                    </div>
+                    <p id="week-mode-desc" class="text-[11px] text-rose-700 leading-relaxed bg-white/80 px-2.5 py-1.5 rounded-lg border border-rose-100">
+                        💡 <b>雙週同張整合</b>：將連續兩週合併在同一張報表、共用底部簽名欄；且<b>第一週與第二週會分別計算截至該週末的「當週累計總積分」</b>，不會兩週顯示同一個最終總分！
+                    </p>
+                </div>
+
+                <!-- 基本設定（支援第一週 ＆ 第二週） -->
+                <div class="bg-orange-50/50 p-4 rounded-2xl border border-orange-100/50 space-y-3.5">
+                    <div class="flex justify-between items-center">
+                        <label class="block text-xs font-bold text-orange-800">學期與週次區間</label>
+                        <button id="btn-refresh-data" class="text-[11px] bg-orange-200 text-orange-900 hover:bg-orange-300 px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1">
+                            <span class="iconify" data-icon="ph:arrows-clockwise-bold"></span> 重載試算表資料
+                        </button>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-orange-700 mb-1">學期</label>
+                        <select id="input-semester" class="w-full px-3 py-2 border border-orange-200 rounded-xl bg-white text-xs font-bold shadow-sm cursor-pointer outline-none focus:ring-2 focus:ring-orange-400/50">
+                            <option value="114學年度第1學期">114學年度第1學期</option>
+                        </select>
+                    </div>
+
+                    <!-- 第一週設定 -->
+                    <div class="bg-white p-3 rounded-xl border border-orange-200/80 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-extrabold text-orange-800" id="label-week-a">📅 第一週（較早週次）</span>
+                            <input type="text" id="input-week" value="第 9 週" class="w-28 px-2.5 py-1 border border-orange-200 rounded-lg bg-orange-50/40 text-xs font-bold text-center outline-none focus:ring-2 focus:ring-orange-400/50">
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <input type="date" id="input-date-start" class="w-full px-2 py-1.5 border border-orange-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-orange-400/50">
+                            <span class="text-orange-400 font-bold">~</span>
+                            <input type="date" id="input-date-end" class="w-full px-2 py-1.5 border border-orange-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-orange-400/50">
+                        </div>
+                    </div>
+
+                    <!-- 第二週設定（雙週模式時顯示） -->
+                    <div id="week-b-config-box" class="bg-white p-3 rounded-xl border border-rose-200/90 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-extrabold text-rose-800">📅 第二週（接續週次）</span>
+                            <input type="text" id="input-week-b" value="第 10 週" class="w-28 px-2.5 py-1 border border-rose-200 rounded-lg bg-rose-50/40 text-xs font-bold text-center outline-none focus:ring-2 focus:ring-rose-400/50">
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <input type="date" id="input-date-start-b" class="w-full px-2 py-1.5 border border-rose-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-rose-400/50">
+                            <span class="text-rose-400 font-bold">~</span>
+                            <input type="date" id="input-date-end-b" class="w-full px-2 py-1.5 border border-rose-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-rose-400/50">
+                        </div>
+                        <!-- 當選擇「雙週分開兩張」時，可切換右側預覽哪一週 -->
+                        <div id="separate-preview-switch" class="hidden pt-1 flex items-center justify-between border-t border-rose-100">
+                            <span class="text-[11px] font-bold text-slate-500">右側畫布目前預覽：</span>
+                            <div class="flex gap-1">
+                                <button type="button" data-sep-view="A" class="sep-view-btn px-2.5 py-1 rounded-md text-[11px] font-bold bg-rose-500 text-white">第一週</button>
+                                <button type="button" data-sep-view="B" class="sep-view-btn px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 text-slate-600">第二週</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 每日備註/放假設定 -->
+                <div class="bg-red-50/50 p-4 rounded-2xl border border-red-100/50 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-red-800 flex items-center gap-1">
+                            <span class="iconify" data-icon="ph:calendar-star-duotone"></span> 每日備註 / 放假設定
+                        </label>
+                        <span id="save-status-class" class="text-[10px] font-bold opacity-0 transition"></span>
+                    </div>
+                    <div class="text-[11px] font-bold text-red-700" id="day-note-label-a">第一週（一 ～ 五）</div>
+                    <div class="grid grid-cols-5 gap-1">
+                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-1">一</div><input type="text" id="note-day-1" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
+                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-1">二</div><input type="text" id="note-day-2" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
+                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-1">三</div><input type="text" id="note-day-3" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
+                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-1">四</div><input type="text" id="note-day-4" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
+                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-1">五</div><input type="text" id="note-day-5" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
+                    </div>
+
+                    <div id="day-note-box-b" class="pt-2 border-t border-red-100 space-y-1.5">
+                        <div class="text-[11px] font-bold text-rose-700">第二週（一 ～ 五）</div>
+                        <div class="grid grid-cols-5 gap-1">
+                            <div class="text-center"><input type="text" id="note-b-day-1" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-rose-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-400 bg-white"></div>
+                            <div class="text-center"><input type="text" id="note-b-day-2" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-rose-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-400 bg-white"></div>
+                            <div class="text-center"><input type="text" id="note-b-day-3" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-rose-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-400 bg-white"></div>
+                            <div class="text-center"><input type="text" id="note-b-day-4" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-rose-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-400 bg-white"></div>
+                            <div class="text-center"><input type="text" id="note-b-day-5" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-rose-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-400 bg-white"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 選擇學生 -->
+                <div class="bg-gradient-to-br from-teal-50 to-emerald-50 p-4 rounded-2xl border border-teal-100 shadow-sm">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-xs font-bold text-teal-800">選擇學生</label>
+                        <button id="btn-open-edit" class="text-[11px] bg-teal-600 text-white hover:bg-teal-700 px-3 py-1 rounded-lg font-bold transition flex items-center gap-1 shadow-sm">
+                            <span class="iconify" data-icon="ph:pencil-simple-duotone"></span> 微調資料
+                        </button>
+                    </div>
+                    <select id="input-seat" class="w-full px-3 py-2 border border-teal-200 rounded-xl bg-white text-sm font-bold text-teal-900 cursor-pointer shadow-sm outline-none focus:ring-2 focus:ring-teal-400/50"></select>
+                </div>
+
+                <!-- 版面與比例設定 -->
+                <div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100/50 space-y-3">
+                    <label class="block text-xs font-bold text-indigo-800 flex items-center gap-1"><span class="iconify" data-icon="ph:layout-duotone"></span> 版面與產出模式設定</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="col-span-2">
+                            <label class="block text-[10px] font-bold text-indigo-600 mb-1">產出模式 (決定 PDF 大小)</label>
+                            <select id="input-export-mode" class="w-full px-3 py-2 border border-indigo-200 rounded-xl text-sm font-bold text-indigo-900 outline-none focus:ring-2 focus:ring-indigo-400 bg-white cursor-pointer shadow-sm">
+                                <option value="dynamic_pdf">⬇️ 自適應下載 (有多長存多長)</option>
+                                <option value="native_print">🖨️ 傳統列印 (自動縮放符合紙張)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-indigo-600 mb-1">預覽畫布佈局</label>
+                            <select id="input-orientation" class="w-full px-3 py-2 border border-indigo-200 rounded-xl text-sm font-bold text-indigo-900 outline-none focus:ring-2 focus:ring-indigo-400 bg-white cursor-pointer shadow-sm">
+                                <option value="landscape">一般橫向佈局</option>
+                                <option value="portrait">加長直向佈局</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-indigo-600 mb-1">簽名區模式</label>
+                            <select id="input-signature-layout" class="w-full px-3 py-2 border border-indigo-200 rounded-xl text-sm font-bold text-indigo-900 outline-none focus:ring-2 focus:ring-indigo-400 bg-white cursor-pointer shadow-sm">
+                                <option value="row">橫向並排</option>
+                                <option value="stacked">右側堆疊</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <label class="block text-[10px] font-bold text-indigo-600 mb-1">簽名區比例 (師:生:家)</label>
+                        <div class="flex gap-2 items-center">
+                            <input type="number" id="input-flex-teacher" value="45" class="w-full px-2 py-1.5 border border-indigo-200 rounded-lg text-center text-sm font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
+                            <span class="text-indigo-300">:</span>
+                            <input type="number" id="input-flex-student" value="25" class="w-full px-2 py-1.5 border border-indigo-200 rounded-lg text-center text-sm font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
+                            <span class="text-indigo-300">:</span>
+                            <input type="number" id="input-flex-parent" value="30" class="w-full px-2 py-1.5 border border-indigo-200 rounded-lg text-center text-sm font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3 mt-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-indigo-600 mb-1">簽名區總高度 (PX)</label>
+                            <div class="flex items-center">
+                                <input type="number" id="input-signature-height" value="150" min="50" max="400" step="10" class="w-full px-2 py-1.5 border border-indigo-200 rounded-lg text-center text-sm font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-rose-600 mb-1">PDF 下沉校正 (PX)</label>
+                            <div class="flex items-center">
+                                <input type="number" id="input-pdf-offset" value="2" min="0" max="10" step="1" class="w-full px-2 py-1.5 border border-rose-200 text-rose-700 rounded-lg text-center text-sm font-bold bg-white outline-none focus:ring-2 focus:ring-rose-400 shadow-sm">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3 pb-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-slate-600">導師的話（班級宣導＆個人評語）</span>
+                        <span id="save-status-personal" class="text-[10px] font-bold opacity-0 transition"></span>
+                    </div>
+                    <textarea id="input-class-comment" rows="2" placeholder="班級宣導..." class="w-full p-3 border border-indigo-200 rounded-2xl font-handwriting text-slate-800 bg-white focus:ring-2 focus:ring-indigo-400 outline-none"></textarea>
+                    <textarea id="input-comment" rows="3" placeholder="個人評語..." class="w-full p-3 border border-rose-200 rounded-2xl font-handwriting text-slate-800 bg-white focus:ring-2 focus:ring-rose-400 outline-none"></textarea>
+                </div>
+            </div>
+
+            <div class="p-5 bg-white/90 border-t border-rose-50 space-y-2.5 sticky bottom-0 z-10 rounded-tr-[2rem]">
+                <button id="btn-download-single" class="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-full shadow-lg transition flex justify-center items-center">
+                    <span class="iconify text-xl mr-1" data-icon="ph:download-simple-bold"></span> <span id="btn-single-label">執行產出 (單人雙週整合)</span>
+                </button>
+                <button id="btn-download-all" class="w-full py-3 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-full shadow-lg transition flex justify-center items-center">
+                    <span class="iconify text-xl mr-1" data-icon="ph:files-bold"></span> <span id="btn-all-label">執行產出 (全班批次)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 右側：即時預覽區 -->
+        <div class="flex-1 bg-cute-pattern h-full overflow-auto p-4 md:p-8 flex justify-center items-start relative">
+            <div id="preview-scale-wrapper" class="relative" style="transform-origin: top center; transition: transform 0.2s;">
+                <div class="absolute inset-0 bg-black/5 blur-xl rounded-sm transform translate-y-4 translate-x-2 pointer-events-none"></div>
+                
+                <!-- 報告預覽畫布 -->
+                <div id="report-template" class="report-page layout-landscape theme-bw relative z-10 shadow-2xl">
+                    <!-- 頂部標題與學生姓名列 -->
+                    <div class="flex justify-between items-end mb-4 border-b-2 border-slate-800 pb-3">
+                        <div>
+                            <div id="prev-semester" class="adjust-baseline text-xs text-text-light font-bold mb-0.5">--</div>
+                            <h1 id="prev-main-title" class="adjust-baseline text-2xl font-black text-text-main font-comfortaa tracking-wide">805 生活計點週報表（雙週整合）</h1>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="info-card px-4 py-2 flex items-center gap-4">
+                                <div>
+                                    <div class="adjust-baseline text-[10px] font-bold text-gray-500 leading-none mb-1">座號</div>
+                                    <div id="prev-seat" class="adjust-baseline text-xl font-black font-comfortaa leading-none">--</div>
+                                </div>
+                                <div class="h-7 w-[1.5px] bg-slate-300"></div>
+                                <div>
+                                    <div class="adjust-baseline text-[10px] font-bold text-gray-500 leading-none mb-1">姓名</div>
+                                    <div id="prev-name" class="adjust-baseline text-xl font-black leading-none">--</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 🌟 動態週次內容容器（單週時渲染 1 組，雙週同張整合時上下渲染第 1 週 ＋ 第 2 週！） -->
+                    <div id="weeks-render-container"></div>
+                    
+                    <!-- 底部簽名與評語區（單週或雙週同張皆共用此簽名區） -->
+                    <div id="signature-container" class="grid gap-3 mt-3 w-full items-stretch">
+                        <div id="box-teacher" class="box-wrapper h-full shadow-sm flex flex-col">
+                            <div class="box-inner flex flex-col h-full">
+                                <div class="border-b border-slate-300 w-full flex-none bg-gray-100" style="display: table;">
+                                    <div style="display: table-cell; vertical-align: middle;" class="text-center h-[32px]">
+                                        <span class="adjust-baseline block font-bold text-xs tracking-widest text-gray-700 leading-[32px]">導師的話</span>
+                                    </div>
+                                </div>
+                                <div class="box-body items-start justify-start flex-1 overflow-hidden w-full p-3">
+                                    <div id="prev-teacher-comment" class="adjust-baseline text-[14px] leading-relaxed font-handwriting text-gray-800 whitespace-pre-wrap text-left w-full block"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="box-student" class="box-wrapper h-full shadow-sm flex flex-col">
+                            <div class="box-inner flex flex-col h-full">
+                                <div class="border-b border-slate-300 w-full flex-none bg-gray-100" style="display: table;">
+                                    <div style="display: table-cell; vertical-align: middle;" class="text-center h-[32px]">
+                                        <span class="adjust-baseline block font-bold text-xs tracking-widest text-gray-700 leading-[32px]">學生確認</span>
+                                    </div>
+                                </div>
+                                <div class="box-body items-start justify-start flex-1 w-full p-3"></div>
+                            </div>
+                        </div>
+
+                        <div id="box-parent" class="box-wrapper h-full shadow-sm flex flex-col">
+                            <div class="box-inner flex flex-col h-full">
+                                <div class="border-b border-slate-300 w-full flex-none bg-gray-100" style="display: table;">
+                                    <div style="display: table-cell; vertical-align: middle;" class="text-center h-[32px]">
+                                        <span class="adjust-baseline block font-bold text-xs tracking-widest text-gray-700 leading-[32px]">家長的話</span>
+                                    </div>
+                                </div>
+                                <div class="box-body flex flex-col justify-end w-full p-3 h-full">
+                                    <div class="flex-1 mb-2"></div>
+                                    <div class="text-[12px] font-bold border-t border-dashed border-gray-400 pt-3 text-gray-600 flex items-end w-full">
+                                        <span class="adjust-baseline">簽名：</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div> 
+            </div> 
+        </div>
+    </div>
+
+    <!-- 幕後處理區 -->
+    <div id="print-area" style="display: none; position: absolute; top: 0; left: -15000px; background-color: white;"></div>
+
+    <!-- 編輯彈出視窗 -->
+    <div id="edit-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl">
+            <div class="p-5 border-b flex justify-between items-center bg-teal-50 rounded-t-2xl">
+                <div>
+                    <h3 class="font-bold text-lg text-teal-800 flex items-center gap-2"><span class="iconify" data-icon="ph:pencil-circle-duotone"></span> 微調本週畫面資料</h3>
+                    <p class="text-xs text-teal-600 mt-1">此處修改僅限本次預覽與匯出有效，不會覆寫試算表；修改第一週分數也會自動連動更新第二週累計總積分！</p>
+                </div>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-red-500 text-2xl">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 bg-slate-50/50" id="edit-modal-body"></div>
+            <div class="p-4 border-t flex justify-end gap-3 bg-white rounded-b-2xl">
+                <button onclick="closeEditModal()" class="px-5 py-2 rounded-xl bg-slate-100 text-slate-600 font-bold">取消</button>
+                <button onclick="saveEditModal()" class="px-5 py-2 rounded-xl bg-teal-600 text-white font-bold shadow-lg">確認更新</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // 🏆 全域狀態與資料庫
+    window.isExporting = false;
+    let weekMode = 'dual_merged';       // 'single' | 'dual_merged' | 'dual_separate'
+    let separatePreviewTarget = 'A';    // 當 weekMode === 'dual_separate' 時，預覽 'A' 或 'B'
+    let globalSemesterList = [
+        { name: '114學年度第1學期', isActive: true, startDate: new Date(2026, 8, 1).getTime() }
+    ];
+
+    // 支援兩週各自獨立的資料結構（含當週截止的 totalScore、當週明細、當週淨分、當週放假備註）
+    let weekStateA = {
+        weekLabel: '第 9 週',
+        startDate: '2026-10-26',
+        endDate: '2026-11-01',
+        dayNotes: { 1: '', 2: '', 3: '', 4: '', 5: '', classComment: '下週四、五為第二次定期評量，請同學提早溫習功課、作息正常！' },
+        students: {},       // { [seatNo]: { seatNo, name, totalScore, records: {1..5}, comment } }
+        netScores: {}       // { [seatNo]: number }
+    };
+
+    let weekStateB = {
+        weekLabel: '第 10 週',
+        startDate: '2026-11-02',
+        endDate: '2026-11-08',
+        dayNotes: { 1: '', 2: '', 3: '', 4: '', 5: '運動會補假' },
+        students: {},       // { [seatNo]: { seatNo, name, totalScore, records: {1..5}, comment } }
+        netScores: {}
+    };
+
+    let tempEditWeekA = null;
+    let tempEditWeekB = null;
+
+    function getEl(id) { return document.getElementById(id); }
+    const escHtml = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    /* ============ 1. 內建示範資料（展現「第 9 週總積分 ≠ 第 10 週總積分」的真實推進效果） ============ */
+    function loadBuiltInDemoData() {
+        const demoRoster = [
+            { seatNo: '1', name: '林宥辰', baseBeforeW9: 101 },
+            { seatNo: '2', name: '陳品言', baseBeforeW9: 100 },
+            { seatNo: '3', name: '張宇翔', baseBeforeW9: 98.5 },
+            { seatNo: '4', name: '黃子軒', baseBeforeW9: 100 },
+            { seatNo: '5', name: '李承恩', baseBeforeW9: 99 },
+            { seatNo: '6', name: '王宥翔', baseBeforeW9: 102 },
+            { seatNo: '7', name: '吳冠廷', baseBeforeW9: 97 },
+            { seatNo: '8', name: '劉品希', baseBeforeW9: 103 }
+        ];
+
+        const w9Recs = {
+            '1': { 1: [{ reason: '早自習秩序優良', points: 1, remarks: '' }], 2: [], 3: [{ reason: '熱心班級事務', points: 1, remarks: '協助搬運器材' }], 4: [], 5: [] },
+            '2': { 1: [], 2: [{ reason: '聯絡簿家長未簽名', points: -1, remarks: '' }], 3: [], 4: [{ reason: '聯絡簿書寫優良', points: 1, remarks: '' }], 5: [] },
+            '3': { 1: [{ reason: '聯絡簿未交', points: -1, remarks: '' }], 2: [], 3: [{ reason: '作業未交／遲交', points: -1, remarks: '數學習作' }], 4: [{ reason: '打掃工作認真', points: 1, remarks: '' }], 5: [] },
+            '5': { 1: [], 2: [], 3: [{ reason: '聯絡簿札記未寫', points: -1, remarks: '' }], 4: [], 5: [] },
+            '7': { 1: [{ reason: '服儀／物品未帶', points: -1, remarks: '' }], 2: [{ reason: '聯絡簿未交', points: -1, remarks: '' }], 3: [], 4: [], 5: [] },
+            '8': { 1: [], 2: [{ reason: '聯絡簿書寫優良', points: 1, remarks: '心得深刻' }], 3: [], 4: [{ reason: '抽屜座位整潔優良', points: 1, remarks: '' }], 5: [] }
+        };
+
+        const w10Recs = {
+            '1': { 1: [], 2: [{ reason: '聯絡簿書寫優良', points: 1, remarks: '' }], 3: [], 4: [{ reason: '打掃工作認真', points: 1, remarks: '' }], 5: [] },
+            '2': { 1: [{ reason: '打掃工作認真', points: 1, remarks: '' }], 2: [], 3: [], 4: [], 5: [] },
+            '3': { 1: [], 2: [{ reason: '聯絡簿遲交', points: -0.5, remarks: '第一節下課補交' }], 3: [], 4: [{ reason: '聯絡簿未交', points: -1, remarks: '' }, { reason: '週報表未交', points: -1, remarks: '' }], 5: [] },
+            '5': { 1: [{ reason: '聯絡簿家長未簽名', points: -1, remarks: '' }], 2: [], 3: [], 4: [{ reason: '熱心班級事務', points: 1, remarks: '' }], 5: [] },
+            '7': { 1: [], 2: [], 3: [{ reason: '聯絡簿家長未簽名', points: -1, remarks: '' }], 4: [], 5: [] },
+            '8': { 1: [{ reason: '熱心班級事務', points: 1, remarks: '' }], 2: [], 3: [{ reason: '早自習秩序優良', points: 1, remarks: '' }], 4: [], 5: [] }
+        };
+
+        const demoComments = {
+            '1': '宥辰這兩週表現非常穩定，還主動幫忙搬器材，繼續保持！',
+            '2': '品言第二週完全沒有缺簽聯絡簿了，進步看得見！',
+            '3': '宇翔這兩週聯絡簿常忘記帶來或遲交，請養成睡前檢查書包的好習慣喔！'
+        };
+
+        weekStateA.students = {};
+        weekStateB.students = {};
+
+        demoRoster.forEach((stu) => {
+            const rA = w9Recs[stu.seatNo] || { 1: [], 2: [], 3: [], 4: [], 5: [] };
+            const rB = w10Recs[stu.seatNo] || { 1: [], 2: [], 3: [], 4: [], 5: [] };
+
+            let sumA = 0;
+            Object.values(rA).forEach(arr => arr.forEach(item => { sumA += item.points; }));
+            const totalEndW9 = parseFloat((stu.baseBeforeW9 + sumA).toFixed(1));
+
+            let sumB = 0;
+            Object.values(rB).forEach(arr => arr.forEach(item => { sumB += item.points; }));
+            // ★ 第 10 週的總積分 = 第 9 週結算總積分 + 第 10 週淨分！
+            const totalEndW10 = parseFloat((totalEndW9 + sumB).toFixed(1));
+
+            weekStateA.students[stu.seatNo] = {
+                seatNo: stu.seatNo,
+                name: stu.name,
+                baseBeforeWeek: stu.baseBeforeW9,
+                totalScore: totalEndW9,
+                records: JSON.parse(JSON.stringify(rA)),
+                comment: demoComments[stu.seatNo] || ''
+            };
+
+            weekStateB.students[stu.seatNo] = {
+                seatNo: stu.seatNo,
+                name: stu.name,
+                baseBeforeWeek: totalEndW9,
+                totalScore: totalEndW10,
+                records: JSON.parse(JSON.stringify(rB)),
+                comment: demoComments[stu.seatNo] || ''
+            };
+        });
+
+        recalculateNetScores(weekStateA);
+        recalculateNetScores(weekStateB);
+    }
+
+    function recalculateNetScores(wState) {
+        wState.netScores = {};
+        Object.keys(wState.students).forEach(seat => {
+            const student = wState.students[seat];
+            let p = 0, m = 0;
+            Object.values(student.records || {}).forEach(dayArr => {
+                (dayArr || []).forEach(r => {
+                    if (r.points > 0) p += r.points;
+                    else m += Math.abs(r.points);
+                });
+            });
+            wState.netScores[seat] = parseFloat((p - m).toFixed(1));
+        });
+    }
+
+    /* ============ 2. 連線後端（支援 Apps Script 內部環境 與 GitHub Pages Fetch API） ============ */
+    async function callBackendAPI(action, payload) {
+        // 1. 若在 Google Apps Script iframe 內執行
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            return new Promise((resolve, reject) => {
+                const runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
+                if (action === 'getMultiWeekReportData') runner.getMultiWeekReportData(payload.ranges, payload.semesterName);
+                else if (action === 'getCompleteReportData') runner.getCompleteReportData(payload.startDateStr, payload.endDateStr, payload.semesterName);
+                else if (action === 'saveWeekDayNotes') runner.saveWeekDayNotes(payload.semester, payload.week, payload.notesObj);
+                else if (action === 'saveWeeklyComment') runner.saveWeeklyComment(payload.semester, payload.week, payload.seatNo, payload.studentName, payload.comment);
+                else resolve(null);
+            });
+        }
+        // 2. 若在 GitHub Pages 獨立網頁執行，透過 fetch 呼叫 CONFIG.API_URL
+        if (typeof CONFIG !== 'undefined' && CONFIG.API_URL) {
+            const resp = await fetch(CONFIG.API_URL, {
+                method: 'POST',
+                body: JSON.stringify(Object.assign({ action: action }, payload))
+            });
+            return await resp.json();
+        }
+        return null;
+    }
+
+    async function fetchAllData() {
+        const loader = getEl('global-loader');
+        if (loader) loader.style.display = 'flex';
+
+        const startA = getEl('input-date-start').value;
+        const endA = getEl('input-date-end').value;
+        const startB = getEl('input-date-start-b').value;
+        const endB = getEl('input-date-end-b').value;
+        const semName = getEl('input-semester').value;
+
+        try {
+            const res = await callBackendAPI('getMultiWeekReportData', {
+                ranges: [
+                    { startDateStr: startA, endDateStr: endA },
+                    { startDateStr: startB, endDateStr: endB }
+                ],
+                semesterName: semName
+            });
+
+            if (res && res.success && Array.isArray(res.weeks) && res.weeks.length >= 2) {
+                globalSemesterList = res.semesterList || globalSemesterList;
+                const semSelect = getEl('input-semester');
+                if (semSelect && globalSemesterList.length) {
+                    semSelect.innerHTML = '';
+                    globalSemesterList.forEach(sem => {
+                        const opt = document.createElement('option');
+                        opt.value = sem.name; opt.textContent = sem.name;
+                        if (sem.name === res.activeSemester) opt.selected = true;
+                        semSelect.appendChild(opt);
+                    });
+                }
+
+                applyBackendWeekData(weekStateA, res.weeks[0]);
+                applyBackendWeekData(weekStateB, res.weeks[1]);
+
+                getEl('input-week').value = weekStateA.weekLabel;
+                getEl('input-week-b').value = weekStateB.weekLabel;
+                syncDayNoteInputsFromState();
+
+                const badge = getEl('data-source-badge');
+                if (badge) {
+                    badge.textContent = '🟢 已連線試算表';
+                    badge.className = 'text-[11px] bg-emerald-600/90 text-white px-2.5 py-1 rounded-full font-bold';
+                }
+            } else {
+                // 後端尚未部署 getMultiWeekReportData 時，自動使用內建示範資料，保證預覽順暢
+                weekStateA.startDate = startA;
+                weekStateA.endDate = endA;
+                weekStateB.startDate = startB;
+                weekStateB.endDate = endB;
+                weekStateA.weekLabel = getEl('input-week').value || '第 9 週';
+                weekStateB.weekLabel = getEl('input-week-b').value || '第 10 週';
+                syncDayNoteInputsFromState();
+            }
+        } catch (err) {
+            console.warn('目前使用內建預覽示範資料：', err);
+            syncDayNoteInputsFromState();
+        }
+
+        updateSeatDropdown();
+        if (loader) loader.style.display = 'none';
+    }
+
+    function applyBackendWeekData(targetState, wRes) {
+        if (!wRes || !wRes.success) return;
+        targetState.weekLabel = wRes.currentWeek || targetState.weekLabel;
+        targetState.startDate = wRes.startDateStr || targetState.startDate;
+        targetState.endDate = wRes.endDateStr || targetState.endDate;
+        targetState.dayNotes = wRes.dayNotes || {};
+        targetState.students = {};
+        (wRes.students || []).forEach(s => {
+            if (s && s.seatNo) targetState.students[s.seatNo] = s;
+        });
+        recalculateNetScores(targetState);
+    }
+
+    function syncDayNoteInputsFromState() {
+        for (let i = 1; i <= 5; i++) {
+            if (getEl(`note-day-${i}`)) getEl(`note-day-${i}`).value = weekStateA.dayNotes[i] || '';
+            if (getEl(`note-b-day-${i}`)) getEl(`note-b-day-${i}`).value = weekStateB.dayNotes[i] || '';
+        }
+        const clsCmt = weekStateB.dayNotes['classComment'] || weekStateA.dayNotes['classComment'] || '';
+        if (getEl('input-class-comment')) getEl('input-class-comment').value = clsCmt;
+    }
+
+    /* ============ 3. 學生選單與畫面渲染 ============ */
+    function updateSeatDropdown() {
+        const select = getEl('input-seat');
+        if (!select) return;
+
+        const currentSelected = select.value;
+        select.innerHTML = '';
+
+        const seats = Object.keys(weekStateA.students).sort((a, b) => parseInt(a) - parseInt(b));
+        if (seats.length === 0) {
+            select.innerHTML = '<option value="">無學生資料</option>';
+            updatePreview();
+            return;
+        }
+
+        seats.forEach(seat => {
+            const opt = document.createElement('option');
+            opt.value = seat;
+            opt.textContent = `${seat}號 - ${weekStateA.students[seat].name}`;
+            select.appendChild(opt);
+        });
+
+        if (seats.includes(currentSelected)) select.value = currentSelected;
+        else select.value = seats[0];
+
+        loadStudentData();
+    }
+
+    function loadStudentData() {
+        const seat = getEl('input-seat') ? getEl('input-seat').value : null;
+        const sB = seat ? weekStateB.students[seat] : null;
+        const sA = seat ? weekStateA.students[seat] : null;
+        const cmt = (sB && sB.comment) ? sB.comment : (sA && sA.comment ? sA.comment : '');
+        if (getEl('input-comment')) getEl('input-comment').value = cmt;
+        updatePreview();
+    }
+
+    function formatShortDate(ds) {
+        if (!ds) return '--/--';
+        const parts = ds.split('-');
+        if (parts.length < 3) return ds;
+        return `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
+    }
+
+    function getStudentWeekStats(wState, seat) {
+        const s = wState.students[seat];
+        if (!s) return { plus: 0, minus: 0, net: 0, weekRank: '--', totalScore: 0, totalRank: '--', hasRecord: false, records: {1:[],2:[],3:[],4:[],5:[]} };
+
+        let p = 0, m = 0, hasRecord = false;
+        Object.values(s.records || {}).forEach(dayArr => {
+            if (dayArr && dayArr.length > 0) hasRecord = true;
+            (dayArr || []).forEach(r => {
+                if (r.points > 0) p += r.points;
+                else m += Math.abs(r.points);
+            });
+        });
+        p = parseFloat(p.toFixed(1));
+        m = parseFloat(m.toFixed(1));
+        const net = parseFloat((p - m).toFixed(1));
+        const totalScore = parseFloat((s.totalScore || 0).toFixed(1));
+
+        // 計算當週名次（依本週淨分）
+        let weekRank = 1;
+        const myNet = wState.netScores[seat] ?? net;
+        Object.keys(wState.netScores).forEach(otherSeat => {
+            if (wState.netScores[otherSeat] > myNet) weekRank++;
+        });
+
+        // ★ 計算截至該週末的「當週總班排」（依截至該週末的 totalScore）
+        let totalRank = 1;
+        Object.values(wState.students).forEach(other => {
+            if (other.totalScore > s.totalScore) totalRank++;
+        });
+
+        return { plus: p, minus: m, net, weekRank, totalScore, totalRank, hasRecord, records: s.records };
+    }
+
+    function buildWeekBlockHTML(wState, seat, isCompactDual) {
+        const st = getStudentWeekStats(wState, seat);
+        const startD = wState.startDate;
+        const endD = wState.endDate;
+
+        // 計算週一～週五表頭日期
+        const dayHeaders = [];
+        if (startD) {
+            const parts = startD.split('-');
+            const sd = new Date(parts[0], parts[1] - 1, parts[2]);
+            for (let i = 1; i <= 5; i++) {
+                const d = new Date(sd);
+                d.setDate(sd.getDate() + (i - 1));
+                dayHeaders.push(`${d.getMonth() + 1}/${String(d.getDate()).padStart(2, '0')}`);
+            }
+        } else {
+            for (let i = 1; i <= 5; i++) dayHeaders.push('--/--');
+        }
+
+        // 每日紀錄列 HTML
+        let rowCells = '<tr>';
+        for (let i = 1; i <= 5; i++) {
+            rowCells += '<td>';
+            if (wState.dayNotes[i] && String(wState.dayNotes[i]).trim() !== '') {
+                rowCells += `<div class="w-full mb-2 mt-0.5 bg-red-50 rounded border border-red-100" style="display: table;">
+                    <div style="display: table-cell; vertical-align: middle;" class="text-center px-1 py-1 h-[26px]">
+                        <span class="adjust-baseline block font-bold text-red-600 text-[12px] leading-[26px] break-words">${escHtml(wState.dayNotes[i])}</span>
+                    </div>
+                </div>`;
+            }
+            if (i === 3 && !st.hasRecord) {
+                rowCells += `<div class="flex items-center justify-center h-full opacity-40 py-2"><span class="adjust-baseline text-slate-400 font-bold text-sm">本週無加扣分紀錄 👍</span></div>`;
+            }
+            (st.records[i] || []).forEach(r => {
+                const color = r.points > 0 ? 'text-emerald-600' : 'text-red-600';
+                const sign = r.points > 0 ? '+' : '';
+                rowCells += `<div class="record-item items-start"><span class="adjust-baseline desc text-[13px] font-medium text-slate-800 whitespace-pre-wrap">${escHtml(r.reason)}</span><span class="adjust-baseline score text-[14px] ${color}">${sign}${r.points}</span></div>`;
+                if (r.remarks) {
+                    const formatted = String(r.remarks).split('\n').map(line => `└ ${escHtml(line)}`).join('\n');
+                    rowCells += `<div class="adjust-baseline text-[11px] text-gray-500 whitespace-pre-wrap mt-0 pt-0 leading-snug mb-[5px] text-left">${formatted}</div>`;
+                }
+            });
+            rowCells += '</td>';
+        }
+        rowCells += '</tr>';
+
+        const dayNames = ['星期一', '星期二', '星期三', '星期四', '星期五'];
+        const thHtml = dayNames.map((dName, idx) => `
+            <th class="text-center align-middle w-1/5 h-[36px]">
+                <div class="adjust-baseline leading-[36px] inline-block w-full">
+                    <span class="text-xs text-slate-700 font-bold">${dName}</span>
+                    <span class="text-[11px] font-bold text-gray-500 font-raleway ml-1">${dayHeaders[idx]}</span>
+                </div>
+            </th>
+        `).join('');
+
+        return `
+        <div class="${isCompactDual ? 'week-section-block' : 'mb-4'}">
+            <!-- 該週統計數據橫列 -->
+            <div class="flex gap-2 mb-3 w-full items-stretch">
+                <div class="info-card w-[26%] p-2.5 flex flex-col justify-between">
+                    <div class="flex justify-between w-full mb-1.5">
+                        <span class="adjust-baseline text-[10px] font-bold text-gray-500 leading-none">週次</span>
+                        <span class="adjust-baseline text-[10px] font-bold text-gray-500 leading-none">統計區間</span>
+                    </div>
+                    <div class="flex justify-between w-full items-end">
+                        <span class="adjust-baseline text-lg font-black leading-none text-slate-900">${escHtml(wState.weekLabel)}</span>
+                        <span class="adjust-baseline text-[13px] font-bold font-comfortaa leading-none text-slate-700">${formatShortDate(startD)} ~ ${formatShortDate(endD)}</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-1 gap-1.5 items-stretch">
+                    <div class="stat-box flex-1 p-2 flex flex-col justify-between">
+                        <div class="adjust-baseline text-[10px] font-bold text-text-light mb-1 leading-none">本週加分</div>
+                        <div class="adjust-baseline text-lg font-black font-comfortaa text-emerald-700 leading-none">+${st.plus}</div>
+                    </div>
+                    <div class="stat-box flex-1 p-2 flex flex-col justify-between">
+                        <div class="adjust-baseline text-[10px] font-bold text-text-light mb-1 leading-none">本週扣分</div>
+                        <div class="adjust-baseline text-lg font-black font-comfortaa text-red-600 leading-none">${st.minus === 0 ? '0' : '-' + st.minus}</div>
+                    </div>
+                    <div class="stat-box flex-1 p-2 flex flex-col justify-between border-blue-200 bg-blue-50">
+                        <div class="adjust-baseline text-[10px] font-bold text-blue-800 mb-1 leading-none">本週淨分</div>
+                        <div class="adjust-baseline text-lg font-black font-comfortaa text-blue-700 leading-none">${st.net >= 0 ? '+' + st.net : st.net}</div>
+                    </div>
+                    <div class="stat-box flex-1 p-2 flex flex-col justify-between border-blue-500 bg-blue-100 border-[2px]">
+                        <div class="adjust-baseline text-[10px] font-bold text-blue-800 mb-1 leading-none">本週名次</div>
+                        <div class="adjust-baseline text-lg font-black font-comfortaa text-blue-700 leading-none">${st.weekRank}</div>
+                    </div>
+                    <div class="stat-box stat-box-total flex-[1.35] p-2 border-[2px] border-[#374151] bg-[#f3f4f6] flex flex-col justify-between">
+                        <div class="flex justify-between items-baseline mb-1 leading-none">
+                            <div class="adjust-baseline text-[10px] font-extrabold text-slate-800">當週結算總分</div>
+                            <div class="adjust-baseline text-[8px] text-gray-500 font-bold">累計至${formatShortDate(endD)}</div>
+                        </div>
+                        <div class="adjust-baseline text-lg font-black font-comfortaa text-text-main leading-none">${st.totalScore}</div>
+                    </div>
+                    <div class="stat-box flex-1 p-2 border-emerald-600 bg-emerald-50 border-[2px] flex flex-col justify-between">
+                        <div class="adjust-baseline text-[10px] font-bold text-emerald-800 mb-1 leading-none">當週總班排</div>
+                        <div class="adjust-baseline text-lg font-black font-comfortaa text-emerald-600 leading-none">${st.totalRank}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 該週五日紀錄表格 -->
+            <div class="box-wrapper w-full">
+                <div class="box-inner">
+                    <table class="record-table">
+                        <thead><tr>${thHtml}</tr></thead>
+                        <tbody>${rowCells}</tbody>
+                    </table>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    function updatePreview(overrideSingleTarget) {
+        const seat = getEl('input-seat') ? getEl('input-seat').value : '1';
+        const stu = weekStateA.students[seat] || weekStateB.students[seat];
+
+        weekStateA.weekLabel = getEl('input-week') ? getEl('input-week').value : '第 9 週';
+        weekStateA.startDate = getEl('input-date-start') ? getEl('input-date-start').value : '';
+        weekStateA.endDate = getEl('input-date-end') ? getEl('input-date-end').value : '';
+
+        weekStateB.weekLabel = getEl('input-week-b') ? getEl('input-week-b').value : '第 10 週';
+        weekStateB.startDate = getEl('input-date-start-b') ? getEl('input-date-start-b').value : '';
+        weekStateB.endDate = getEl('input-date-end-b') ? getEl('input-date-end-b').value : '';
+
+        const classCommentText = getEl('input-class-comment') ? getEl('input-class-comment').value : '';
+        const personalCommentText = getEl('input-comment') ? getEl('input-comment').value : '';
+
+        let finalComment = '';
+        if (classCommentText.trim()) finalComment += `【班級宣導】\n${classCommentText.trim()}`;
+        if (personalCommentText.trim()) {
+            if (finalComment) finalComment += `\n\n`;
+            finalComment += `【個人評語】\n${personalCommentText.trim()}`;
+        }
+        if (getEl('prev-teacher-comment')) getEl('prev-teacher-comment').textContent = finalComment;
+        if (getEl('prev-semester')) getEl('prev-semester').textContent = getEl('input-semester') ? getEl('input-semester').value : '--';
+        if (getEl('prev-seat')) getEl('prev-seat').textContent = seat || '--';
+        if (getEl('prev-name')) getEl('prev-name').textContent = stu ? stu.name : '--';
+
+        const container = getEl('weeks-render-container');
+        const mainTitle = getEl('prev-main-title');
+
+        const activeTarget = overrideSingleTarget || separatePreviewTarget;
+
+        if (weekMode === 'dual_merged') {
+            mainTitle.textContent = `805 生活計點雙週報表（${weekStateA.weekLabel} ＆ ${weekStateB.weekLabel}）`;
+            container.innerHTML =
+                buildWeekBlockHTML(weekStateA, seat, true) +
+                buildWeekBlockHTML(weekStateB, seat, true);
+        } else if (weekMode === 'dual_separate') {
+            const targetState = activeTarget === 'B' ? weekStateB : weekStateA;
+            mainTitle.textContent = `805 生活計點週報表（${targetState.weekLabel}）`;
+            container.innerHTML = buildWeekBlockHTML(targetState, seat, false);
+        } else {
+            mainTitle.textContent = `805 生活計點週報表（${weekStateA.weekLabel}）`;
+            container.innerHTML = buildWeekBlockHTML(weekStateA, seat, false);
+        }
+    }
+
+    /* ============ 4. 模式切換（單週 / 雙週同張 / 雙週分開兩張） ============ */
+    function setWeekMode(mode) {
+        weekMode = mode;
+        document.querySelectorAll('.week-mode-btn').forEach(btn => {
+            const isAct = btn.getAttribute('data-week-mode') === mode;
+            btn.className = isAct
+                ? 'week-mode-btn px-2 py-2 rounded-xl text-xs font-bold border transition bg-rose-500 text-white border-rose-500 shadow-sm'
+                : 'week-mode-btn px-2 py-2 rounded-xl text-xs font-bold border transition bg-white text-slate-600 border-rose-200 hover:bg-rose-50';
+        });
+
+        const isDual = mode !== 'single';
+        getEl('week-b-config-box').classList.toggle('hidden', !isDual);
+        getEl('day-note-box-b').classList.toggle('hidden', !isDual);
+        getEl('separate-preview-switch').classList.toggle('hidden', mode !== 'dual_separate');
+        getEl('label-week-a').textContent = isDual ? '📅 第一週（較早週次）' : '📅 選擇週次與日期區間';
+
+        const desc = getEl('week-mode-desc');
+        if (mode === 'dual_merged') {
+            desc.innerHTML = '💡 <b>雙週同張整合</b>：將連續兩週合併在同一張報表、共用底部簽名欄；且<b>第一週與第二週分別顯示截至該週末的「當週結算總分」</b>，帳目一目了然！';
+            getEl('btn-single-label').textContent = '執行產出 (單人雙週同張)';
+            getEl('btn-all-label').textContent = '執行產出 (全班雙週同張)';
+        } else if (mode === 'dual_separate') {
+            desc.innerHTML = '💡 <b>雙週分開兩張</b>：維持一週一張格式，但按一次產出就會<b>自動連續產出第一週與第二週共 2 張報表</b>（各自帶當週截止的累計總積分）！';
+            getEl('btn-single-label').textContent = '執行產出 (單人一次出2週)';
+            getEl('btn-all-label').textContent = '執行產出 (全班一次出2週)';
+        } else {
+            desc.innerHTML = '💡 <b>單週標準模式</b>：產出單一週次報表，「當週結算總分」已修正為<b>只累加到該週結束日為止</b>，回頭補印舊週次也不會印出未來總分！';
+            getEl('btn-single-label').textContent = '執行產出 (單張)';
+            getEl('btn-all-label').textContent = '執行產出 (全班批次)';
+        }
+
+        updatePreview();
+        adjustScale();
+    }
+
+    /* ============ 5. 微調資料彈窗（支援同時微調第一週與第二週，並自動連動總分！） ============ */
+    function openEditModal() {
+        const seat = getEl('input-seat').value;
+        const sA = weekStateA.students[seat];
+        if (!sA) return alert('目前沒有選擇學生');
+        tempEditWeekA = JSON.parse(JSON.stringify(sA.records));
+        tempEditWeekB = weekStateB.students[seat] ? JSON.parse(JSON.stringify(weekStateB.students[seat].records)) : {1:[],2:[],3:[],4:[],5:[]};
+        renderModalBody();
+        getEl('edit-modal').classList.remove('hidden');
+    }
+
+    function closeEditModal() { getEl('edit-modal').classList.add('hidden'); }
+
+    function renderModalBody() {
+        const container = getEl('edit-modal-body');
+        const days = ['星期一', '星期二', '星期三', '星期四', '星期五'];
+
+        const renderWeekSection = (title, tagKey, recObj) => {
+            let html = `<div class="mb-6"><h4 class="font-black text-base text-slate-800 mb-3 pb-1 border-b-2 border-teal-500 inline-block">${escHtml(title)}</h4>`;
+            for (let i = 1; i <= 5; i++) {
+                html += `<div class="mb-3 bg-white p-3 rounded-xl shadow-sm border border-gray-200">
+                    <div class="flex justify-between mb-2">
+                        <b class="text-sm text-teal-700">${days[i - 1]}</b>
+                        <button type="button" onclick="addTempRecord('${tagKey}', ${i})" class="text-xs bg-teal-100 text-teal-800 px-2.5 py-1 rounded-lg font-bold">+ 新增紀錄</button>
+                    </div>`;
+                if (!recObj[i] || recObj[i].length === 0) {
+                    html += `<div class="text-xs text-gray-400 text-center py-1">無紀錄</div>`;
+                } else {
+                    recObj[i].forEach((r, idx) => {
+                        html += `<div class="flex gap-2 mb-2 items-center bg-gray-50 p-2 rounded-lg">
+                            <input type="text" value="${escHtml(r.reason)}" onchange="updateTempRecord('${tagKey}', ${i}, ${idx}, 'reason', this.value)" class="flex-1 border p-1.5 text-sm rounded">
+                            <input type="number" step="0.5" value="${r.points}" onchange="updateTempRecord('${tagKey}', ${i}, ${idx}, 'points', this.value)" class="w-20 border p-1.5 text-sm rounded text-center font-bold">
+                            <input type="text" value="${escHtml(r.remarks)}" onchange="updateTempRecord('${tagKey}', ${i}, ${idx}, 'remarks', this.value)" placeholder="備註" class="flex-1 border p-1.5 text-sm rounded">
+                            <button type="button" onclick="removeTempRecord('${tagKey}', ${i}, ${idx})" class="text-red-500 font-bold px-2">✕</button>
+                        </div>`;
+                    });
+                }
+                html += `</div>`;
+            }
+            html += `</div>`;
+            return html;
+        };
+
+        let out = renderWeekSection(`📅 ${weekStateA.weekLabel} (${weekStateA.startDate} ~ ${weekStateA.endDate})`, 'A', tempEditWeekA);
+        if (weekMode !== 'single') {
+            out += renderWeekSection(`📅 ${weekStateB.weekLabel} (${weekStateB.startDate} ~ ${weekStateB.endDate})`, 'B', tempEditWeekB);
+        }
+        container.innerHTML = out;
+    }
+
+    window.addTempRecord = function(wkKey, day) {
+        const target = wkKey === 'B' ? tempEditWeekB : tempEditWeekA;
+        target[day].push({ date: '', reason: '手動新增', points: -1, remarks: '' });
+        renderModalBody();
+    };
+    window.updateTempRecord = function(wkKey, day, idx, field, val) {
+        const target = wkKey === 'B' ? tempEditWeekB : tempEditWeekA;
+        target[day][idx][field] = field === 'points' ? (parseFloat(val) || 0) : val;
+    };
+    window.removeTempRecord = function(wkKey, day, idx) {
+        const target = wkKey === 'B' ? tempEditWeekB : tempEditWeekA;
+        target[day].splice(idx, 1);
+        renderModalBody();
+    };
+
+    window.saveEditModal = function() {
+        const seat = getEl('input-seat').value;
+        const sA = weekStateA.students[seat];
+        const sB = weekStateB.students[seat];
+        if (sA) {
+            let oldPtsA = 0, newPtsA = 0;
+            for (let i = 1; i <= 5; i++) {
+                (sA.records[i] || []).forEach(r => { oldPtsA += r.points; });
+                (tempEditWeekA[i] || []).forEach(r => { newPtsA += r.points; });
+            }
+            const diffA = newPtsA - oldPtsA;
+            sA.totalScore = parseFloat((sA.totalScore + diffA).toFixed(1));
+            sA.records = tempEditWeekA;
+
+            if (sB) {
+                let oldPtsB = 0, newPtsB = 0;
+                for (let i = 1; i <= 5; i++) {
+                    (sB.records[i] || []).forEach(r => { oldPtsB += r.points; });
+                    (tempEditWeekB[i] || []).forEach(r => { newPtsB += r.points; });
+                }
+                const diffB = newPtsB - oldPtsB;
+                // ★ 第一週分數變動時，第二週的累計總積分也會同步加上 diffA + diffB！
+                sB.totalScore = parseFloat((sB.totalScore + diffA + diffB).toFixed(1));
+                sB.records = tempEditWeekB;
+            }
+
+            recalculateNetScores(weekStateA);
+            recalculateNetScores(weekStateB);
+            updatePreview();
+        }
+        closeEditModal();
+    };
+
+    /* ============ 6. 版面彈性比例與縮放 ============ */
+    function updateFlex() {
+        const template = getEl('report-template');
+        const orientation = getEl('input-orientation') ? getEl('input-orientation').value : 'landscape';
+        const sigLayout = getEl('input-signature-layout') ? getEl('input-signature-layout').value : 'row';
+        const container = getEl('signature-container');
+        const teacher = getEl('box-teacher');
+        const student = getEl('box-student');
+        const parent = getEl('box-parent');
+
+        if (template) template.className = `report-page theme-bw relative z-10 shadow-2xl layout-${orientation}`;
+        if (!container || !teacher || !student || !parent) return;
+
+        const wT = parseFloat(getEl('input-flex-teacher') ? getEl('input-flex-teacher').value : 45) || 45;
+        const wS = parseFloat(getEl('input-flex-student') ? getEl('input-flex-student').value : 25) || 25;
+        const wP = parseFloat(getEl('input-flex-parent') ? getEl('input-flex-parent').value : 30) || 30;
+        const sigHeight = parseFloat(getEl('input-signature-height') ? getEl('input-signature-height').value : 150) || 150;
+
+        container.style.minHeight = `${sigHeight}px`;
+        container.style.height = `auto`;
+
+        if (sigLayout === 'stacked') {
+            const rightTotal = wS + wP;
+            container.style.gridTemplateColumns = `${wT}fr ${rightTotal}fr`;
+            container.style.gridTemplateRows = `${wS}fr ${wP}fr`;
+            teacher.style.gridColumn = '1 / 2'; teacher.style.gridRow = '1 / 3';
+            student.style.gridColumn = '2 / 3'; student.style.gridRow = '1 / 2';
+            parent.style.gridColumn = '2 / 3';  parent.style.gridRow = '2 / 3';
+        } else {
+            container.style.gridTemplateColumns = `${wT}fr ${wS}fr ${wP}fr`;
+            container.style.gridTemplateRows = '1fr';
+            teacher.style.gridColumn = '1 / 2'; teacher.style.gridRow = '1 / 2';
+            student.style.gridColumn = '2 / 3'; student.style.gridRow = '1 / 2';
+            parent.style.gridColumn = '3 / 4';  parent.style.gridRow = '1 / 2';
+        }
+        adjustScale();
+    }
+
+    function adjustScale() {
+        const w = getEl('preview-scale-wrapper');
+        if (!w || !w.parentElement) return;
+        const cw = w.parentElement.clientWidth;
+        const baseWidth = 971;
+        const scale = cw < (baseWidth + 60) ? (cw - 60) / baseWidth : 1;
+        w.style.transform = `scale(${scale})`;
+    }
+
+    window.addEventListener('resize', adjustScale);
+
+    /* ============ 7. PDF 與列印匯出（支援單週、雙週同張整合、雙週分開兩張批次匯出） ============ */
+    async function performExport(all = false) {
+        const mode = getEl('input-export-mode').value;
+        window.isExporting = true;
+        const loader = getEl('global-loader');
+        const printArea = getEl('print-area');
+        loader.style.display = 'flex';
+        printArea.style.display = 'block';
+        printArea.innerHTML = '';
+
+        const currentSeat = getEl('input-seat').value;
+        const seats = all ? Object.keys(weekStateA.students).sort((a, b) => parseInt(a) - parseInt(b)) : [currentSeat];
+        const { jsPDF } = window.jspdf;
+        let pdf = null;
+
+        const offsetPx = getEl('input-pdf-offset') ? getEl('input-pdf-offset').value : 2;
+        let styleTag = document.getElementById('temp-pdf-offset-style');
+        if (!styleTag) {
+            styleTag = document.createElement('style');
+            styleTag.id = 'temp-pdf-offset-style';
+            document.head.appendChild(styleTag);
+        }
+        styleTag.innerHTML = `.exporting-pdf .adjust-baseline { top: -${offsetPx}px !important; }`;
+
+        // 若為「雙週分開兩張」，每位學生依序產出 ['A', 'B'] 兩頁；否則每位學生產出 1 頁
+        const subPages = weekMode === 'dual_separate' ? ['A', 'B'] : [null];
+        const totalSteps = seats.length * subPages.length;
+        let stepCount = 0;
+
+        for (let i = 0; i < seats.length; i++) {
+            getEl('input-seat').value = seats[i];
+            loadStudentData();
+
+            for (let pIdx = 0; pIdx < subPages.length; pIdx++) {
+                stepCount++;
+                updatePreview(subPages[pIdx]);
+                await new Promise(r => setTimeout(r, 90));
+
+                const clone = getEl('report-template').cloneNode(true);
+                clone.removeAttribute('id');
+                clone.querySelectorAll('*').forEach(el => el.removeAttribute('id'));
+
+                clone.style.transform = 'none';
+                clone.style.margin = '0';
+                clone.style.width = '971px';
+                clone.style.height = 'auto';
+
+                if (mode === 'native_print') {
+                    if (stepCount < totalSteps) clone.classList.add('page-break');
+                    printArea.appendChild(clone);
+                } else {
+                    clone.classList.add('exporting-pdf');
+                    printArea.innerHTML = '';
+                    printArea.appendChild(clone);
+
+                    await new Promise(r => setTimeout(r, 50));
+                    const w = clone.offsetWidth;
+                    const h = clone.offsetHeight;
+
+                    const canvas = await html2canvas(clone, { scale: 2, useCORS: true, logging: false });
+                    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+
+                    if (!pdf) {
+                        pdf = new jsPDF({ orientation: w > h ? 'landscape' : 'portrait', unit: 'px', format: [w, h] });
+                    } else {
+                        pdf.addPage([w, h], w > h ? 'landscape' : 'portrait');
+                    }
+                    pdf.addImage(imgData, 'JPEG', 0, 0, w, h);
+                    canvas.width = 0;
+                    canvas.height = 0;
+                }
+            }
+        }
+
+        if (styleTag) styleTag.innerHTML = '';
+
+        const fileTitle = weekMode === 'single'
+            ? weekStateA.weekLabel
+            : `${weekStateA.weekLabel}+${weekStateB.weekLabel}`;
+
+        if (mode === 'native_print') {
+            window.print();
+        } else if (pdf) {
+            pdf.save(`805週報表_${fileTitle}${all ? '_全班' : '_' + currentSeat + '號'}.pdf`);
+        }
+
+        printArea.style.display = 'none';
+        loader.style.display = 'none';
+        getEl('input-seat').value = currentSeat;
+        loadStudentData();
+        window.isExporting = false;
+    }
+
+    /* ============ 8. 日期與週次自動換算輔助 ============ */
+    function toIsoDate(d) {
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function syncWeekBFromWeekA() {
+        const wMatch = (getEl('input-week').value || '').match(/\d+/);
+        if (wMatch) {
+            const wNum = parseInt(wMatch[0], 10);
+            getEl('input-week').value = `第 ${wNum} 週`;
+            getEl('input-week-b').value = `第 ${wNum + 1} 週`;
+        }
+        const sVal = getEl('input-date-start').value;
+        if (sVal) {
+            const parts = sVal.split('-');
+            const monA = new Date(parts[0], parts[1] - 1, parts[2]);
+            const sunA = new Date(monA); sunA.setDate(monA.getDate() + 6);
+            const monB = new Date(monA); monB.setDate(monA.getDate() + 7);
+            const sunB = new Date(monA); sunB.setDate(monA.getDate() + 13);
+            getEl('input-date-end').value = toIsoDate(sunA);
+            getEl('input-date-start-b').value = toIsoDate(monB);
+            getEl('input-date-end-b').value = toIsoDate(sunB);
+        }
+    }
+
+    /* ============ 9. 初始化與事件綁定 ============ */
+    window.addEventListener('DOMContentLoaded', () => {
+        getEl('input-date-start').value = weekStateA.startDate;
+        getEl('input-date-end').value = weekStateA.endDate;
+        getEl('input-date-start-b').value = weekStateB.startDate;
+        getEl('input-date-end-b').value = weekStateB.endDate;
+
+        loadBuiltInDemoData();
+        syncDayNoteInputsFromState();
+        updateSeatDropdown();
+        setWeekMode('dual_merged');
+        updateFlex();
+
+        // 同時嘗試連線後端試算表
+        fetchAllData();
+
+        // 切換報表模式（單週 / 雙週同張 / 雙週分開）
+        document.querySelectorAll('.week-mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => setWeekMode(btn.getAttribute('data-week-mode')));
+        });
+
+        // 雙週分開模式下，切換預覽第一週／第二週
+        document.querySelectorAll('.sep-view-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                separatePreviewTarget = btn.getAttribute('data-sep-view');
+                document.querySelectorAll('.sep-view-btn').forEach(b => {
+                    const act = b === btn;
+                    b.className = act
+                        ? 'sep-view-btn px-2.5 py-1 rounded-md text-[11px] font-bold bg-rose-500 text-white'
+                        : 'sep-view-btn px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 text-slate-600';
+                });
+                updatePreview();
+            });
+        });
+
+        getEl('input-seat').addEventListener('change', loadStudentData);
+        getEl('btn-refresh-data').addEventListener('click', fetchAllData);
+        getEl('btn-open-edit').addEventListener('click', openEditModal);
+        getEl('btn-download-single').addEventListener('click', () => performExport(false));
+        getEl('btn-download-all').addEventListener('click', () => performExport(true));
+
+        // 修改第一週週次時，自動推算第一週與第二週日期
+        getEl('input-week').addEventListener('change', () => {
+            const sem = getEl('input-semester').value;
+            const semObj = globalSemesterList.find(s => s.name === sem) || globalSemesterList[0];
+            const m = (getEl('input-week').value || '').match(/\d+/);
+            const w = m ? parseInt(m[0], 10) : 1;
+            getEl('input-week').value = `第 ${w} 週`;
+            getEl('input-week-b').value = `第 ${w + 1} 週`;
+            if (semObj && semObj.startDate) {
+                const d = new Date(semObj.startDate);
+                d.setDate(d.getDate() + (w - 1) * 7);
+                getEl('input-date-start').value = toIsoDate(d);
+                syncWeekBFromWeekA();
+                fetchAllData();
+            } else {
+                updatePreview();
+            }
+        });
+
+        getEl('input-date-start').addEventListener('change', () => {
+            syncWeekBFromWeekA();
+            updatePreview();
+        });
+        ['input-date-end', 'input-week-b', 'input-date-start-b', 'input-date-end-b'].forEach(id => {
+            getEl(id).addEventListener('change', () => updatePreview());
+        });
+
+        getEl('input-orientation').addEventListener('change', updateFlex);
+        getEl('input-signature-layout').addEventListener('change', updateFlex);
+        ['teacher', 'student', 'parent'].forEach(k => {
+            getEl(`input-flex-${k}`).addEventListener('input', updateFlex);
+        });
+        getEl('input-signature-height').addEventListener('input', updateFlex);
+
+        // 每日放假備註與評語輸入即時預覽＋雲端儲存
+        let noteSaveTimer;
+        for (let i = 1; i <= 5; i++) {
+            getEl(`note-day-${i}`).addEventListener('input', (e) => {
+                weekStateA.dayNotes[i] = e.target.value;
+                updatePreview();
+                clearTimeout(noteSaveTimer);
+                noteSaveTimer = setTimeout(() => {
+                    callBackendAPI('saveWeekDayNotes', { semester: getEl('input-semester').value, week: weekStateA.weekLabel, notesObj: weekStateA.dayNotes });
+                }, 1000);
+            });
+            getEl(`note-b-day-${i}`).addEventListener('input', (e) => {
+                weekStateB.dayNotes[i] = e.target.value;
+                updatePreview();
+                clearTimeout(noteSaveTimer);
+                noteSaveTimer = setTimeout(() => {
+                    callBackendAPI('saveWeekDayNotes', { semester: getEl('input-semester').value, week: weekStateB.weekLabel, notesObj: weekStateB.dayNotes });
+                }, 1000);
+            });
+        }
+
+        getEl('input-class-comment').addEventListener('input', (e) => {
+            weekStateA.dayNotes['classComment'] = e.target.value;
+            weekStateB.dayNotes['classComment'] = e.target.value;
+            updatePreview();
+        });
+
+        let cmtTimer;
+        getEl('input-comment').addEventListener('input', (e) => {
+            const seat = getEl('input-seat').value;
+            if (weekStateA.students[seat]) weekStateA.students[seat].comment = e.target.value;
+            if (weekStateB.students[seat]) weekStateB.students[seat].comment = e.target.value;
+            updatePreview();
+            clearTimeout(cmtTimer);
+            cmtTimer = setTimeout(() => {
+                if (seat && weekStateB.students[seat]) {
+                    callBackendAPI('saveWeeklyComment', {
+                        semester: getEl('input-semester').value,
+                        week: weekMode === 'single' ? weekStateA.weekLabel : weekStateB.weekLabel,
+                        seatNo: seat,
+                        studentName: weekStateB.students[seat].name,
+                        comment: e.target.value
+                    });
+                }
+            }, 1000);
+        });
+    });
+</script>
+</body>
+</html>
