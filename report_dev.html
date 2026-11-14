@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&family=LXGW+WenKai+TC&family=Noto+Sans+TC:wght@400;500;700;900&family=Raleway:wght@400;600;700&display=swap" rel="stylesheet">
     
+    <script src="https://cdn.jsdelivr.net/npm/modern-screenshot@4.6.0/dist/index.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="js/config.js"></script>
@@ -135,8 +136,78 @@
         .loader { border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 3px solid #fff; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .exporting-pdf .adjust-baseline {
-            position: relative;
+        /* 修復 Tailwind Preflight (img { display: block }) 導致 html2canvas 測量字體基線時整頁文字下沉的 Bug */
+        img { display: inline-block; }
+
+        /* ================================================================ */
+        /* ✨ 導師的話：富文本編輯器與預覽渲染樣式 (粗體、字級、清單、表格、圖片) */
+        /* ================================================================ */
+        .rich-comment-editor {
+            min-height: 64px;
+            max-height: 220px;
+            overflow-y: auto;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+        .rich-comment-editor:empty:before {
+            content: attr(data-placeholder);
+            color: #9ca3af;
+            pointer-events: none;
+        }
+        .rich-comment-editor b, .rich-comment-editor strong,
+        .teacher-rich-content b, .teacher-rich-content strong {
+            font-weight: 900;
+            -webkit-text-stroke: 0.35px currentColor;
+        }
+        .rich-comment-editor ul, .teacher-rich-content ul {
+            list-style-type: disc !important;
+            padding-left: 1.35em !important;
+            margin: 3px 0 !important;
+        }
+        .rich-comment-editor ol, .teacher-rich-content ol {
+            list-style-type: decimal !important;
+            padding-left: 1.35em !important;
+            margin: 3px 0 !important;
+        }
+        .rich-comment-editor li, .teacher-rich-content li {
+            margin-bottom: 1px;
+        }
+        .rich-comment-editor table, .teacher-rich-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 4px 0;
+            font-size: 12px;
+            background-color: #ffffff;
+        }
+        .rich-comment-editor th, .rich-comment-editor td,
+        .teacher-rich-content th, .teacher-rich-content td {
+            border: 1px solid #64748b;
+            padding: 3px 6px;
+            text-align: left;
+            vertical-align: middle;
+        }
+        .rich-comment-editor th, .teacher-rich-content th {
+            background-color: #f1f5f9;
+            font-weight: 700;
+        }
+        .rich-comment-editor img, .teacher-rich-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            vertical-align: middle;
+        }
+        .rich-comment-editor img {
+            cursor: pointer;
+            transition: outline 0.15s;
+        }
+        .rich-comment-editor img.selected-rich-img {
+            outline: 2.5px solid #f43f5e;
+            outline-offset: 2px;
+        }
+        .teacher-rich-content::after, .rich-comment-editor::after {
+            content: "";
+            display: block;
+            clear: both;
         }
 
         @media print {
@@ -278,25 +349,34 @@
 
                 <!-- 版面與比例設定 -->
                 <div class="bg-indigo-50/50 p-3 rounded-2xl border border-indigo-100/50 space-y-2.5">
-                    <label class="block text-xs font-bold text-indigo-800 flex items-center gap-1"><span class="iconify" data-icon="ph:layout-duotone"></span> 版面與產出模式設定</label>
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-indigo-800 flex items-center gap-1"><span class="iconify" data-icon="ph:layout-duotone"></span> 版面與產出模式設定</label>
+                        <button type="button" id="btn-confirm-layout" class="text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded-lg font-bold transition shadow-sm flex items-center gap-1">
+                            <span>📌 確認記住比例</span>
+                        </button>
+                    </div>
+                    <div id="layout-lock-hint" class="hidden text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg font-bold flex items-center justify-between">
+                        <span>🔒 已鎖定並記住您的版面比例設定</span>
+                        <button type="button" id="btn-unlock-layout" class="underline text-indigo-600 hover:text-indigo-800 font-extrabold">解鎖修改</button>
+                    </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div class="col-span-2">
                             <label class="block text-[10px] font-bold text-indigo-600 mb-1">產出模式 (決定 PDF 大小)</label>
-                            <select id="input-export-mode" class="w-full px-2.5 py-1.5 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-900 outline-none focus:ring-2 focus:ring-indigo-400 bg-white cursor-pointer shadow-sm">
+                            <select id="input-export-mode" class="layout-pref-input w-full px-2.5 py-1.5 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-900 outline-none focus:ring-2 focus:ring-indigo-400 bg-white cursor-pointer shadow-sm">
                                 <option value="dynamic_pdf">⬇️ 自適應下載 (有多長存多長)</option>
                                 <option value="native_print">🖨️ 傳統列印 (自動縮放符合紙張)</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-indigo-600 mb-1">預覽畫布佈局</label>
-                            <select id="input-orientation" class="w-full px-2 py-1.5 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-900 outline-none focus:ring-2 focus:ring-indigo-400 bg-white cursor-pointer shadow-sm">
+                            <select id="input-orientation" class="layout-pref-input w-full px-2 py-1.5 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-900 outline-none focus:ring-2 focus:ring-indigo-400 bg-white cursor-pointer shadow-sm">
                                 <option value="landscape">一般橫向佈局</option>
                                 <option value="portrait">加長直向佈局</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-indigo-600 mb-1">簽名區模式</label>
-                            <select id="input-signature-layout" class="w-full px-2 py-1.5 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-900 outline-none focus:ring-2 focus:ring-indigo-400 bg-white cursor-pointer shadow-sm">
+                            <select id="input-signature-layout" class="layout-pref-input w-full px-2 py-1.5 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-900 outline-none focus:ring-2 focus:ring-indigo-400 bg-white cursor-pointer shadow-sm">
                                 <option value="row">橫向並排</option>
                                 <option value="stacked">右側堆疊</option>
                             </select>
@@ -306,37 +386,135 @@
                     <div class="mt-2">
                         <label class="block text-[10px] font-bold text-indigo-600 mb-1">簽名區比例 (師:生:家)</label>
                         <div class="flex gap-1.5 items-center">
-                            <input type="number" id="input-flex-teacher" value="45" class="w-full px-1.5 py-1 border border-indigo-200 rounded-lg text-center text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
+                            <input type="number" id="input-flex-teacher" value="45" class="layout-pref-input w-full px-1.5 py-1 border border-indigo-200 rounded-lg text-center text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
                             <span class="text-indigo-300">:</span>
-                            <input type="number" id="input-flex-student" value="25" class="w-full px-1.5 py-1 border border-indigo-200 rounded-lg text-center text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
+                            <input type="number" id="input-flex-student" value="25" class="layout-pref-input w-full px-1.5 py-1 border border-indigo-200 rounded-lg text-center text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
                             <span class="text-indigo-300">:</span>
-                            <input type="number" id="input-flex-parent" value="30" class="w-full px-1.5 py-1 border border-indigo-200 rounded-lg text-center text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
+                            <input type="number" id="input-flex-parent" value="30" class="layout-pref-input w-full px-1.5 py-1 border border-indigo-200 rounded-lg text-center text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-2 mt-2">
-                        <div>
-                            <label class="block text-[10px] font-bold text-indigo-600 mb-1">簽名區總高度 (PX)</label>
-                            <div class="flex items-center">
-                                <input type="number" id="input-signature-height" value="140" min="50" max="400" step="10" class="w-full px-2 py-1 border border-indigo-200 rounded-lg text-center text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-rose-600 mb-1">PDF 下沉校正 (PX)</label>
-                            <div class="flex items-center">
-                                <input type="number" id="input-pdf-offset" value="2" min="0" max="10" step="1" class="w-full px-2 py-1 border border-rose-200 text-rose-700 rounded-lg text-center text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-rose-400 shadow-sm">
-                            </div>
+                    <div class="mt-2">
+                        <label class="block text-[10px] font-bold text-indigo-600 mb-1">簽名區總高度 (PX)</label>
+                        <div class="flex items-center">
+                            <input type="number" id="input-signature-height" value="140" min="50" max="400" step="10" class="layout-pref-input w-full px-2 py-1 border border-indigo-200 rounded-lg text-center text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
                         </div>
                     </div>
                 </div>
 
-                <div class="space-y-2 pb-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs font-bold text-slate-600">導師的話（班級宣導＆個人評語）</span>
-                        <span id="save-status-personal" class="text-[10px] font-bold opacity-0 transition"></span>
+                <div class="bg-rose-50/40 p-3 rounded-2xl border border-rose-200/70 space-y-2">
+                    <div class="flex justify-between items-center gap-1">
+                        <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
+                            <span class="iconify text-rose-500" data-icon="ph:chat-centered-text-duotone"></span> 導師的話
+                        </span>
+                        <div class="flex items-center gap-1.5">
+                            <span id="save-status-personal" class="text-[10px] font-bold opacity-0 transition"></span>
+                            <button type="button" id="btn-confirm-comment" class="text-[10px] bg-rose-500 hover:bg-rose-600 text-white px-2 py-0.5 rounded-lg font-bold shadow-sm transition">
+                                💾 記住評語
+                            </button>
+                        </div>
                     </div>
-                    <textarea id="input-class-comment" rows="2" placeholder="班級宣導..." class="w-full p-2.5 border border-indigo-200 rounded-xl font-handwriting text-sm text-slate-800 bg-white focus:ring-2 focus:ring-indigo-400 outline-none"></textarea>
-                    <textarea id="input-comment" rows="2" placeholder="個人評語..." class="w-full p-2.5 border border-rose-200 rounded-xl font-handwriting text-sm text-slate-800 bg-white focus:ring-2 focus:ring-rose-400 outline-none"></textarea>
+
+                    <!-- ✨ 迷你富文本工具列 -->
+                    <div class="bg-white p-1.5 rounded-xl border border-rose-200/80 shadow-sm space-y-1.5">
+                        <div class="flex flex-wrap items-center gap-1">
+                            <button type="button" onmousedown="event.preventDefault(); execRichCmd('bold')" title="粗體 (Cmd+B)" class="px-2 py-1 rounded-lg text-xs font-black bg-slate-100 hover:bg-rose-100 text-slate-800 border border-slate-200 transition">B</button>
+                            <button type="button" onmousedown="event.preventDefault(); execRichCmd('underline')" title="底線 (Cmd+U)" class="px-2 py-1 rounded-lg text-xs font-bold underline bg-slate-100 hover:bg-rose-100 text-slate-800 border border-slate-200 transition">U</button>
+
+                            <select id="rich-font-size" onchange="applyRichFontSize(this.value); this.value='';" title="選取文字改字級（未選取則改變整框字級）" class="px-1.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 hover:bg-rose-50 text-slate-700 border border-slate-200 cursor-pointer outline-none">
+                                <option value="">字級大小</option>
+                                <option value="12px">小 (12px)</option>
+                                <option value="13.5px">標準 (13.5px)</option>
+                                <option value="15px">中 (15px)</option>
+                                <option value="17px">大 (17px)</option>
+                                <option value="20px">特大 (20px)</option>
+                            </select>
+
+                            <button type="button" onmousedown="event.preventDefault(); execRichCmd('insertUnorderedList')" title="項目符號清單" class="px-1.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 hover:bg-rose-100 text-slate-700 border border-slate-200 transition flex items-center gap-0.5">
+                                <span>• 清單</span>
+                            </button>
+                            <button type="button" onmousedown="event.preventDefault(); execRichCmd('insertOrderedList')" title="編號清單" class="px-1.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 hover:bg-rose-100 text-slate-700 border border-slate-200 transition flex items-center gap-0.5">
+                                <span>1. 編號</span>
+                            </button>
+
+                            <button type="button" onmousedown="event.preventDefault(); toggleTablePopover()" title="插入表格" class="px-1.5 py-1 rounded-lg text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition">
+                                ⊞ 表格
+                            </button>
+                            <button type="button" onmousedown="event.preventDefault(); triggerRichImageUpload()" title="上傳圖片（也支援直接截圖 Cmd+V 貼上或拖曳圖片進框）" class="px-1.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition">
+                                🖼️ 圖片
+                            </button>
+                            <button type="button" onmousedown="event.preventDefault(); insertSampleStamp()" title="一鍵插入示範榮譽印章試試看！" class="px-1.5 py-1 rounded-lg text-[10px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition">
+                                💮 蓋章試用
+                            </button>
+                            <input type="file" id="rich-img-input" accept="image/*" class="hidden">
+                        </div>
+
+                        <!-- ⊞ 表格快速插入與編輯小面板 -->
+                        <div id="rich-table-popover" class="hidden pt-1.5 border-t border-slate-200 text-[11px] space-y-1.5">
+                            <div class="flex items-center justify-between gap-1">
+                                <span class="font-bold text-indigo-800">新增表格：</span>
+                                <div class="flex items-center gap-1">
+                                    <button type="button" onmousedown="event.preventDefault(); insertRichTable(2, 3)" class="px-2 py-0.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded font-bold">2×3</button>
+                                    <button type="button" onmousedown="event.preventDefault(); insertRichTable(3, 4)" class="px-2 py-0.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded font-bold">3×4</button>
+                                    <input type="number" id="tbl-rows" value="2" min="1" max="10" class="w-9 px-1 py-0.5 border rounded text-center font-bold">×
+                                    <input type="number" id="tbl-cols" value="3" min="1" max="8" class="w-9 px-1 py-0.5 border rounded text-center font-bold">
+                                    <button type="button" onmousedown="event.preventDefault(); insertRichTable(Number(getEl('tbl-rows').value)||2, Number(getEl('tbl-cols').value)||3)" class="px-2 py-0.5 bg-indigo-600 text-white rounded font-bold">插入</button>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between gap-1 text-[10px] text-slate-600">
+                                <span>游標於表格內可調整：</span>
+                                <div class="flex gap-1">
+                                    <button type="button" onmousedown="event.preventDefault(); modifyRichTable('addRow')" class="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 rounded font-bold">+列</button>
+                                    <button type="button" onmousedown="event.preventDefault(); modifyRichTable('addCol')" class="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 rounded font-bold">+欄</button>
+                                    <button type="button" onmousedown="event.preventDefault(); modifyRichTable('delRow')" class="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 rounded font-bold">-列</button>
+                                    <button type="button" onmousedown="event.preventDefault(); modifyRichTable('delCol')" class="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 rounded font-bold">-欄</button>
+                                    <button type="button" onmousedown="event.preventDefault(); modifyRichTable('delTable')" class="px-1.5 py-0.5 bg-red-50 hover:bg-red-100 text-red-600 rounded font-bold">刪表</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 🖼️ 點擊圖片時自動展開的「圖片尺寸＆位置控制面板」 -->
+                        <div id="rich-img-toolbar" class="hidden pt-1.5 border-t border-rose-200 bg-rose-50/70 p-1.5 rounded-lg space-y-1.5 text-[11px]">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-rose-800 flex items-center gap-1">🖼️ 圖片調整（點選圖片中）</span>
+                                <button type="button" onmousedown="event.preventDefault(); removeSelectedRichImg()" class="px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded text-[10px] font-bold">🗑️ 刪除圖片</button>
+                            </div>
+                            <div class="flex items-center gap-1 flex-wrap">
+                                <span class="text-[10px] text-slate-600 font-bold">大小：</span>
+                                <button type="button" onmousedown="event.preventDefault(); resizeSelectedRichImg('65px')" class="px-1.5 py-0.5 bg-white border border-rose-200 rounded text-[10px] font-bold hover:bg-rose-100">印章(65px)</button>
+                                <button type="button" onmousedown="event.preventDefault(); resizeSelectedRichImg('120px')" class="px-1.5 py-0.5 bg-white border border-rose-200 rounded text-[10px] font-bold hover:bg-rose-100">小(120px)</button>
+                                <button type="button" onmousedown="event.preventDefault(); resizeSelectedRichImg('200px')" class="px-1.5 py-0.5 bg-white border border-rose-200 rounded text-[10px] font-bold hover:bg-rose-100">中(200px)</button>
+                                <button type="button" onmousedown="event.preventDefault(); resizeSelectedRichImg('300px')" class="px-1.5 py-0.5 bg-white border border-rose-200 rounded text-[10px] font-bold hover:bg-rose-100">大(300px)</button>
+                                <button type="button" onmousedown="event.preventDefault(); resizeSelectedRichImg('100%')" class="px-1.5 py-0.5 bg-white border border-rose-200 rounded text-[10px] font-bold hover:bg-rose-100">滿寬</button>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] text-slate-600 font-bold whitespace-nowrap">自訂寬度：</span>
+                                <input type="range" id="rich-img-slider" min="40" max="420" value="140" oninput="resizeSelectedRichImg(this.value + 'px')" class="flex-1 accent-rose-500 cursor-pointer h-1.5">
+                                <span id="rich-img-size-label" class="text-[10px] font-bold text-rose-700 w-10 text-right">140px</span>
+                            </div>
+                            <div class="flex items-center gap-1 flex-wrap">
+                                <span class="text-[10px] text-slate-600 font-bold">排列：</span>
+                                <button type="button" onmousedown="event.preventDefault(); alignSelectedRichImg('float-right')" class="px-1.5 py-0.5 bg-white border border-rose-200 rounded text-[10px] font-bold hover:bg-rose-100" title="圖片浮在右側，文字在左邊環繞">↗ 文繞圖(靠右)</button>
+                                <button type="button" onmousedown="event.preventDefault(); alignSelectedRichImg('float-left')" class="px-1.5 py-0.5 bg-white border border-rose-200 rounded text-[10px] font-bold hover:bg-rose-100" title="圖片浮在左側，文字在右邊環繞">↖ 文繞圖(靠左)</button>
+                                <button type="button" onmousedown="event.preventDefault(); alignSelectedRichImg('left')" class="px-1.5 py-0.5 bg-white border border-rose-200 rounded text-[10px] font-bold hover:bg-rose-100">單行靠左</button>
+                                <button type="button" onmousedown="event.preventDefault(); alignSelectedRichImg('center')" class="px-1.5 py-0.5 bg-white border border-rose-200 rounded text-[10px] font-bold hover:bg-rose-100">單行置中</button>
+                                <button type="button" onmousedown="event.preventDefault(); alignSelectedRichImg('inline')" class="px-1.5 py-0.5 bg-white border border-rose-200 rounded text-[10px] font-bold hover:bg-rose-100">隨文字同行</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-[10.5px] font-bold text-indigo-700">📢 班級宣導（全班共用，可貼圖／表格）</label>
+                            <span id="active-editor-badge" class="text-[9.5px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold">目前編輯：個人評語</span>
+                        </div>
+                        <div id="input-class-comment" contenteditable="true" data-placeholder="輸入班級宣導（支援粗體、清單、表格、直接 Cmd+V 貼上截圖或拖曳圖片）..." class="rich-comment-editor w-full p-2.5 border border-indigo-200 rounded-xl font-handwriting text-sm text-slate-800 bg-white focus:ring-2 focus:ring-indigo-400 outline-none"></div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10.5px] font-bold text-rose-700 mb-1">✍️ 個人評語（當前座號專屬，可貼圖／蓋章／表格）</label>
+                        <div id="input-comment" contenteditable="true" data-placeholder="輸入個人評語（支援粗體、清單、表格、直接 Cmd+V 貼上截圖或拖曳圖片）..." class="rich-comment-editor w-full p-2.5 border border-rose-200 rounded-xl font-handwriting text-sm text-slate-800 bg-white focus:ring-2 focus:ring-rose-400 outline-none"></div>
+                    </div>
                 </div>
             </div>
 
@@ -394,8 +572,8 @@
                                         <span class="adjust-baseline block font-bold text-xs tracking-widest text-gray-700 leading-[30px]">導師的話</span>
                                     </div>
                                 </div>
-                                <div class="box-body items-start justify-start flex-1 overflow-hidden w-full p-3">
-                                    <div id="prev-teacher-comment" class="adjust-baseline text-[13.5px] leading-relaxed font-handwriting text-gray-800 whitespace-pre-wrap text-left w-full block"></div>
+                                <div class="box-body items-start justify-start flex-1 w-full p-3">
+                                    <div id="prev-teacher-comment" class="teacher-rich-content adjust-baseline text-[13.5px] leading-relaxed font-handwriting text-gray-800 text-left w-full block"></div>
                                 </div>
                             </div>
                         </div>
@@ -433,7 +611,7 @@
     </div>
 
     <!-- 幕後處理區 -->
-    <div id="print-area" style="display: none; position: absolute; top: 0; left: -15000px; background-color: white;"></div>
+    <div id="print-area" style="display: none; position: fixed; top: 0; left: 0; z-index: -10; pointer-events: none; background-color: white;"></div>
 
     <!-- 編輯彈出視窗 -->
     <div id="edit-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -468,9 +646,504 @@
     // weeksList 儲存每一週的完整狀態：[{ weekLabel, startDate, endDate, dayNotes, students, netScores }]
     let weeksList = [];
     let tempEditRecordsByWeek = [];
+    let isUsingDemoData = true;
+    let userManuallySelectedSemester = false;
+
+    const LOCAL_CACHE_KEY = '805_report_local_cache_v1';
+    const UI_PREFS_KEY = '805_report_ui_prefs_v1';
+    const LAYOUT_PREFS_KEY = '805_report_layout_prefs_v1';
+    const SEM_CACHE_KEY = '805_report_sem_cache_v1';
+
+    function loadLocalCache() {
+        try {
+            return JSON.parse(localStorage.getItem(LOCAL_CACHE_KEY) || '{"comments":{},"dayNotes":{}}');
+        } catch (e) {
+            return { comments: {}, dayNotes: {} };
+        }
+    }
+
+    function saveLocalCache(cache) {
+        try {
+            localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(cache));
+        } catch (e) {}
+    }
+
+    function normWeekKey(wLabel) {
+        return String(wLabel || '').replace(/\s+/g, '');
+    }
+
+    function saveCommentToLocal(sem, weekLabel, seatNo, text) {
+        const cache = loadLocalCache();
+        if (!cache.comments) cache.comments = {};
+        const val = String(text ?? '');
+        const now = Date.now();
+        const wkKey = normWeekKey(weekLabel);
+        cache.comments[`${sem}|${wkKey}|${seatNo}`] = { text: val, ts: now };
+        cache.comments[`wk|${wkKey}|${seatNo}`] = { text: val, ts: now };
+        cache.comments[`seat|${seatNo}`] = { text: val, ts: now };
+        saveLocalCache(cache);
+    }
+
+    const LEGACY_DEMO_STRINGS = new Set([
+        '本月份週報表彙整了近幾週的生活常規與聯絡簿表現，請家長參閱並簽名！',
+        '宥辰這幾週表現非常穩定，常主動幫忙班務，繼續保持！',
+        '品言近期聯絡簿簽名與札記越來越穩定，進步看得見！',
+        '宇翔這幾週聯絡簿與作業較常遲交或未交，請養成睡前檢查書包的好習慣喔！'
+    ]);
+
+    function cleanDemoText(str) {
+        if (str === undefined || str === null) return undefined;
+        const s = String(str).trim();
+        return LEGACY_DEMO_STRINGS.has(s) ? '' : str;
+    }
+
+    function getCommentFromLocal(sem, weekLabel, seatNo) {
+        const cache = loadLocalCache();
+        if (!cache.comments) return undefined;
+        const wkKey = normWeekKey(weekLabel);
+        const exact = cache.comments[`${sem}|${wkKey}|${seatNo}`];
+        if (exact !== undefined) return cleanDemoText(exact.text);
+        const byWk = cache.comments[`wk|${wkKey}|${seatNo}`];
+        if (byWk !== undefined) return cleanDemoText(byWk.text);
+        const bySeat = cache.comments[`seat|${seatNo}`];
+        return bySeat ? cleanDemoText(bySeat.text) : undefined;
+    }
+
+    function saveDayNotesToLocal(sem, weekLabel, notesObj) {
+        const cache = loadLocalCache();
+        if (!cache.dayNotes) cache.dayNotes = {};
+        const wkKey = normWeekKey(weekLabel);
+        const copy = Object.assign({}, notesObj);
+        cache.dayNotes[`${sem}|${wkKey}`] = { notes: copy, ts: Date.now() };
+        cache.dayNotes[`wk|${wkKey}`] = { notes: copy, ts: Date.now() };
+        if (copy.classComment !== undefined) {
+            cache.latestClassComment = { text: copy.classComment, ts: Date.now() };
+        }
+        saveLocalCache(cache);
+    }
+
+    function getDayNotesFromLocal(sem, weekLabel) {
+        const cache = loadLocalCache();
+        if (!cache.dayNotes) return undefined;
+        const wkKey = normWeekKey(weekLabel);
+        const exact = cache.dayNotes[`${sem}|${wkKey}`] || cache.dayNotes[`wk|${wkKey}`];
+        const base = exact ? Object.assign({}, exact.notes) : {};
+        if (cache.latestClassComment !== undefined && base.classComment === undefined) {
+            base.classComment = cache.latestClassComment.text;
+        }
+        if (base.classComment !== undefined) {
+            base.classComment = cleanDemoText(base.classComment);
+        }
+        return (exact || cache.latestClassComment !== undefined) ? base : undefined;
+    }
+
+    function saveLayoutPrefs(locked = undefined) {
+        try {
+            const cur = loadLayoutPrefs() || {};
+            const nextLocked = locked !== undefined ? locked : !!cur.locked;
+            const prefs = {
+                exportMode: getEl('input-export-mode') ? getEl('input-export-mode').value : 'dynamic_pdf',
+                orientation: getEl('input-orientation') ? getEl('input-orientation').value : 'landscape',
+                sigLayout: getEl('input-signature-layout') ? getEl('input-signature-layout').value : 'row',
+                flexTeacher: getEl('input-flex-teacher') ? getEl('input-flex-teacher').value : '45',
+                flexStudent: getEl('input-flex-student') ? getEl('input-flex-student').value : '25',
+                flexParent: getEl('input-flex-parent') ? getEl('input-flex-parent').value : '30',
+                sigHeight: getEl('input-signature-height') ? getEl('input-signature-height').value : '140',
+                locked: nextLocked
+            };
+            localStorage.setItem(LAYOUT_PREFS_KEY, JSON.stringify(prefs));
+            applyLayoutLockUI(nextLocked);
+        } catch (e) {}
+    }
+
+    function loadLayoutPrefs() {
+        try {
+            return JSON.parse(localStorage.getItem(LAYOUT_PREFS_KEY) || 'null');
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function restoreLayoutPrefsToDOM() {
+        const lp = loadLayoutPrefs();
+        if (!lp) return;
+        if (lp.exportMode && getEl('input-export-mode')) getEl('input-export-mode').value = lp.exportMode;
+        if (lp.orientation && getEl('input-orientation')) getEl('input-orientation').value = lp.orientation;
+        if (lp.sigLayout && getEl('input-signature-layout')) getEl('input-signature-layout').value = lp.sigLayout;
+        if (lp.flexTeacher && getEl('input-flex-teacher')) getEl('input-flex-teacher').value = lp.flexTeacher;
+        if (lp.flexStudent && getEl('input-flex-student')) getEl('input-flex-student').value = lp.flexStudent;
+        if (lp.flexParent && getEl('input-flex-parent')) getEl('input-flex-parent').value = lp.flexParent;
+        if (lp.sigHeight && getEl('input-signature-height')) getEl('input-signature-height').value = lp.sigHeight;
+        applyLayoutLockUI(!!lp.locked);
+    }
+
+    function applyLayoutLockUI(isLocked) {
+        const hint = getEl('layout-lock-hint');
+        const btn = getEl('btn-confirm-layout');
+        if (hint) hint.classList.toggle('hidden', !isLocked);
+        if (btn) {
+            btn.innerHTML = isLocked ? '<span>✓ 已記住比例</span>' : '<span>📌 確認記住比例</span>';
+            btn.className = isLocked
+                ? 'text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg font-bold transition shadow-sm flex items-center gap-1'
+                : 'text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded-lg font-bold transition shadow-sm flex items-center gap-1';
+        }
+        document.querySelectorAll('.layout-pref-input').forEach(el => {
+            el.disabled = !!isLocked;
+            el.classList.toggle('opacity-60', !!isLocked);
+            el.classList.toggle('cursor-not-allowed', !!isLocked);
+        });
+    }
+
+    function saveUiPrefs() {
+        try {
+            const prefs = {
+                selectedWeekCount,
+                pageSplitMode,
+                startWeek: getEl('input-start-week') ? getEl('input-start-week').value : '第 7 週',
+                seat: getEl('input-seat') ? getEl('input-seat').value : '1'
+            };
+            localStorage.setItem(UI_PREFS_KEY, JSON.stringify(prefs));
+        } catch (e) {}
+    }
+
+    function loadUiPrefs() {
+        try {
+            return JSON.parse(localStorage.getItem(UI_PREFS_KEY) || 'null');
+        } catch (e) {
+            return null;
+        }
+    }
 
     function getEl(id) { return document.getElementById(id); }
     const escHtml = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    /* ============ ✨ 導師的話：富文本＋圖片＋表格核心引擎 ============ */
+    let activeRichEditorId = 'input-comment';
+    let selectedRichImgEl = null;
+
+    function toRichHtml(raw) {
+        const s = String(raw == null ? '' : raw);
+        if (!s.trim()) return '';
+        // 若已含 HTML 標籤（粗體、清單、表格、圖片、換行等），直接保留並移除編輯態選取框 class
+        if (/<(div|p|br|b|strong|u|i|span|ul|ol|li|table|thead|tbody|tr|td|th|img|font)\b/i.test(s)) {
+            return s.replace(/\bselected-rich-img\b/g, '');
+        }
+        return escHtml(s).replace(/\n/g, '<br>');
+    }
+
+    function isRichEmpty(html) {
+        const s = String(html == null ? '' : html).trim();
+        if (!s) return true;
+        if (/<(img|table)\b/i.test(s)) return false;
+        const stripped = s.replace(/<[^>]*>/g, '').replace(/&nbsp;/gi, ' ').trim();
+        return stripped === '';
+    }
+
+    function getRichVal(id) {
+        const el = getEl(id);
+        if (!el) return '';
+        if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') return el.value;
+        const clone = el.cloneNode(true);
+        clone.querySelectorAll('.selected-rich-img').forEach(img => img.classList.remove('selected-rich-img'));
+        const html = clone.innerHTML.trim();
+        return isRichEmpty(html) ? '' : html;
+    }
+
+    function setRichVal(id, val) {
+        const el = getEl(id);
+        if (!el) return;
+        if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
+            el.value = val || '';
+        } else {
+            el.innerHTML = toRichHtml(val);
+        }
+    }
+
+    function getActiveRichEditor() {
+        return getEl(activeRichEditorId) || getEl('input-comment');
+    }
+
+    function notifyRichEditorChanged(editorEl) {
+        if (!editorEl) return;
+        editorEl.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    window.execRichCmd = function(cmd, val = null) {
+        const ed = getActiveRichEditor();
+        if (!ed) return;
+        ed.focus();
+        document.execCommand(cmd, false, val);
+        notifyRichEditorChanged(ed);
+    };
+
+    window.applyRichFontSize = function(sizePx) {
+        if (!sizePx) return;
+        const ed = getActiveRichEditor();
+        if (!ed) return;
+        ed.focus();
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed || !ed.contains(sel.anchorNode)) {
+            // 若沒有反白特定文字，直接調整整個編輯框內容的字級
+            ed.innerHTML = `<div style="font-size: ${sizePx};">${ed.innerHTML}</div>`;
+            notifyRichEditorChanged(ed);
+            return;
+        }
+        document.execCommand('fontSize', false, '7');
+        ed.querySelectorAll('font[size="7"]').forEach(f => {
+            const span = document.createElement('span');
+            span.style.fontSize = sizePx;
+            span.innerHTML = f.innerHTML;
+            f.replaceWith(span);
+        });
+        notifyRichEditorChanged(ed);
+    };
+
+    window.toggleTablePopover = function() {
+        const pop = getEl('rich-table-popover');
+        if (pop) pop.classList.toggle('hidden');
+    };
+
+    window.insertRichTable = function(rows = 2, cols = 3) {
+        const ed = getActiveRichEditor();
+        if (!ed) return;
+        ed.focus();
+        const rCnt = Math.max(1, Math.min(10, Number(rows) || 2));
+        const cCnt = Math.max(1, Math.min(8, Number(cols) || 3));
+        let tbl = '<table><tbody>';
+        for (let r = 0; r < rCnt; r++) {
+            tbl += '<tr>';
+            for (let c = 0; c < cCnt; c++) {
+                tbl += r === 0
+                    ? `<th style="background:#f1f5f9;font-weight:700;">標題 ${c + 1}</th>`
+                    : `<td>內容</td>`;
+            }
+            tbl += '</tr>';
+        }
+        tbl += '</tbody></table><div><br></div>';
+        document.execCommand('insertHTML', false, tbl);
+        notifyRichEditorChanged(ed);
+    };
+
+    window.modifyRichTable = function(action) {
+        const sel = window.getSelection();
+        if (!sel || !sel.anchorNode) return;
+        const node = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentElement : sel.anchorNode;
+        const cell = node && node.closest ? node.closest('td, th') : null;
+        const table = node && node.closest ? node.closest('table') : null;
+        if (!table) return alert('請先將游標點在表格內的任一格！');
+        const ed = table.closest('.rich-comment-editor');
+
+        if (action === 'delTable') {
+            table.remove();
+        } else if (action === 'addRow' && cell) {
+            const tr = cell.parentElement;
+            const newTr = tr.cloneNode(true);
+            newTr.querySelectorAll('td, th').forEach(td => {
+                const n = document.createElement('td');
+                n.innerHTML = '&nbsp;';
+                td.replaceWith(n);
+            });
+            tr.after(newTr);
+        } else if (action === 'delRow' && cell) {
+            const tr = cell.parentElement;
+            const tbody = tr.parentElement;
+            if (tbody.rows.length <= 1) table.remove();
+            else tr.remove();
+        } else if (action === 'addCol' && cell) {
+            const colIdx = cell.cellIndex;
+            Array.from(table.rows).forEach((r, rIdx) => {
+                const ref = r.cells[colIdx] || r.cells[r.cells.length - 1];
+                const newCell = document.createElement(rIdx === 0 && ref.tagName === 'TH' ? 'th' : 'td');
+                if (newCell.tagName === 'TH') newCell.style.cssText = 'background:#f1f5f9;font-weight:700;';
+                newCell.innerHTML = rIdx === 0 ? '標題' : '&nbsp;';
+                if (ref) ref.after(newCell);
+                else r.appendChild(newCell);
+            });
+        } else if (action === 'delCol' && cell) {
+            const colIdx = cell.cellIndex;
+            if (table.rows[0].cells.length <= 1) {
+                table.remove();
+            } else {
+                Array.from(table.rows).forEach(r => {
+                    if (r.cells[colIdx]) r.cells[colIdx].remove();
+                });
+            }
+        }
+        if (ed) notifyRichEditorChanged(ed);
+    };
+
+    // 圖片自動輕量壓縮（保留 PNG 透明底供印章貼紙使用，照片則壓縮為高畫質輕量 JPEG）
+    function compressImageFileToDataUrl(file, maxWidth = 520) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    let w = img.width || 200;
+                    let h = img.height || 200;
+                    if (w > maxWidth) {
+                        h = Math.round((h * maxWidth) / w);
+                        w = maxWidth;
+                    }
+                    const cvs = document.createElement('canvas');
+                    cvs.width = w;
+                    cvs.height = h;
+                    const ctx = cvs.getContext('2d');
+                    const isPng = file.type === 'image/png' || file.type === 'image/svg+xml' || file.type === 'image/webp';
+                    if (!isPng) {
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, w, h);
+                    }
+                    ctx.drawImage(img, 0, 0, w, h);
+                    let out = isPng ? cvs.toDataURL('image/png') : cvs.toDataURL('image/jpeg', 0.82);
+                    // 若 PNG 太大（超過 38,000 字元），自動轉為輕量 JPEG 以確保能存進 Google 試算表儲存格
+                    if (out.length > 38000) {
+                        const jpgCvs = document.createElement('canvas');
+                        jpgCvs.width = w;
+                        jpgCvs.height = h;
+                        const jCtx = jpgCvs.getContext('2d');
+                        jCtx.fillStyle = '#ffffff';
+                        jCtx.fillRect(0, 0, w, h);
+                        jCtx.drawImage(img, 0, 0, w, h);
+                        out = jpgCvs.toDataURL('image/jpeg', 0.75);
+                    }
+                    resolve({ dataUrl: out, width: Math.min(w, 160) });
+                };
+                img.onerror = reject;
+                img.src = ev.target.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function insertImageDataUrlIntoEditor(dataUrl, defaultWidthPx = 140, alignMode = 'float-right', targetEditor = null) {
+        const ed = targetEditor || getActiveRichEditor();
+        if (!ed) return;
+        ed.focus();
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        img.style.width = `${defaultWidthPx}px`;
+        img.style.height = 'auto';
+        applyImgAlignStyle(img, alignMode);
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0 && ed.contains(sel.anchorNode)) {
+            const range = sel.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(img);
+            range.setStartAfter(img);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        } else {
+            ed.appendChild(img);
+        }
+        selectRichImg(img);
+        notifyRichEditorChanged(ed);
+    }
+
+    function applyImgAlignStyle(img, mode) {
+        if (!img) return;
+        img.setAttribute('data-align', mode);
+        img.style.float = 'none';
+        img.style.display = 'inline-block';
+        img.style.margin = '3px 4px';
+        if (mode === 'float-right') {
+            img.style.float = 'right';
+            img.style.margin = '2px 0 6px 10px';
+        } else if (mode === 'float-left') {
+            img.style.float = 'left';
+            img.style.margin = '2px 10px 6px 0';
+        } else if (mode === 'left') {
+            img.style.display = 'block';
+            img.style.margin = '4px auto 4px 0';
+        } else if (mode === 'center') {
+            img.style.display = 'block';
+            img.style.margin = '4px auto';
+        }
+    }
+
+    function selectRichImg(img) {
+        document.querySelectorAll('.rich-comment-editor img.selected-rich-img').forEach(el => el.classList.remove('selected-rich-img'));
+        selectedRichImgEl = img;
+        const bar = getEl('rich-img-toolbar');
+        if (!img) {
+            if (bar) bar.classList.add('hidden');
+            return;
+        }
+        img.classList.add('selected-rich-img');
+        if (bar) bar.classList.remove('hidden');
+        const curW = parseInt(img.style.width, 10) || img.width || 140;
+        if (getEl('rich-img-slider')) getEl('rich-img-slider').value = Math.min(420, Math.max(40, curW));
+        if (getEl('rich-img-size-label')) getEl('rich-img-size-label').textContent = img.style.width || `${curW}px`;
+    }
+
+    window.resizeSelectedRichImg = function(sizeStr) {
+        if (!selectedRichImgEl) return;
+        selectedRichImgEl.style.width = sizeStr;
+        selectedRichImgEl.style.height = 'auto';
+        if (getEl('rich-img-size-label')) getEl('rich-img-size-label').textContent = sizeStr;
+        if (sizeStr.endsWith('px') && getEl('rich-img-slider')) {
+            getEl('rich-img-slider').value = parseInt(sizeStr, 10) || 140;
+        }
+        const ed = selectedRichImgEl.closest('.rich-comment-editor');
+        if (ed) notifyRichEditorChanged(ed);
+    };
+
+    window.alignSelectedRichImg = function(mode) {
+        if (!selectedRichImgEl) return;
+        applyImgAlignStyle(selectedRichImgEl, mode);
+        const ed = selectedRichImgEl.closest('.rich-comment-editor');
+        if (ed) notifyRichEditorChanged(ed);
+    };
+
+    window.removeSelectedRichImg = function() {
+        if (!selectedRichImgEl) return;
+        const ed = selectedRichImgEl.closest('.rich-comment-editor');
+        selectedRichImgEl.remove();
+        selectRichImg(null);
+        if (ed) notifyRichEditorChanged(ed);
+    };
+
+    window.triggerRichImageUpload = function() {
+        const inp = getEl('rich-img-input');
+        if (inp) {
+            inp.value = '';
+            inp.click();
+        }
+    };
+
+    // 內建「💮 蓋章試用」：產生精緻的 805 表現優良印章 PNG 讓老師一鍵體驗文繞圖與縮放效果
+    window.insertSampleStamp = function() {
+        const cvs = document.createElement('canvas');
+        cvs.width = 180;
+        cvs.height = 180;
+        const ctx = cvs.getContext('2d');
+        ctx.save();
+        ctx.translate(90, 90);
+        ctx.rotate(-0.12);
+        ctx.strokeStyle = '#e11d48';
+        ctx.fillStyle = 'rgba(255, 241, 242, 0.85)';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.arc(0, 0, 74, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, 65, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#e11d48';
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 20px "Noto Sans TC", sans-serif';
+        ctx.fillText('★ 805 榮譽章 ★', 0, -24);
+        ctx.font = '900 32px "Noto Sans TC", sans-serif';
+        ctx.fillText('表現優良', 0, 14);
+        ctx.font = 'bold 16px "Noto Sans TC", sans-serif';
+        ctx.fillText('導師肯定 👍', 0, 44);
+        ctx.restore();
+        insertImageDataUrlIntoEditor(cvs.toDataURL('image/png'), 75, 'float-right');
+    };
 
     function toIsoDate(d) {
         return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -500,7 +1173,7 @@
         const demoRecordsPerWeek = [
             // Week offset 0 (例如第 7 週)
             {
-                dayNotes: { 1: '', 2: '', 3: '', 4: '', 5: '', classComment: '本月份週報表彙整了近幾週的生活常規與聯絡簿表現，請家長參閱並簽名！' },
+                dayNotes: { 1: '', 2: '', 3: '', 4: '', 5: '', classComment: '' },
                 recs: {
                     '1': { 1: [], 2: [{ reason: '早自習秩序優良', points: 1, remarks: '' }], 3: [], 4: [], 5: [] },
                     '2': { 1: [{ reason: '聯絡簿家長未簽名', points: -1, remarks: '' }], 2: [], 3: [], 4: [], 5: [] },
@@ -548,11 +1221,7 @@
             }
         ];
 
-        const demoComments = {
-            '1': '宥辰這幾週表現非常穩定，常主動幫忙班務，繼續保持！',
-            '2': '品言近期聯絡簿簽名與札記越來越穩定，進步看得見！',
-            '3': '宇翔這幾週聯絡簿與作業較常遲交或未交，請養成睡前檢查書包的好習慣喔！'
-        };
+        const demoComments = {};
 
         const semStartMs = (globalSemesterList[0] && globalSemesterList[0].startDate) || new Date(2026, 8, 7).getTime();
         const runningScoreMap = {};
@@ -582,20 +1251,27 @@
                 // ★ 每一週的 totalScore 都是累加至「該週末」的當週結算總分！
                 runningScoreMap[stu.seatNo] = parseFloat((runningScoreMap[stu.seatNo] + weekDelta).toFixed(1));
 
+                const wkLbl = `第 ${wNum} 週`;
+                const curSem = getEl('input-semester') ? getEl('input-semester').value : '114學年度第1學期';
+                const localCmt = getCommentFromLocal(curSem, wkLbl, stu.seatNo);
                 studentsMap[stu.seatNo] = {
                     seatNo: stu.seatNo,
                     name: stu.name,
                     totalScore: runningScoreMap[stu.seatNo],
                     records: rCopy,
-                    comment: demoComments[stu.seatNo] || ''
+                    comment: localCmt !== undefined ? localCmt : (demoComments[stu.seatNo] || '')
                 };
             });
 
+            const wkLbl = `第 ${wNum} 週`;
+            const curSem = getEl('input-semester') ? getEl('input-semester').value : '114學年度第1學期';
+            const baseDayNotes = Object.assign({ 1: '', 2: '', 3: '', 4: '', 5: '' }, tpl.dayNotes);
+            const localNotes = getDayNotesFromLocal(curSem, wkLbl);
             const wObj = {
-                weekLabel: `第 ${wNum} 週`,
+                weekLabel: wkLbl,
                 startDate: toIsoDate(mon),
                 endDate: toIsoDate(sun),
-                dayNotes: Object.assign({ 1: '', 2: '', 3: '', 4: '', 5: '' }, tpl.dayNotes),
+                dayNotes: localNotes ? Object.assign({}, baseDayNotes, localNotes) : baseDayNotes,
                 students: studentsMap,
                 netScores: {}
             };
@@ -673,7 +1349,8 @@
         const loader = getEl('global-loader');
         if (loader) loader.style.display = 'flex';
 
-        const semName = getEl('input-semester').value;
+        // ★ 若使用者未主動切換過學期下拉選單，傳入空字串讓後端自動讀取試算表「學期設定」中勾選「目前顯示」的預設學期！
+        const semName = userManuallySelectedSemester ? getEl('input-semester').value : '';
         const m = (getEl('input-start-week').value || '').match(/\d+/);
         const startW = m ? parseInt(m[0], 10) : 7;
         const ranges = weeksList.map(w => ({ startDateStr: w.startDate, endDateStr: w.endDate }));
@@ -698,16 +1375,37 @@
                         semSelect.appendChild(opt);
                     });
                 }
+                try {
+                    localStorage.setItem(SEM_CACHE_KEY, JSON.stringify({
+                        activeSemester: res.activeSemester,
+                        semesterList: globalSemesterList
+                    }));
+                } catch (e) {}
 
+                isUsingDemoData = false;
+                const activeSem = res.activeSemester || getEl('input-semester').value;
                 res.weeks.forEach((wRes, idx) => {
                     if (!wRes || !wRes.success) return;
-                    weeksList[idx].weekLabel = wRes.currentWeek || weeksList[idx].weekLabel;
+                    const wkLbl = wRes.currentWeek || weeksList[idx].weekLabel;
+                    weeksList[idx].weekLabel = wkLbl;
                     weeksList[idx].startDate = wRes.startDateStr || weeksList[idx].startDate;
                     weeksList[idx].endDate = wRes.endDateStr || weeksList[idx].endDate;
-                    weeksList[idx].dayNotes = wRes.dayNotes || { 1: '', 2: '', 3: '', 4: '', 5: '' };
+
+                    const cloudNotes = Object.assign({ 1: '', 2: '', 3: '', 4: '', 5: '' }, wRes.dayNotes || {});
+                    if (cloudNotes.classComment !== undefined) cloudNotes.classComment = cleanDemoText(cloudNotes.classComment);
+                    const localNotes = getDayNotesFromLocal(activeSem, wkLbl);
+                    weeksList[idx].dayNotes = localNotes ? Object.assign({}, cloudNotes, localNotes) : cloudNotes;
+
                     weeksList[idx].students = {};
                     (wRes.students || []).forEach(s => {
-                        if (s && s.seatNo) weeksList[idx].students[s.seatNo] = s;
+                        if (s && s.seatNo) {
+                            s.comment = cleanDemoText(s.comment || '');
+                            const localCmt = getCommentFromLocal(activeSem, wkLbl, s.seatNo);
+                            if (localCmt !== undefined) {
+                                s.comment = localCmt;
+                            }
+                            weeksList[idx].students[s.seatNo] = s;
+                        }
                     });
                     recalculateNetScores(weeksList[idx]);
                 });
@@ -722,8 +1420,21 @@
             console.warn('目前使用內建預覽示範資料：', err);
         }
 
+        // 若尚未連線成功（示範模式），仍套用本機已儲存過的評語與備註，確保重整絕不遺失
+        if (isUsingDemoData) {
+            const curSem = getEl('input-semester') ? getEl('input-semester').value : '114學年度第1學期';
+            weeksList.forEach(w => {
+                const localNotes = getDayNotesFromLocal(curSem, w.weekLabel);
+                if (localNotes) w.dayNotes = Object.assign({}, w.dayNotes, localNotes);
+                Object.keys(w.students || {}).forEach(seatNo => {
+                    const localCmt = getCommentFromLocal(curSem, w.weekLabel, seatNo);
+                    if (localCmt !== undefined) w.students[seatNo].comment = localCmt;
+                });
+            });
+        }
+
         renderWeekRangesListUI();
-        renderDayNoteWeekTabs();
+        renderDayNoteWeekTabs(true);
         updateSeatDropdown();
         if (loader) loader.style.display = 'none';
     }
@@ -770,12 +1481,12 @@
         });
     }
 
-    function renderDayNoteWeekTabs() {
+    function renderDayNoteWeekTabs(forceSyncClassComment = false) {
         if (activeDayNoteWeekIdx >= weeksList.length) activeDayNoteWeekIdx = 0;
         const wrap = getEl('day-note-week-tabs');
         if (!wrap) return;
         wrap.innerHTML = weeksList.map((w, idx) => {
-            const hasNote = [1, 2, 3, 4, 5].some(d => w.dayNotes && String(w.dayNotes[d] || '').trim() !== '');
+            const hasNote = [1, 2, 3, 4, 5].some(d => w.dayNotes && String(d ? w.dayNotes[d] || '' : '').trim() !== '');
             const isAct = idx === activeDayNoteWeekIdx;
             return `<button type="button" data-note-wk="${idx}" class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${isAct ? 'bg-red-500 text-white shadow-sm' : 'bg-white text-red-800 border border-red-200'}">
                 <span>${escHtml(w.weekLabel)}</span>
@@ -786,23 +1497,40 @@
         wrap.querySelectorAll('[data-note-wk]').forEach(btn => {
             btn.addEventListener('click', () => {
                 activeDayNoteWeekIdx = Number(btn.getAttribute('data-note-wk'));
-                renderDayNoteWeekTabs();
-                syncDayNoteInputsFromActiveWeek();
+                renderDayNoteWeekTabs(false);
+                syncDayNoteInputsFromActiveWeek(false);
             });
         });
 
-        syncDayNoteInputsFromActiveWeek();
+        syncDayNoteInputsFromActiveWeek(forceSyncClassComment);
     }
 
-    function syncDayNoteInputsFromActiveWeek() {
+    function syncDayNoteInputsFromActiveWeek(forceSyncClassComment = false) {
         const w = weeksList[activeDayNoteWeekIdx];
         if (!w) return;
         for (let i = 1; i <= 5; i++) {
             if (getEl(`note-day-${i}`)) getEl(`note-day-${i}`).value = (w.dayNotes && w.dayNotes[i]) || '';
         }
-        const firstWithCls = weeksList.find(x => x.dayNotes && x.dayNotes.classComment);
-        if (getEl('input-class-comment') && !getEl('input-class-comment').value && firstWithCls) {
-            getEl('input-class-comment').value = firstWithCls.dayNotes.classComment;
+        if (getEl('input-class-comment')) {
+            // 優先讀取本機已記住的班級宣導，其次從目前週次（或由後往前找有設定 classComment 的週次）載入
+            const sem = getEl('input-semester') ? getEl('input-semester').value : '';
+            const localNotes = getDayNotesFromLocal(sem, w.weekLabel);
+            let resolvedCls = undefined;
+            if (localNotes && localNotes.classComment !== undefined) {
+                resolvedCls = localNotes.classComment;
+            } else if (w.dayNotes && w.dayNotes.classComment !== undefined) {
+                resolvedCls = w.dayNotes.classComment;
+            } else {
+                for (let i = weeksList.length - 1; i >= 0; i--) {
+                    if (weeksList[i].dayNotes && weeksList[i].dayNotes.classComment !== undefined && weeksList[i].dayNotes.classComment !== '') {
+                        resolvedCls = weeksList[i].dayNotes.classComment;
+                        break;
+                    }
+                }
+            }
+            if (forceSyncClassComment || isRichEmpty(getRichVal('input-class-comment'))) {
+                setRichVal('input-class-comment', resolvedCls !== undefined ? resolvedCls : '');
+            }
         }
     }
 
@@ -846,9 +1574,17 @@
             btn.addEventListener('click', () => {
                 activeChunkIndex = Number(btn.getAttribute('data-chunk-idx'));
                 renderPreviewPageSwitcher();
-                updatePreview();
+                loadStudentData();
             });
         });
+    }
+
+    // 取得目前預覽分頁對應的週次物件清單
+    function getActiveChunkWeeks() {
+        const chunks = getPageChunks();
+        const cIdx = Math.min(activeChunkIndex, Math.max(0, chunks.length - 1));
+        const currentChunk = chunks[cIdx] || [0];
+        return currentChunk.map(i => weeksList[i]).filter(Boolean);
     }
 
     /* ============ 5. 學生統計與單週區塊 HTML 建構 ============ */
@@ -856,7 +1592,8 @@
         const select = getEl('input-seat');
         if (!select || !weeksList.length) return;
 
-        const currentSelected = select.value;
+        const savedPrefs = loadUiPrefs();
+        const currentSelected = select.value || (savedPrefs && savedPrefs.seat) || '';
         select.innerHTML = '';
 
         const firstWeekStudents = weeksList[0].students || {};
@@ -882,9 +1619,30 @@
 
     function loadStudentData() {
         const seat = getEl('input-seat') ? getEl('input-seat').value : null;
-        const lastW = weeksList[weeksList.length - 1];
-        const s = (lastW && seat && lastW.students[seat]) ? lastW.students[seat] : null;
-        if (getEl('input-comment')) getEl('input-comment').value = (s && s.comment) || '';
+        const sem = getEl('input-semester') ? getEl('input-semester').value : '114學年度第1學期';
+        let resolvedComment = '';
+
+        if (seat && weeksList.length) {
+            // 優先從目前預覽分頁涵蓋的週次（由後往前）尋找已儲存的評語，若無再找全部選取週次
+            const activeWeeks = getActiveChunkWeeks();
+            const searchOrder = [...activeWeeks.slice().reverse(), ...weeksList.slice().reverse()];
+            for (const w of searchOrder) {
+                const localCmt = getCommentFromLocal(sem, w.weekLabel, seat);
+                if (localCmt !== undefined) {
+                    resolvedComment = localCmt;
+                    break;
+                }
+                const stu = w.students && w.students[seat];
+                if (stu && stu.comment && !isRichEmpty(stu.comment)) {
+                    resolvedComment = stu.comment;
+                    break;
+                }
+            }
+        }
+
+        setRichVal('input-comment', resolvedComment);
+        selectRichImg(null);
+        saveUiPrefs();
         updatePreview();
     }
 
@@ -982,17 +1740,17 @@
         const statsHeaderHtml = isUltraCompact
             ? `<div class="flex items-center justify-between gap-2 mb-2 bg-white border border-slate-300 rounded-lg px-3 py-1.5">
                 <div class="flex items-center gap-2">
-                    <span class="adjust-baseline text-sm font-black text-slate-900 bg-slate-200 px-2.5 py-0.5 rounded">${escHtml(wState.weekLabel)}</span>
-                    <span class="adjust-baseline text-xs font-bold text-slate-600 font-comfortaa">${formatShortDate(startD)} ~ ${formatShortDate(endD)}</span>
+                    <span class="adjust-baseline inline-flex items-center justify-center text-sm font-black text-slate-900 bg-slate-200 px-2.5 py-0.5 rounded leading-snug">${escHtml(wState.weekLabel)}</span>
+                    <span class="adjust-baseline text-xs font-bold text-slate-600 font-comfortaa leading-snug">${formatShortDate(startD)} ~ ${formatShortDate(endD)}</span>
                 </div>
                 <div class="flex items-center gap-2.5 text-xs font-bold">
-                    <span class="adjust-baseline text-slate-600">${wName}加分 <b class="font-comfortaa text-emerald-700">+${st.plus}</b></span>
+                    <span class="adjust-baseline inline-flex items-center gap-1 text-slate-600 leading-snug">${wName}加分 <b class="font-comfortaa text-emerald-700">+${st.plus}</b></span>
                     <span class="text-slate-300">|</span>
-                    <span class="adjust-baseline text-slate-600">${wName}扣分 <b class="font-comfortaa text-red-600">${st.minus === 0 ? '0' : '-' + st.minus}</b></span>
+                    <span class="adjust-baseline inline-flex items-center gap-1 text-slate-600 leading-snug">${wName}扣分 <b class="font-comfortaa text-red-600">${st.minus === 0 ? '0' : '-' + st.minus}</b></span>
                     <span class="text-slate-300">|</span>
-                    <span class="adjust-baseline text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">${wName}淨分 <b class="font-comfortaa">${st.net >= 0 ? '+' + st.net : st.net}</b></span>
-                    <span class="adjust-baseline text-slate-900 bg-gray-100 px-2.5 py-0.5 rounded border-2 border-slate-700">${wName}總積分 <b class="font-comfortaa text-sm">${st.totalScore}</b></span>
-                    <span class="adjust-baseline text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-500">${wName}排名 <b class="font-comfortaa">#${st.totalRank}</b></span>
+                    <span class="adjust-baseline inline-flex items-center gap-1 text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 leading-snug">${wName}淨分 <b class="font-comfortaa">${st.net >= 0 ? '+' + st.net : st.net}</b></span>
+                    <span class="adjust-baseline inline-flex items-center gap-1 text-slate-900 bg-gray-100 px-2.5 py-0.5 rounded border-2 border-slate-700 leading-snug">${wName}總積分 <b class="font-comfortaa text-sm">${st.totalScore}</b></span>
+                    <span class="adjust-baseline inline-flex items-center gap-1 text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-500 leading-snug">${wName}排名 <b class="font-comfortaa">#${st.totalRank}</b></span>
                 </div>
             </div>`
             : `<div class="flex gap-2 mb-2.5 w-full items-stretch">
@@ -1049,16 +1807,17 @@
         const seat = getEl('input-seat') ? getEl('input-seat').value : '1';
         const stu = weeksList[0].students[seat];
 
-        const classCommentText = getEl('input-class-comment') ? getEl('input-class-comment').value : '';
-        const personalCommentText = getEl('input-comment') ? getEl('input-comment').value : '';
+        const classCommentHtml = toRichHtml(getRichVal('input-class-comment'));
+        const personalCommentHtml = toRichHtml(getRichVal('input-comment'));
 
-        let finalComment = '';
-        if (classCommentText.trim()) finalComment += `【班級宣導】\n${classCommentText.trim()}`;
-        if (personalCommentText.trim()) {
-            if (finalComment) finalComment += `\n\n`;
-            finalComment += `【個人評語】\n${personalCommentText.trim()}`;
+        const sections = [];
+        if (!isRichEmpty(classCommentHtml)) {
+            sections.push(`<div class="mb-1.5"><div class="font-bold text-slate-900 mb-0.5">【班級宣導】</div><div>${classCommentHtml}</div><div style="clear:both;"></div></div>`);
         }
-        if (getEl('prev-teacher-comment')) getEl('prev-teacher-comment').textContent = finalComment;
+        if (!isRichEmpty(personalCommentHtml)) {
+            sections.push(`<div><div class="font-bold text-slate-900 mb-0.5">【個人評語】</div><div>${personalCommentHtml}</div><div style="clear:both;"></div></div>`);
+        }
+        if (getEl('prev-teacher-comment')) getEl('prev-teacher-comment').innerHTML = sections.join('');
         if (getEl('prev-semester')) getEl('prev-semester').textContent = getEl('input-semester') ? getEl('input-semester').value : '--';
         if (getEl('prev-seat')) getEl('prev-seat').textContent = seat || '--';
         if (getEl('prev-name')) getEl('prev-name').textContent = stu ? stu.name : '--';
@@ -1120,11 +1879,13 @@
         const startW = m ? parseInt(m[0], 10) : 7;
         getEl('input-start-week').value = `第 ${startW} 週`;
 
+        isUsingDemoData = true;
         initDemoWeeksData(startW, cnt);
         activeChunkIndex = 0;
         activeDayNoteWeekIdx = 0;
+        saveUiPrefs();
         renderWeekRangesListUI();
-        renderDayNoteWeekTabs();
+        renderDayNoteWeekTabs(true);
         renderPreviewPageSwitcher();
         updateModeDescriptions();
         updateSeatDropdown();
@@ -1140,9 +1901,10 @@
                 : 'page-mode-btn px-1 py-1.5 rounded-xl text-[10px] font-bold border transition bg-white text-slate-600 border-rose-200 hover:bg-rose-50';
         });
         activeChunkIndex = 0;
+        saveUiPrefs();
         renderPreviewPageSwitcher();
         updateModeDescriptions();
-        updatePreview();
+        loadStudentData();
         adjustScale();
     }
 
@@ -1276,28 +2038,52 @@
 
     window.addEventListener('resize', adjustScale);
 
+    async function renderNodeToCanvas(node) {
+        // 優先使用方案 1：modern-screenshot（瀏覽器原生 <foreignObject> 渲染，100% 零文字下沉）
+        if (window.modernScreenshot && typeof window.modernScreenshot.domToCanvas === 'function') {
+            try {
+                return await window.modernScreenshot.domToCanvas(node, {
+                    scale: 2,
+                    backgroundColor: '#ffffff'
+                });
+            } catch (err) {
+                console.warn('modern-screenshot 切換至 html2canvas 備援：', err);
+            }
+        }
+        // 自動備援方案 2：已修復 Tailwind 圖片基線 Bug 的 html2canvas
+        return await html2canvas(node, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            onclone: (clonedDoc) => {
+                const s = clonedDoc.createElement('style');
+                s.textContent = 'img, svg { display: inline-block !important; }';
+                clonedDoc.head.appendChild(s);
+            }
+        });
+    }
+
     async function performExport(all = false) {
         const mode = getEl('input-export-mode').value;
         window.isExporting = true;
         const loader = getEl('global-loader');
+        const loaderText = getEl('loader-text');
         const printArea = getEl('print-area');
         loader.style.display = 'flex';
         printArea.style.display = 'block';
         printArea.innerHTML = '';
 
+        // 確保 Google 網路字型（手寫體、圓體、思源黑體）已完整載入，避免測量失準
+        if (document.fonts && document.fonts.ready) {
+            try { await document.fonts.ready; } catch (e) {}
+        }
+
         const currentSeat = getEl('input-seat').value;
+        const savedChunkIdx = activeChunkIndex;
         const seats = all ? Object.keys(weeksList[0].students).sort((a, b) => parseInt(a) - parseInt(b)) : [currentSeat];
         const { jsPDF } = window.jspdf;
         let pdf = null;
-
-        const offsetPx = getEl('input-pdf-offset') ? getEl('input-pdf-offset').value : 2;
-        let styleTag = document.getElementById('temp-pdf-offset-style');
-        if (!styleTag) {
-            styleTag = document.createElement('style');
-            styleTag.id = 'temp-pdf-offset-style';
-            document.head.appendChild(styleTag);
-        }
-        styleTag.innerHTML = `.exporting-pdf .adjust-baseline { top: -${offsetPx}px !important; }`;
 
         const chunks = getPageChunks();
         const totalSteps = seats.length * chunks.length;
@@ -1305,12 +2091,16 @@
 
         for (let i = 0; i < seats.length; i++) {
             getEl('input-seat').value = seats[i];
-            loadStudentData();
 
             for (let cIdx = 0; cIdx < chunks.length; cIdx++) {
                 stepCount++;
+                activeChunkIndex = cIdx;
+                loadStudentData();
+                if (loaderText) {
+                    loaderText.textContent = `正在產出高畫質週報表 (${stepCount} / ${totalSteps})...`;
+                }
                 updatePreview(cIdx);
-                await new Promise(r => setTimeout(r, 90));
+                await new Promise(r => setTimeout(r, 80));
 
                 const clone = getEl('report-template').cloneNode(true);
                 clone.removeAttribute('id');
@@ -1325,7 +2115,6 @@
                     if (stepCount < totalSteps) clone.classList.add('page-break');
                     printArea.appendChild(clone);
                 } else {
-                    clone.classList.add('exporting-pdf');
                     printArea.innerHTML = '';
                     printArea.appendChild(clone);
 
@@ -1333,7 +2122,7 @@
                     const w = clone.offsetWidth;
                     const h = clone.offsetHeight;
 
-                    const canvas = await html2canvas(clone, { scale: 2, useCORS: true, logging: false });
+                    const canvas = await renderNodeToCanvas(clone);
                     const imgData = canvas.toDataURL('image/jpeg', 0.98);
 
                     if (!pdf) {
@@ -1348,8 +2137,6 @@
             }
         }
 
-        if (styleTag) styleTag.innerHTML = '';
-
         const firstLbl = weeksList[0].weekLabel;
         const lastLbl = weeksList[weeksList.length - 1].weekLabel;
         const fileTitle = weeksList.length === 1 ? firstLbl : `${firstLbl}~${lastLbl}`;
@@ -1360,8 +2147,10 @@
             pdf.save(`805週報表_${fileTitle}${all ? '_全班' : '_' + currentSeat + '號'}.pdf`);
         }
 
+        if (loaderText) loaderText.textContent = '正在同步原始資料與學期設定中...';
         printArea.style.display = 'none';
         loader.style.display = 'none';
+        activeChunkIndex = savedChunkIdx;
         getEl('input-seat').value = currentSeat;
         loadStudentData();
         window.isExporting = false;
@@ -1369,15 +2158,63 @@
 
     /* ============ 9. 初始化與事件綁定 ============ */
     window.addEventListener('DOMContentLoaded', () => {
-        initDemoWeeksData(7, 4);
+        const prefs = loadUiPrefs();
+        if (prefs) {
+            if ([1, 2, 3, 4].includes(Number(prefs.selectedWeekCount))) {
+                selectedWeekCount = Number(prefs.selectedWeekCount);
+            }
+            if (['all_in_one', 'two_per_page', 'one_per_page'].includes(prefs.pageSplitMode)) {
+                pageSplitMode = prefs.pageSplitMode;
+            }
+            if (prefs.startWeek && getEl('input-start-week')) {
+                getEl('input-start-week').value = prefs.startWeek;
+            }
+        }
+
+        document.querySelectorAll('.week-cnt-btn').forEach(btn => {
+            const isAct = Number(btn.getAttribute('data-week-count')) === selectedWeekCount;
+            btn.className = isAct
+                ? 'week-cnt-btn py-1.5 rounded-xl text-xs font-extrabold border transition bg-rose-500 text-white border-rose-500 shadow-sm'
+                : 'week-cnt-btn py-1.5 rounded-xl text-xs font-extrabold border transition bg-white text-slate-600 border-rose-200 hover:bg-rose-50';
+        });
+        document.querySelectorAll('.page-mode-btn').forEach(btn => {
+            const isAct = btn.getAttribute('data-page-mode') === pageSplitMode;
+            btn.className = isAct
+                ? 'page-mode-btn px-1 py-1.5 rounded-xl text-[10px] font-bold border transition bg-rose-500 text-white border-rose-500 shadow-sm'
+                : 'page-mode-btn px-1 py-1.5 rounded-xl text-[10px] font-bold border transition bg-white text-slate-600 border-rose-200 hover:bg-rose-50';
+        });
+
+        const initM = (getEl('input-start-week').value || '').match(/\d+/);
+        const initStartW = initM ? parseInt(initM[0], 10) : 7;
+
+        // 若本機曾快取過試算表的「學期設定」，第一時間先呈現試算表設定的預設學期
+        try {
+            const semCache = JSON.parse(localStorage.getItem(SEM_CACHE_KEY) || 'null');
+            if (semCache && Array.isArray(semCache.semesterList) && semCache.semesterList.length) {
+                globalSemesterList = semCache.semesterList;
+                const semSelect = getEl('input-semester');
+                if (semSelect) {
+                    semSelect.innerHTML = '';
+                    globalSemesterList.forEach(sem => {
+                        const opt = document.createElement('option');
+                        opt.value = sem.name; opt.textContent = sem.name;
+                        if (sem.name === semCache.activeSemester || sem.isActive) opt.selected = true;
+                        semSelect.appendChild(opt);
+                    });
+                }
+            }
+        } catch (e) {}
+
+        restoreLayoutPrefsToDOM();
+        initDemoWeeksData(initStartW, selectedWeekCount);
         renderWeekRangesListUI();
-        renderDayNoteWeekTabs();
+        renderDayNoteWeekTabs(true);
         renderPreviewPageSwitcher();
         updateModeDescriptions();
         updateSeatDropdown();
         updateFlex();
 
-        // 嘗試連線真實試算表
+        // 嘗試連線真實試算表（預設跟隨試算表「學期設定」裡勾選的學期）
         fetchAllData();
 
         // 點選 1 週 / 2 週 / 3 週 / 4 週
@@ -1392,6 +2229,7 @@
 
         // 修改學期或起始週次時，自動重算連續 N 週的區間並向試算表抓取
         getEl('input-semester').addEventListener('change', () => {
+            userManuallySelectedSemester = true;
             fetchAllData(true);
         });
         getEl('input-start-week').addEventListener('change', () => {
@@ -1404,78 +2242,237 @@
         getEl('btn-download-single').addEventListener('click', () => performExport(false));
         getEl('btn-download-all').addEventListener('click', () => performExport(true));
 
-        getEl('input-orientation').addEventListener('change', updateFlex);
-        getEl('input-signature-layout').addEventListener('change', updateFlex);
+        getEl('input-export-mode').addEventListener('change', () => saveLayoutPrefs());
+        getEl('input-orientation').addEventListener('change', () => { updateFlex(); saveLayoutPrefs(); });
+        getEl('input-signature-layout').addEventListener('change', () => { updateFlex(); saveLayoutPrefs(); });
         ['teacher', 'student', 'parent'].forEach(k => {
-            getEl(`input-flex-${k}`).addEventListener('input', updateFlex);
+            getEl(`input-flex-${k}`).addEventListener('input', () => { updateFlex(); saveLayoutPrefs(); });
         });
-        getEl('input-signature-height').addEventListener('input', updateFlex);
+        getEl('input-signature-height').addEventListener('input', () => { updateFlex(); saveLayoutPrefs(); });
 
+        if (getEl('btn-confirm-layout')) {
+            getEl('btn-confirm-layout').addEventListener('click', () => {
+                saveLayoutPrefs(true);
+                updateFlex();
+            });
+        }
+        if (getEl('btn-unlock-layout')) {
+            getEl('btn-unlock-layout').addEventListener('click', () => {
+                saveLayoutPrefs(false);
+            });
+        }
+
+        const statusHideTimers = {};
         const showSavingStatus = (id) => {
             const el = getEl(id); if (!el) return;
-            el.textContent = '儲存中...'; el.className = 'text-[10px] font-bold text-amber-500 opacity-100 transition';
+            clearTimeout(statusHideTimers[id]);
+            el.textContent = '💾 已存本機 · 雲端同步中...';
+            el.className = 'text-[10px] font-bold text-amber-600 opacity-100 transition';
         };
-        const showSavedStatus = (id) => {
+        const showSavedStatus = (id, cloudOk = true) => {
             const el = getEl(id); if (!el) return;
-            el.textContent = '✓ 已存雲端'; el.className = 'text-[10px] font-bold text-emerald-600 opacity-100 transition';
-            setTimeout(() => { el.classList.replace('opacity-100', 'opacity-0'); }, 2000);
+            clearTimeout(statusHideTimers[id]);
+            el.textContent = cloudOk ? '✓ 已存雲端與本機' : '✓ 已存本機記憶';
+            el.className = 'text-[10px] font-bold text-emerald-600 opacity-100 transition';
+            statusHideTimers[id] = setTimeout(() => { el.classList.replace('opacity-100', 'opacity-0'); }, 2500);
         };
 
-        // 每日放假備註（針對目前選取的 activeDayNoteWeekIdx 週次）
+        // 每日放假備註（針對目前選取的 activeDayNoteWeekIdx 週次，0ms 寫入本機 + 雲端同步）
         let noteSaveTimer;
         for (let i = 1; i <= 5; i++) {
             getEl(`note-day-${i}`).addEventListener('input', (e) => {
                 const w = weeksList[activeDayNoteWeekIdx];
                 if (!w) return;
+                const sem = getEl('input-semester').value;
                 w.dayNotes[i] = e.target.value;
-                renderDayNoteWeekTabs();
+                saveDayNotesToLocal(sem, w.weekLabel, w.dayNotes);
+                renderDayNoteWeekTabs(false);
                 updatePreview();
                 showSavingStatus('save-status-class');
                 clearTimeout(noteSaveTimer);
                 noteSaveTimer = setTimeout(async () => {
-                    await callBackendAPI('saveWeekDayNotes', { semester: getEl('input-semester').value, week: w.weekLabel, notesObj: w.dayNotes });
-                    showSavedStatus('save-status-class');
-                }, 1000);
+                    const res = await callBackendAPI('saveWeekDayNotes', { semester: sem, week: w.weekLabel, notesObj: w.dayNotes });
+                    showSavedStatus('save-status-class', !!(res && res.success));
+                }, 700);
             });
         }
 
-        getEl('input-class-comment').addEventListener('input', (e) => {
-            weeksList.forEach(w => { w.dayNotes['classComment'] = e.target.value; });
-            updatePreview();
-            showSavingStatus('save-status-class');
-            clearTimeout(noteSaveTimer);
-            noteSaveTimer = setTimeout(async () => {
-                const w = weeksList[activeDayNoteWeekIdx] || weeksList[0];
-                if (w) {
-                    await callBackendAPI('saveWeekDayNotes', { semester: getEl('input-semester').value, week: w.weekLabel, notesObj: w.dayNotes });
-                    showSavedStatus('save-status-class');
+        // 綁定富文本編輯器互動（切換目標框、點擊圖片顯示調整面板、剪貼簿貼圖、拖曳放圖、選檔上傳）
+        const bindRichEditorInteractions = (edId, labelText, badgeClass) => {
+            const ed = getEl(edId);
+            if (!ed) return;
+            ed.addEventListener('focus', () => {
+                activeRichEditorId = edId;
+                const b = getEl('active-editor-badge');
+                if (b) {
+                    b.textContent = `目前編輯：${labelText}`;
+                    b.className = `text-[9.5px] ${badgeClass} px-1.5 py-0.5 rounded font-bold`;
                 }
-            }, 1000);
-        });
+            });
+            ed.addEventListener('click', (ev) => {
+                if (ev.target && ev.target.tagName === 'IMG') {
+                    selectRichImg(ev.target);
+                } else {
+                    selectRichImg(null);
+                }
+            });
+            // 支援直接 Cmd+V / Ctrl+V 貼上截圖或圖片
+            ed.addEventListener('paste', async (ev) => {
+                const items = (ev.clipboardData && ev.clipboardData.items) ? Array.from(ev.clipboardData.items) : [];
+                const imgItem = items.find(it => it.type && it.type.startsWith('image/'));
+                if (imgItem) {
+                    ev.preventDefault();
+                    const file = imgItem.getAsFile();
+                    if (file) {
+                        const { dataUrl, width } = await compressImageFileToDataUrl(file);
+                        insertImageDataUrlIntoEditor(dataUrl, width, 'float-right', ed);
+                    }
+                }
+            });
+            // 支援直接從桌面拖曳圖片進框
+            ed.addEventListener('dragover', (ev) => { ev.preventDefault(); });
+            ed.addEventListener('drop', async (ev) => {
+                const files = (ev.dataTransfer && ev.dataTransfer.files) ? Array.from(ev.dataTransfer.files) : [];
+                const imgFile = files.find(f => f.type && f.type.startsWith('image/'));
+                if (imgFile) {
+                    ev.preventDefault();
+                    activeRichEditorId = edId;
+                    const { dataUrl, width } = await compressImageFileToDataUrl(imgFile);
+                    insertImageDataUrlIntoEditor(dataUrl, width, 'float-right', ed);
+                }
+            });
+        };
 
-        let cmtTimer;
-        getEl('input-comment').addEventListener('input', (e) => {
-            const seat = getEl('input-seat').value;
+        bindRichEditorInteractions('input-class-comment', '班級宣導', 'bg-indigo-100 text-indigo-700');
+        bindRichEditorInteractions('input-comment', '個人評語', 'bg-rose-100 text-rose-700');
+
+        const richImgInput = getEl('rich-img-input');
+        if (richImgInput) {
+            richImgInput.addEventListener('change', async (ev) => {
+                const file = ev.target.files && ev.target.files[0];
+                if (!file) return;
+                const { dataUrl, width } = await compressImageFileToDataUrl(file);
+                insertImageDataUrlIntoEditor(dataUrl, width, 'float-right');
+            });
+        }
+
+        // 班級宣導（0ms 寫入本機所有選取週次 + 同步雲端，狀態顯示於導師的話旁）
+        let classCmtTimer;
+        getEl('input-class-comment').addEventListener('input', () => {
+            const sem = getEl('input-semester').value;
+            const val = getRichVal('input-class-comment');
             weeksList.forEach(w => {
-                if (w.students[seat]) w.students[seat].comment = e.target.value;
+                if (!w.dayNotes) w.dayNotes = { 1: '', 2: '', 3: '', 4: '', 5: '' };
+                w.dayNotes['classComment'] = val;
+                saveDayNotesToLocal(sem, w.weekLabel, w.dayNotes);
             });
             updatePreview();
             showSavingStatus('save-status-personal');
-            clearTimeout(cmtTimer);
-            cmtTimer = setTimeout(async () => {
-                const lastW = weeksList[weeksList.length - 1];
-                if (seat && lastW && lastW.students[seat]) {
-                    await callBackendAPI('saveWeeklyComment', {
-                        semester: getEl('input-semester').value,
+            clearTimeout(classCmtTimer);
+            classCmtTimer = setTimeout(async () => {
+                const targetWeeks = getActiveChunkWeeks();
+                let allOk = false;
+                for (const w of targetWeeks) {
+                    const res = await callBackendAPI('saveWeekDayNotes', { semester: sem, week: w.weekLabel, notesObj: w.dayNotes });
+                    if (res && res.success) allOk = true;
+                }
+                showSavedStatus('save-status-personal', allOk);
+            }, 700);
+        });
+
+        // 個人評語（每位學生獨立計時器 + 0ms 寫入本機，切換座號或重整時絕不漏存！）
+        const cmtTimersByKey = {};
+        getEl('input-comment').addEventListener('input', () => {
+            const seat = getEl('input-seat').value;
+            const sem = getEl('input-semester').value;
+            const commentVal = getRichVal('input-comment');
+            if (!seat || !weeksList.length) return;
+
+            const targetWeeks = getActiveChunkWeeks();
+            targetWeeks.forEach(w => {
+                if (w.students && w.students[seat]) w.students[seat].comment = commentVal;
+                saveCommentToLocal(sem, w.weekLabel, seat, commentVal);
+            });
+            // 若為「全部同張」模式，同步寫入本次載入的所有週次，切換 1~4 週時評語都能自動帶出
+            if (pageSplitMode === 'all_in_one') {
+                weeksList.forEach(w => {
+                    if (w.students && w.students[seat]) w.students[seat].comment = commentVal;
+                    saveCommentToLocal(sem, w.weekLabel, seat, commentVal);
+                });
+            }
+
+            updatePreview();
+            showSavingStatus('save-status-personal');
+
+            const timerKey = `${sem}|${seat}`;
+            clearTimeout(cmtTimersByKey[timerKey]);
+            cmtTimersByKey[timerKey] = setTimeout(async () => {
+                const lastW = targetWeeks[targetWeeks.length - 1] || weeksList[weeksList.length - 1];
+                let cloudOk = false;
+                if (lastW && lastW.students && lastW.students[seat]) {
+                    const res = await callBackendAPI('saveWeeklyComment', {
+                        semester: sem,
                         week: lastW.weekLabel,
                         seatNo: seat,
                         studentName: lastW.students[seat].name,
-                        comment: e.target.value
+                        comment: commentVal
                     });
-                    showSavedStatus('save-status-personal');
+                    if (res && res.success) cloudOk = true;
                 }
-            }, 1000);
+                showSavedStatus('save-status-personal', cloudOk);
+            }, 600);
         });
+
+        // 手動點擊「💾 記住評語」按鈕：立即強制寫入本機記憶並同步至雲端試算表
+        if (getEl('btn-confirm-comment')) {
+            getEl('btn-confirm-comment').addEventListener('click', async () => {
+                const btn = getEl('btn-confirm-comment');
+                const sem = getEl('input-semester').value;
+                const seat = getEl('input-seat').value;
+                const classVal = getRichVal('input-class-comment');
+                const personalVal = getRichVal('input-comment');
+
+                weeksList.forEach(w => {
+                    if (!w.dayNotes) w.dayNotes = { 1: '', 2: '', 3: '', 4: '', 5: '' };
+                    w.dayNotes['classComment'] = classVal;
+                    saveDayNotesToLocal(sem, w.weekLabel, w.dayNotes);
+                });
+
+                const targetWeeks = getActiveChunkWeeks();
+                const weeksToSavePersonal = (pageSplitMode === 'all_in_one') ? weeksList : targetWeeks;
+                weeksToSavePersonal.forEach(w => {
+                    if (seat && w.students && w.students[seat]) w.students[seat].comment = personalVal;
+                    if (seat) saveCommentToLocal(sem, w.weekLabel, seat, personalVal);
+                });
+
+                updatePreview();
+                btn.innerHTML = '<span>✓ 已記住評語</span>';
+                btn.className = 'text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg font-bold transition shadow-sm flex items-center gap-1';
+                showSavingStatus('save-status-personal');
+
+                let cloudOk = false;
+                for (const w of targetWeeks) {
+                    const r1 = await callBackendAPI('saveWeekDayNotes', { semester: sem, week: w.weekLabel, notesObj: w.dayNotes });
+                    if (r1 && r1.success) cloudOk = true;
+                }
+                const lastW = targetWeeks[targetWeeks.length - 1] || weeksList[weeksList.length - 1];
+                if (seat && lastW && lastW.students && lastW.students[seat]) {
+                    const r2 = await callBackendAPI('saveWeeklyComment', {
+                        semester: sem,
+                        week: lastW.weekLabel,
+                        seatNo: seat,
+                        studentName: lastW.students[seat].name,
+                        comment: personalVal
+                    });
+                    if (r2 && r2.success) cloudOk = true;
+                }
+                showSavedStatus('save-status-personal', cloudOk);
+                setTimeout(() => {
+                    btn.innerHTML = '<span>💾 記住評語</span>';
+                    btn.className = 'text-[10px] bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded-lg font-bold transition shadow-sm flex items-center gap-1';
+                }, 2000);
+            });
+        }
     });
 </script>
 </body>
