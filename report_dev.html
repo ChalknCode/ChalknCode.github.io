@@ -316,24 +316,64 @@
                     <div id="week-ranges-list" class="space-y-1.5 max-h-52 overflow-y-auto pr-1 custom-scrollbar"></div>
                 </div>
 
-                <!-- 每日備註/放假設定（支援切換目前選取的任一週） -->
+                <!-- 每日備註/放假＆個人請假設定（支援切換目前選取的任一週） -->
                 <div class="bg-red-50/50 p-3 rounded-2xl border border-red-100/50 space-y-2">
                     <div class="flex items-center justify-between">
                         <label class="block text-xs font-bold text-red-800 flex items-center gap-1">
-                            <span class="iconify" data-icon="ph:calendar-star-duotone"></span> 每日備註 / 放假設定
+                            <span class="iconify" data-icon="ph:calendar-star-duotone"></span> 每日備註（全班放假＆個人請假）
                         </label>
                         <span id="save-status-class" class="text-[10px] font-bold opacity-0 transition"></span>
                     </div>
-                    <!-- 切換要編輯哪一週的放假備註 -->
+                    <!-- 切換要編輯哪一週的備註 -->
                     <div id="day-note-week-tabs" class="flex flex-wrap gap-1"></div>
 
-                    <div class="grid grid-cols-5 gap-1 pt-0.5">
-                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-0.5">一</div><input type="text" id="note-day-1" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
-                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-0.5">二</div><input type="text" id="note-day-2" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
-                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-0.5">三</div><input type="text" id="note-day-3" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
-                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-0.5">四</div><input type="text" id="note-day-4" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
-                        <div class="text-center"><div class="text-[10px] text-slate-500 mb-0.5">五</div><input type="text" id="note-day-5" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
+                    <!-- 1. 全班性每日備註 -->
+                    <div class="space-y-1 pt-0.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-extrabold text-red-700">🏫 全班備註（如：放假、補假、段考）</span>
+                            <span class="text-[9.5px] text-slate-400">全班報表同步顯示</span>
+                        </div>
+                        <div class="grid grid-cols-5 gap-1">
+                            <div class="text-center"><div class="text-[10px] text-slate-500 mb-0.5">一</div><input type="text" id="note-day-1" list="class-holiday-options" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
+                            <div class="text-center"><div class="text-[10px] text-slate-500 mb-0.5">二</div><input type="text" id="note-day-2" list="class-holiday-options" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
+                            <div class="text-center"><div class="text-[10px] text-slate-500 mb-0.5">三</div><input type="text" id="note-day-3" list="class-holiday-options" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
+                            <div class="text-center"><div class="text-[10px] text-slate-500 mb-0.5">四</div><input type="text" id="note-day-4" list="class-holiday-options" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
+                            <div class="text-center"><div class="text-[10px] text-slate-500 mb-0.5">五</div><input type="text" id="note-day-5" list="class-holiday-options" placeholder="正常" class="w-full px-1 py-1 text-center text-xs border border-red-200 rounded focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"></div>
+                        </div>
                     </div>
+
+                    <!-- 2. 個人性每日備註（請假等） -->
+                    <div class="space-y-1 pt-1.5 border-t border-red-200/60">
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="text-[10px] font-extrabold text-amber-800">👤 個人請假/備註</span>
+                            <span id="personal-note-student-badge" class="text-[9.5px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">目前學生</span>
+                        </div>
+                        <div class="grid grid-cols-5 gap-1">
+                            <div class="text-center"><div class="text-[10px] text-amber-700/70 mb-0.5">一</div><input type="text" id="pnote-day-1" list="personal-leave-options" placeholder="出勤" class="w-full px-1 py-1 text-center text-xs border border-amber-300 rounded focus:outline-none focus:ring-1 focus:ring-amber-500 bg-amber-50/40 font-bold text-amber-900"></div>
+                            <div class="text-center"><div class="text-[10px] text-amber-700/70 mb-0.5">二</div><input type="text" id="pnote-day-2" list="personal-leave-options" placeholder="出勤" class="w-full px-1 py-1 text-center text-xs border border-amber-300 rounded focus:outline-none focus:ring-1 focus:ring-amber-500 bg-amber-50/40 font-bold text-amber-900"></div>
+                            <div class="text-center"><div class="text-[10px] text-amber-700/70 mb-0.5">三</div><input type="text" id="pnote-day-3" list="personal-leave-options" placeholder="出勤" class="w-full px-1 py-1 text-center text-xs border border-amber-300 rounded focus:outline-none focus:ring-1 focus:ring-amber-500 bg-amber-50/40 font-bold text-amber-900"></div>
+                            <div class="text-center"><div class="text-[10px] text-amber-700/70 mb-0.5">四</div><input type="text" id="pnote-day-4" list="personal-leave-options" placeholder="出勤" class="w-full px-1 py-1 text-center text-xs border border-amber-300 rounded focus:outline-none focus:ring-1 focus:ring-amber-500 bg-amber-50/40 font-bold text-amber-900"></div>
+                            <div class="text-center"><div class="text-[10px] text-amber-700/70 mb-0.5">五</div><input type="text" id="pnote-day-5" list="personal-leave-options" placeholder="出勤" class="w-full px-1 py-1 text-center text-xs border border-amber-300 rounded focus:outline-none focus:ring-1 focus:ring-amber-500 bg-amber-50/40 font-bold text-amber-900"></div>
+                        </div>
+                    </div>
+
+                    <datalist id="class-holiday-options">
+                        <option value="放假"></option>
+                        <option value="補假"></option>
+                        <option value="校慶補假"></option>
+                        <option value="運動會補假"></option>
+                        <option value="段考"></option>
+                        <option value="模擬考"></option>
+                        <option value="校外教學"></option>
+                    </datalist>
+                    <datalist id="personal-leave-options">
+                        <option value="病假"></option>
+                        <option value="事假"></option>
+                        <option value="公假"></option>
+                        <option value="喪假"></option>
+                        <option value="早退"></option>
+                        <option value="生理假"></option>
+                    </datalist>
                 </div>
 
                 <!-- 選擇學生 -->
@@ -443,10 +483,45 @@
                             <button type="button" onmousedown="event.preventDefault(); triggerRichImageUpload()" title="上傳圖片（也支援直接截圖 Cmd+V 貼上或拖曳圖片進框）" class="px-1.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition">
                                 🖼️ 圖片
                             </button>
-                            <button type="button" onmousedown="event.preventDefault(); insertSampleStamp()" title="一鍵插入示範榮譽印章試試看！" class="px-1.5 py-1 rounded-lg text-[10px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition">
-                                💮 蓋章試用
+                            <button type="button" onmousedown="event.preventDefault(); toggleStampPopover()" title="打開 805 導師專屬印章庫（含全班印章、個人印章與自訂印章）" class="px-1.5 py-1 rounded-lg text-[10px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition">
+                                💮 蓋印章 ▾
                             </button>
                             <input type="file" id="rich-img-input" accept="image/*" class="hidden">
+                        </div>
+
+                        <!-- 💮 導師專屬印章庫小面板（全班 6 款 ＋ 個人 6 款 ＋ 自訂文字印章） -->
+                        <div id="rich-stamp-popover" class="hidden pt-1.5 border-t border-amber-200 bg-amber-50/50 p-1.5 rounded-lg space-y-1.5 text-[11px]">
+                            <div class="flex items-center justify-between gap-1">
+                                <div class="flex gap-1">
+                                    <button type="button" id="stamp-tab-class" onmousedown="event.preventDefault(); switchStampPopoverTab('class')" class="px-2 py-0.5 rounded font-bold text-[10px] bg-rose-600 text-white shadow-sm">🏫 全班適用 (6款)</button>
+                                    <button type="button" id="stamp-tab-personal" onmousedown="event.preventDefault(); switchStampPopoverTab('personal')" class="px-2 py-0.5 rounded font-bold text-[10px] bg-white text-slate-700 border border-amber-200">👤 個人適用 (6款)</button>
+                                    <button type="button" id="stamp-tab-custom" onmousedown="event.preventDefault(); switchStampPopoverTab('custom')" class="px-2 py-0.5 rounded font-bold text-[10px] bg-white text-slate-700 border border-amber-200">✨ 自訂印章</button>
+                                </div>
+                                <button type="button" onmousedown="event.preventDefault(); toggleStampPopover(false)" class="text-slate-400 hover:text-slate-600 font-bold px-1">✕</button>
+                            </div>
+                            <div id="stamp-preset-grid" class="grid grid-cols-3 gap-1"></div>
+                            <div id="stamp-custom-panel" class="hidden space-y-1 pt-0.5">
+                                <div class="grid grid-cols-2 gap-1">
+                                    <input type="text" id="stamp-custom-top" value="805 榮譽章" placeholder="上排小字" class="px-1.5 py-0.5 text-[10px] border border-amber-200 rounded bg-white">
+                                    <input type="text" id="stamp-custom-sub" value="導師肯定" placeholder="下排小字" class="px-1.5 py-0.5 text-[10px] border border-amber-200 rounded bg-white">
+                                </div>
+                                <div class="flex gap-1">
+                                    <input type="text" id="stamp-custom-main" value="表現超棒" placeholder="中間主字" class="flex-1 min-w-0 px-1.5 py-0.5 text-[11px] font-bold border border-amber-300 rounded bg-white">
+                                    <select id="stamp-custom-shape" class="px-1 py-0.5 text-[10px] border border-amber-200 rounded bg-white font-bold">
+                                        <option value="circle">圓章</option>
+                                        <option value="square">方印</option>
+                                        <option value="rect">長方章</option>
+                                    </select>
+                                    <select id="stamp-custom-color" class="px-1 py-0.5 text-[10px] border border-amber-200 rounded bg-white font-bold">
+                                        <option value="#e11d48">紅</option>
+                                        <option value="#d97706">橘金</option>
+                                        <option value="#059669">綠</option>
+                                        <option value="#2563eb">藍</option>
+                                        <option value="#7c3aed">紫</option>
+                                    </select>
+                                    <button type="button" onmousedown="event.preventDefault(); insertCustomStampFromPanel()" class="px-2 py-0.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-[10px] font-bold whitespace-nowrap">蓋章</button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- ⊞ 表格快速插入與編輯小面板 -->
@@ -1113,37 +1188,179 @@
         }
     };
 
-    // 內建「💮 蓋章試用」：產生精緻的 805 表現優良印章 PNG 讓老師一鍵體驗文繞圖與縮放效果
-    window.insertSampleStamp = function() {
+    // 內建「💮 導師專屬印章庫」：支援 6 款全班適用印章、6 款個人適用印章與自訂文字印章
+    const CLASS_STAMP_PRESETS = [
+        { id: 'c_honor', shape: 'circle', color: '#e11d48', bg: 'rgba(255,241,242,0.92)', top: '805 班級榮譽', main: '全班表現優異', sub: '團結合作・導師驕傲', angle: -0.1 },
+        { id: 'c_order', shape: 'circle', color: '#059669', bg: 'rgba(236,253,245,0.92)', top: '805 常規榮譽', main: '整潔秩序優良', sub: '全班共同努力成果', angle: -0.09 },
+        { id: 'c_exam', shape: 'square', color: '#d97706', bg: 'rgba(255,251,235,0.92)', top: '805 學習目標', main: '段考全力衝刺', sub: '按部就班・穩定發揮', angle: -0.07 },
+        { id: 'c_team', shape: 'square', color: '#be123c', bg: 'rgba(255,241,242,0.92)', top: '805 班際榮耀', main: '向心力滿分', sub: '全力以赴・最棒805', angle: -0.08 },
+        { id: 'c_notice', shape: 'rect', color: '#2563eb', bg: 'rgba(239,246,255,0.94)', top: '805 班級重要宣導', main: '請詳閱通知事項', sub: '感謝家長配合與支持', angle: -0.06 },
+        { id: 'c_holiday', shape: 'rect', color: '#7c3aed', bg: 'rgba(245,243,255,0.94)', top: '805 假期溫馨提醒', main: '注意安全與作息', sub: '充實假期・準時收心', angle: -0.06 }
+    ];
+
+    const PERSONAL_STAMP_PRESETS = [
+        { id: 'p_good', shape: 'circle', color: '#e11d48', bg: 'rgba(255,241,242,0.92)', top: '805 榮譽章', main: '表現優良', sub: '導師肯定', angle: -0.11 },
+        { id: 'p_improve', shape: 'circle', color: '#d97706', bg: 'rgba(255,251,235,0.92)', top: '805 進步獎', main: '進步神速', sub: '越戰越勇', angle: -0.09 },
+        { id: 'p_keep', shape: 'circle', color: '#059669', bg: 'rgba(236,253,245,0.92)', top: '805 常規章', main: '繼續保持', sub: '穩定踏實', angle: -0.1 },
+        { id: 'p_service', shape: 'square', color: '#be123c', bg: 'rgba(255,241,242,0.92)', top: '805 模範', main: '熱心服務', sub: '感謝有你', angle: -0.07 },
+        { id: 'p_hw', shape: 'rect', color: '#2563eb', bg: 'rgba(239,246,255,0.94)', top: '導師溫馨提醒', main: '作業請補交', sub: '完成後請給老師檢查', angle: -0.06 },
+        { id: 'p_sign', shape: 'rect', color: '#7c3aed', bg: 'rgba(245,243,255,0.94)', top: '聯絡簿與週報表', main: '請家長簽名', sub: '感謝家長配合與關心', angle: -0.06 }
+    ];
+
+    let activeStampTab = 'class';
+
+    function drawStampDataUrl(cfg) {
         const cvs = document.createElement('canvas');
-        cvs.width = 180;
-        cvs.height = 180;
+        cvs.width = 210;
+        cvs.height = 210;
         const ctx = cvs.getContext('2d');
         ctx.save();
-        ctx.translate(90, 90);
-        ctx.rotate(-0.12);
-        ctx.strokeStyle = '#e11d48';
-        ctx.fillStyle = 'rgba(255, 241, 242, 0.85)';
-        ctx.lineWidth = 6;
-        ctx.beginPath();
-        ctx.arc(0, 0, 74, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(0, 0, 65, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.fillStyle = '#e11d48';
+        ctx.translate(105, 105);
+        ctx.rotate(cfg.angle ?? -0.09);
+        ctx.strokeStyle = cfg.color || '#e11d48';
+        ctx.fillStyle = cfg.bg || 'rgba(255,255,255,0.92)';
+
+        if (cfg.shape === 'square') {
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.roundRect(-78, -76, 156, 152, 14);
+            ctx.fill();
+            ctx.stroke();
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(-69, -67, 138, 134, 9);
+            ctx.stroke();
+        } else if (cfg.shape === 'rect') {
+            ctx.lineWidth = 5.5;
+            ctx.beginPath();
+            ctx.roundRect(-92, -60, 184, 120, 12);
+            ctx.fill();
+            ctx.stroke();
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(-84, -52, 168, 104, 8);
+            ctx.stroke();
+        } else {
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.arc(0, 0, 82, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, 73, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        ctx.fillStyle = cfg.color || '#e11d48';
         ctx.textAlign = 'center';
-        ctx.font = 'bold 20px "Noto Sans TC", sans-serif';
-        ctx.fillText('★ 805 榮譽章 ★', 0, -24);
-        ctx.font = '900 32px "Noto Sans TC", sans-serif';
-        ctx.fillText('表現優良', 0, 14);
-        ctx.font = 'bold 16px "Noto Sans TC", sans-serif';
-        ctx.fillText('導師肯定 👍', 0, 44);
+        ctx.textBaseline = 'middle';
+
+        const yTop = cfg.shape === 'rect' ? -31 : -33;
+        const yMain = 2;
+        const ySub = cfg.shape === 'rect' ? 33 : 37;
+
+        ctx.font = 'bold 15px "Noto Sans TC", sans-serif';
+        ctx.fillText(cfg.top || '', 0, yTop);
+
+        const mainLen = (cfg.main || '').length;
+        const mainSize = mainLen >= 7 ? 21 : (mainLen >= 6 ? 23 : (mainLen >= 5 ? 26 : 31));
+        ctx.font = `900 ${mainSize}px "Noto Sans TC", sans-serif`;
+        ctx.fillText(cfg.main || '', 0, yMain);
+
+        ctx.font = 'bold 13.5px "Noto Sans TC", sans-serif';
+        ctx.fillText(cfg.sub || '', 0, ySub);
+
         ctx.restore();
-        insertImageDataUrlIntoEditor(cvs.toDataURL('image/png'), 75, 'float-right');
+        return cvs.toDataURL('image/png');
+    }
+
+    function renderStampPopoverGrid() {
+        const grid = getEl('stamp-preset-grid');
+        const customPanel = getEl('stamp-custom-panel');
+        if (!grid || !customPanel) return;
+
+        ['class', 'personal', 'custom'].forEach(t => {
+            const btn = getEl(`stamp-tab-${t}`);
+            if (btn) {
+                btn.className = (t === activeStampTab)
+                    ? 'px-2 py-0.5 rounded font-bold text-[10px] bg-rose-600 text-white shadow-sm'
+                    : 'px-2 py-0.5 rounded font-bold text-[10px] bg-white text-slate-700 border border-amber-200 hover:bg-amber-50';
+            }
+        });
+
+        if (activeStampTab === 'custom') {
+            grid.classList.add('hidden');
+            customPanel.classList.remove('hidden');
+            return;
+        }
+
+        customPanel.classList.add('hidden');
+        grid.classList.remove('hidden');
+        const list = activeStampTab === 'class' ? CLASS_STAMP_PRESETS : PERSONAL_STAMP_PRESETS;
+        grid.innerHTML = '';
+        list.forEach(st => {
+            const url = drawStampDataUrl(st);
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'bg-white hover:bg-amber-50 border border-amber-200 rounded-lg p-1 flex flex-col items-center transition shadow-sm';
+            btn.innerHTML = `<img src="${url}" class="w-11 h-11 object-contain"><span class="text-[9.5px] font-bold mt-0.5 leading-tight" style="color:${st.color}">${escHtml(st.main)}</span>`;
+            btn.addEventListener('mousedown', (ev) => {
+                ev.preventDefault();
+                // 點擊「全班適用」印章時預設蓋入班級宣導框；點擊「個人適用」時蓋入個人評語框
+                const targetEd = activeStampTab === 'class' ? getEl('input-class-comment') : getEl('input-comment');
+                insertImageDataUrlIntoEditor(url, 76, 'float-right', targetEd || getActiveRichEditor());
+            });
+            grid.appendChild(btn);
+        });
+    }
+
+    window.toggleStampPopover = function(force) {
+        const pop = getEl('rich-stamp-popover');
+        if (!pop) return;
+        const willOpen = force !== undefined ? force : pop.classList.contains('hidden');
+        pop.classList.toggle('hidden', !willOpen);
+        if (willOpen) renderStampPopoverGrid();
     };
+
+    window.switchStampPopoverTab = function(tab) {
+        activeStampTab = tab;
+        renderStampPopoverGrid();
+    };
+
+    window.insertCustomStampFromPanel = function() {
+        const color = getEl('stamp-custom-color') ? getEl('stamp-custom-color').value : '#e11d48';
+        const url = drawStampDataUrl({
+            shape: getEl('stamp-custom-shape') ? getEl('stamp-custom-shape').value : 'circle',
+            color: color,
+            bg: 'rgba(255,255,255,0.92)',
+            top: getEl('stamp-custom-top') ? getEl('stamp-custom-top').value : '',
+            main: getEl('stamp-custom-main') ? getEl('stamp-custom-main').value : '表現優良',
+            sub: getEl('stamp-custom-sub') ? getEl('stamp-custom-sub').value : '',
+            angle: -0.09
+        });
+        insertImageDataUrlIntoEditor(url, 76, 'float-right', getActiveRichEditor());
+    };
+
+    window.insertSampleStamp = function() {
+        window.toggleStampPopover(true);
+    };
+
+    function mergeDayNotes(baseObj, overrideObj) {
+        const out = Object.assign({ 1: '', 2: '', 3: '', 4: '', 5: '', personalNotes: {} }, baseObj || {});
+        if (overrideObj) {
+            [1, 2, 3, 4, 5, 'classComment'].forEach(k => {
+                if (overrideObj[k] !== undefined) out[k] = overrideObj[k];
+            });
+        }
+        const mergedPersonal = {};
+        const p1 = (baseObj && baseObj.personalNotes) || {};
+        const p2 = (overrideObj && overrideObj.personalNotes) || {};
+        Object.keys(p1).forEach(seat => { mergedPersonal[seat] = Object.assign({ 1: '', 2: '', 3: '', 4: '', 5: '' }, p1[seat]); });
+        Object.keys(p2).forEach(seat => { mergedPersonal[seat] = Object.assign({ 1: '', 2: '', 3: '', 4: '', 5: '' }, mergedPersonal[seat] || {}, p2[seat]); });
+        out.personalNotes = mergedPersonal;
+        return out;
+    }
 
     function toIsoDate(d) {
         return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -1265,13 +1482,13 @@
 
             const wkLbl = `第 ${wNum} 週`;
             const curSem = getEl('input-semester') ? getEl('input-semester').value : '114學年度第1學期';
-            const baseDayNotes = Object.assign({ 1: '', 2: '', 3: '', 4: '', 5: '' }, tpl.dayNotes);
+            const baseDayNotes = Object.assign({ 1: '', 2: '', 3: '', 4: '', 5: '', personalNotes: {} }, tpl.dayNotes);
             const localNotes = getDayNotesFromLocal(curSem, wkLbl);
             const wObj = {
                 weekLabel: wkLbl,
                 startDate: toIsoDate(mon),
                 endDate: toIsoDate(sun),
-                dayNotes: localNotes ? Object.assign({}, baseDayNotes, localNotes) : baseDayNotes,
+                dayNotes: mergeDayNotes(baseDayNotes, localNotes),
                 students: studentsMap,
                 netScores: {}
             };
@@ -1391,10 +1608,10 @@
                     weeksList[idx].startDate = wRes.startDateStr || weeksList[idx].startDate;
                     weeksList[idx].endDate = wRes.endDateStr || weeksList[idx].endDate;
 
-                    const cloudNotes = Object.assign({ 1: '', 2: '', 3: '', 4: '', 5: '' }, wRes.dayNotes || {});
+                    const cloudNotes = Object.assign({ 1: '', 2: '', 3: '', 4: '', 5: '', personalNotes: {} }, wRes.dayNotes || {});
                     if (cloudNotes.classComment !== undefined) cloudNotes.classComment = cleanDemoText(cloudNotes.classComment);
                     const localNotes = getDayNotesFromLocal(activeSem, wkLbl);
-                    weeksList[idx].dayNotes = localNotes ? Object.assign({}, cloudNotes, localNotes) : cloudNotes;
+                    weeksList[idx].dayNotes = mergeDayNotes(cloudNotes, localNotes);
 
                     weeksList[idx].students = {};
                     (wRes.students || []).forEach(s => {
@@ -1425,7 +1642,7 @@
             const curSem = getEl('input-semester') ? getEl('input-semester').value : '114學年度第1學期';
             weeksList.forEach(w => {
                 const localNotes = getDayNotesFromLocal(curSem, w.weekLabel);
-                if (localNotes) w.dayNotes = Object.assign({}, w.dayNotes, localNotes);
+                if (localNotes) w.dayNotes = mergeDayNotes(w.dayNotes, localNotes);
                 Object.keys(w.students || {}).forEach(seatNo => {
                     const localCmt = getCommentFromLocal(curSem, w.weekLabel, seatNo);
                     if (localCmt !== undefined) w.students[seatNo].comment = localCmt;
@@ -1485,12 +1702,16 @@
         if (activeDayNoteWeekIdx >= weeksList.length) activeDayNoteWeekIdx = 0;
         const wrap = getEl('day-note-week-tabs');
         if (!wrap) return;
+        const seat = getEl('input-seat') ? getEl('input-seat').value : '';
         wrap.innerHTML = weeksList.map((w, idx) => {
-            const hasNote = [1, 2, 3, 4, 5].some(d => w.dayNotes && String(d ? w.dayNotes[d] || '' : '').trim() !== '');
+            const hasClassNote = [1, 2, 3, 4, 5].some(d => w.dayNotes && String(w.dayNotes[d] || '').trim() !== '');
+            const pMap = (w.dayNotes && w.dayNotes.personalNotes && seat && w.dayNotes.personalNotes[seat]) || {};
+            const hasPersonalNote = [1, 2, 3, 4, 5].some(d => String(pMap[d] || '').trim() !== '');
             const isAct = idx === activeDayNoteWeekIdx;
             return `<button type="button" data-note-wk="${idx}" class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${isAct ? 'bg-red-500 text-white shadow-sm' : 'bg-white text-red-800 border border-red-200'}">
                 <span>${escHtml(w.weekLabel)}</span>
-                ${hasNote ? '<span class="w-1.5 h-1.5 rounded-full bg-amber-300 inline-block"></span>' : ''}
+                ${hasClassNote ? '<span class="w-1.5 h-1.5 rounded-full bg-rose-300 inline-block" title="本週有全班備註"></span>' : ''}
+                ${hasPersonalNote ? '<span class="w-1.5 h-1.5 rounded-full bg-amber-300 inline-block" title="本週該生有個人請假/備註"></span>' : ''}
             </button>`;
         }).join('');
 
@@ -1508,8 +1729,16 @@
     function syncDayNoteInputsFromActiveWeek(forceSyncClassComment = false) {
         const w = weeksList[activeDayNoteWeekIdx];
         if (!w) return;
+        const seat = getEl('input-seat') ? getEl('input-seat').value : '';
+        const stuName = (seat && w.students && w.students[seat]) ? w.students[seat].name : '';
+        const stuBadge = getEl('personal-note-student-badge');
+        if (stuBadge) {
+            stuBadge.textContent = seat ? `目前：${seat}號 ${stuName}` : '目前學生';
+        }
+        const pMap = (w.dayNotes && w.dayNotes.personalNotes && seat && w.dayNotes.personalNotes[seat]) || {};
         for (let i = 1; i <= 5; i++) {
             if (getEl(`note-day-${i}`)) getEl(`note-day-${i}`).value = (w.dayNotes && w.dayNotes[i]) || '';
+            if (getEl(`pnote-day-${i}`)) getEl(`pnote-day-${i}`).value = pMap[i] || '';
         }
         if (getEl('input-class-comment')) {
             // 優先讀取本機已記住的班級宣導，其次從目前週次（或由後往前找有設定 classComment 的週次）載入
@@ -1642,6 +1871,7 @@
 
         setRichVal('input-comment', resolvedComment);
         selectRichImg(null);
+        renderDayNoteWeekTabs(false);
         saveUiPrefs();
         updatePreview();
     }
@@ -1700,10 +1930,18 @@
         let rowCells = '<tr>';
         for (let i = 1; i <= 5; i++) {
             rowCells += '<td>';
-            if (wState.dayNotes[i] && String(wState.dayNotes[i]).trim() !== '') {
-                rowCells += `<div class="w-full mb-1.5 mt-0.5 bg-red-50 rounded border border-red-100" style="display: table;">
+            if (wState.dayNotes && wState.dayNotes[i] && String(wState.dayNotes[i]).trim() !== '') {
+                rowCells += `<div class="w-full mb-1 mt-0.5 bg-red-50 rounded border border-red-100" style="display: table;">
                     <div style="display: table-cell; vertical-align: middle;" class="text-center px-1 py-0.5 h-[22px]">
                         <span class="adjust-baseline block font-bold text-red-600 text-[11px] leading-[22px] break-words">${escHtml(wState.dayNotes[i])}</span>
+                    </div>
+                </div>`;
+            }
+            const pNote = wState.dayNotes && wState.dayNotes.personalNotes && seat && wState.dayNotes.personalNotes[seat] && wState.dayNotes.personalNotes[seat][i];
+            if (pNote && String(pNote).trim() !== '') {
+                rowCells += `<div class="w-full mb-1 mt-0.5 bg-amber-50 rounded border border-amber-200" style="display: table;">
+                    <div style="display: table-cell; vertical-align: middle;" class="text-center px-1 py-0.5 h-[22px]">
+                        <span class="adjust-baseline block font-bold text-amber-800 text-[11px] leading-[22px] break-words">${escHtml(pNote)}</span>
                     </div>
                 </div>`;
             }
@@ -2277,24 +2515,40 @@
             statusHideTimers[id] = setTimeout(() => { el.classList.replace('opacity-100', 'opacity-0'); }, 2500);
         };
 
-        // 每日放假備註（針對目前選取的 activeDayNoteWeekIdx 週次，0ms 寫入本機 + 雲端同步）
+        // 每日全班放假備註 ＆ 個人請假備註（針對目前選取的 activeDayNoteWeekIdx 週次，0ms 寫入本機 + 雲端同步）
         let noteSaveTimer;
+        const triggerDayNotesSync = (sem, w) => {
+            saveDayNotesToLocal(sem, w.weekLabel, w.dayNotes);
+            renderDayNoteWeekTabs(false);
+            updatePreview();
+            showSavingStatus('save-status-class');
+            clearTimeout(noteSaveTimer);
+            noteSaveTimer = setTimeout(async () => {
+                const res = await callBackendAPI('saveWeekDayNotes', { semester: sem, week: w.weekLabel, notesObj: w.dayNotes });
+                showSavedStatus('save-status-class', !!(res && res.success));
+            }, 700);
+        };
+
         for (let i = 1; i <= 5; i++) {
             getEl(`note-day-${i}`).addEventListener('input', (e) => {
                 const w = weeksList[activeDayNoteWeekIdx];
                 if (!w) return;
                 const sem = getEl('input-semester').value;
                 w.dayNotes[i] = e.target.value;
-                saveDayNotesToLocal(sem, w.weekLabel, w.dayNotes);
-                renderDayNoteWeekTabs(false);
-                updatePreview();
-                showSavingStatus('save-status-class');
-                clearTimeout(noteSaveTimer);
-                noteSaveTimer = setTimeout(async () => {
-                    const res = await callBackendAPI('saveWeekDayNotes', { semester: sem, week: w.weekLabel, notesObj: w.dayNotes });
-                    showSavedStatus('save-status-class', !!(res && res.success));
-                }, 700);
+                triggerDayNotesSync(sem, w);
             });
+            if (getEl(`pnote-day-${i}`)) {
+                getEl(`pnote-day-${i}`).addEventListener('input', (e) => {
+                    const w = weeksList[activeDayNoteWeekIdx];
+                    const seat = getEl('input-seat') ? getEl('input-seat').value : '';
+                    if (!w || !seat) return;
+                    const sem = getEl('input-semester').value;
+                    if (!w.dayNotes.personalNotes) w.dayNotes.personalNotes = {};
+                    if (!w.dayNotes.personalNotes[seat]) w.dayNotes.personalNotes[seat] = { 1: '', 2: '', 3: '', 4: '', 5: '' };
+                    w.dayNotes.personalNotes[seat][i] = e.target.value;
+                    triggerDayNotesSync(sem, w);
+                });
+            }
         }
 
         // 綁定富文本編輯器互動（切換目標框、點擊圖片顯示調整面板、剪貼簿貼圖、拖曳放圖、選檔上傳）
