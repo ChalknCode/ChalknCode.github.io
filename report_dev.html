@@ -9,7 +9,7 @@
     <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&family=LXGW+WenKai+TC&family=Noto+Sans+TC:wght@400;500;700;900&family=Raleway:wght@400;600;700&display=swap" rel="stylesheet">
+    <link id="google-fonts-css" href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&family=LXGW+WenKai+TC&family=Noto+Sans+TC:wght@400;500;700;900&family=Raleway:wght@400;600;700&display=swap" rel="stylesheet" crossorigin="anonymous">
     
     <script src="https://cdn.jsdelivr.net/npm/modern-screenshot@4.6.0/dist/index.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -138,6 +138,14 @@
 
         /* 修復 Tailwind Preflight (img { display: block }) 導致 html2canvas 測量字體基線時整頁文字下沉的 Bug */
         img { display: inline-block; }
+
+        /* 防止 modern-screenshot 複製 getComputedStyle 的固定像素寬度後在 SVG <foreignObject> 內造成單行標題或日期異常折行 */
+        .auto-width-force {
+            width: auto !important;
+            inline-size: auto !important;
+            max-width: none !important;
+            white-space: nowrap !important;
+        }
 
         /* ================================================================ */
         /* ✨ 導師的話：富文本編輯器與預覽渲染樣式 (粗體、字級、清單、表格、圖片) */
@@ -618,19 +626,19 @@
                 <div id="report-template" class="report-page layout-landscape theme-bw relative z-10 shadow-2xl">
                     <!-- 頂部標題與學生姓名列（簡潔呈現班級標題與座號姓名） -->
                     <div class="flex justify-between items-end mb-3 border-b-2 border-slate-800 pb-2.5">
-                        <div>
-                            <div id="prev-semester" class="adjust-baseline text-xs text-text-light font-bold mb-0.5">--</div>
-                            <h1 id="prev-main-title" class="adjust-baseline text-2xl font-black text-text-main font-comfortaa tracking-wide">805 生活計點週報表</h1>
+                        <div class="auto-width-force shrink-0">
+                            <div id="prev-semester" class="auto-width-force adjust-baseline text-xs text-text-light font-bold mb-0.5">--</div>
+                            <h1 id="prev-main-title" class="auto-width-force adjust-baseline text-2xl font-black text-text-main font-comfortaa tracking-wide">805 生活計點週報表</h1>
                         </div>
-                        <div class="info-card px-4 py-1.5 flex items-center gap-3.5 shrink-0 whitespace-nowrap">
-                            <div>
-                                <div class="adjust-baseline text-[10px] font-bold text-gray-500 leading-none mb-1">座號</div>
-                                <div id="prev-seat" class="adjust-baseline text-xl font-black font-comfortaa leading-none">--</div>
+                        <div class="info-card auto-width-force px-4 py-1.5 flex items-center gap-3.5 shrink-0 whitespace-nowrap">
+                            <div class="auto-width-force">
+                                <div class="auto-width-force adjust-baseline text-[10px] font-bold text-gray-500 leading-none mb-1">座號</div>
+                                <div id="prev-seat" class="auto-width-force adjust-baseline text-xl font-black font-comfortaa leading-none">--</div>
                             </div>
-                            <div class="h-6 w-[1.5px] bg-slate-300"></div>
-                            <div>
-                                <div class="adjust-baseline text-[10px] font-bold text-gray-500 leading-none mb-1">姓名</div>
-                                <div id="prev-name" class="adjust-baseline text-xl font-black leading-none">--</div>
+                            <div class="h-6 w-[1.5px] bg-slate-300 shrink-0"></div>
+                            <div class="auto-width-force">
+                                <div class="auto-width-force adjust-baseline text-[10px] font-bold text-gray-500 leading-none mb-1">姓名</div>
+                                <div id="prev-name" class="auto-width-force adjust-baseline text-xl font-black leading-none">--</div>
                             </div>
                         </div>
                     </div>
@@ -1951,7 +1959,7 @@
             (st.records[i] || []).forEach(r => {
                 const color = r.points > 0 ? 'text-emerald-600' : 'text-red-600';
                 const sign = r.points > 0 ? '+' : '';
-                rowCells += `<div class="record-item items-start"><span class="adjust-baseline desc text-[12.5px] font-medium text-slate-800 whitespace-pre-wrap">${escHtml(r.reason)}</span><span class="adjust-baseline score text-[13px] ${color}">${sign}${r.points}</span></div>`;
+                rowCells += `<div class="record-item items-start"><span class="adjust-baseline desc text-[12.5px] font-medium text-slate-800 whitespace-pre-wrap">${escHtml(r.reason)}</span><span class="auto-width-force adjust-baseline score text-[13px] ${color}">${sign}${r.points}</span></div>`;
                 if (r.remarks) {
                     const formatted = String(r.remarks).split('\n').map(line => `└ ${escHtml(line)}`).join('\n');
                     rowCells += `<div class="adjust-baseline text-[10.5px] text-gray-500 whitespace-pre-wrap mt-0 pt-0 leading-snug mb-[4px] text-left">${formatted}</div>`;
@@ -1965,10 +1973,10 @@
         const thHeight = isUltraCompact ? 'h-[30px]' : 'h-[34px]';
         const thLine = isUltraCompact ? 'leading-[30px]' : 'leading-[34px]';
         const thHtml = dayNames.map((dName, idx) => `
-            <th class="text-center align-middle w-1/5 ${thHeight}">
-                <div class="adjust-baseline ${thLine} inline-block w-full">
-                    <span class="text-xs text-slate-700 font-bold">${dName}</span>
-                    <span class="text-[10.5px] font-bold text-gray-500 font-raleway ml-1">${dayHeaders[idx]}</span>
+            <th class="text-center align-middle w-1/5 ${thHeight} whitespace-nowrap">
+                <div class="adjust-baseline ${thLine} inline-block w-full whitespace-nowrap">
+                    <span class="auto-width-force text-xs text-slate-700 font-bold">${dName}</span>
+                    <span class="auto-width-force text-[10.5px] font-bold text-gray-500 font-raleway ml-1">${dayHeaders[idx]}</span>
                 </div>
             </th>
         `).join('');
@@ -1976,52 +1984,52 @@
         // 統一顯示「第X週加分、第X週扣分、第X週淨分、第X週總積分、第X週排名（使用截止至該週之班排，不顯示截止字樣）」
         const wName = escHtml(String(wState.weekLabel || '').replace(/\s+/g, ''));
         const statsHeaderHtml = isUltraCompact
-            ? `<div class="flex items-center justify-between gap-2 mb-2 bg-white border border-slate-300 rounded-lg px-3 py-1.5">
-                <div class="flex items-center gap-2">
-                    <span class="adjust-baseline inline-flex items-center justify-center text-sm font-black text-slate-900 bg-slate-200 px-2.5 py-0.5 rounded leading-snug">${escHtml(wState.weekLabel)}</span>
-                    <span class="adjust-baseline text-xs font-bold text-slate-600 font-comfortaa leading-snug">${formatShortDate(startD)} ~ ${formatShortDate(endD)}</span>
+            ? `<div class="flex items-center justify-between gap-2 mb-2 bg-white border border-slate-300 rounded-lg px-3 py-1.5 whitespace-nowrap">
+                <div class="flex items-center gap-2 auto-width-force">
+                    <span class="auto-width-force adjust-baseline inline-flex items-center justify-center text-sm font-black text-slate-900 bg-slate-200 px-2.5 py-0.5 rounded leading-snug">${escHtml(wState.weekLabel)}</span>
+                    <span class="auto-width-force adjust-baseline text-xs font-bold text-slate-600 font-comfortaa leading-snug">${formatShortDate(startD)} ~ ${formatShortDate(endD)}</span>
                 </div>
-                <div class="flex items-center gap-2.5 text-xs font-bold">
-                    <span class="adjust-baseline inline-flex items-center gap-1 text-slate-600 leading-snug">${wName}加分 <b class="font-comfortaa text-emerald-700">+${st.plus}</b></span>
+                <div class="flex items-center gap-2.5 text-xs font-bold auto-width-force">
+                    <span class="auto-width-force adjust-baseline inline-flex items-center gap-1 text-slate-600 leading-snug">${wName}加分 <b class="auto-width-force font-comfortaa text-emerald-700">+${st.plus}</b></span>
                     <span class="text-slate-300">|</span>
-                    <span class="adjust-baseline inline-flex items-center gap-1 text-slate-600 leading-snug">${wName}扣分 <b class="font-comfortaa text-red-600">${st.minus === 0 ? '0' : '-' + st.minus}</b></span>
+                    <span class="auto-width-force adjust-baseline inline-flex items-center gap-1 text-slate-600 leading-snug">${wName}扣分 <b class="auto-width-force font-comfortaa text-red-600">${st.minus === 0 ? '0' : '-' + st.minus}</b></span>
                     <span class="text-slate-300">|</span>
-                    <span class="adjust-baseline inline-flex items-center gap-1 text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 leading-snug">${wName}淨分 <b class="font-comfortaa">${st.net >= 0 ? '+' + st.net : st.net}</b></span>
-                    <span class="adjust-baseline inline-flex items-center gap-1 text-slate-900 bg-gray-100 px-2.5 py-0.5 rounded border-2 border-slate-700 leading-snug">${wName}總積分 <b class="font-comfortaa text-sm">${st.totalScore}</b></span>
-                    <span class="adjust-baseline inline-flex items-center gap-1 text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-500 leading-snug">${wName}排名 <b class="font-comfortaa">#${st.totalRank}</b></span>
+                    <span class="auto-width-force adjust-baseline inline-flex items-center gap-1 text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 leading-snug">${wName}淨分 <b class="auto-width-force font-comfortaa">${st.net >= 0 ? '+' + st.net : st.net}</b></span>
+                    <span class="auto-width-force adjust-baseline inline-flex items-center gap-1 text-slate-900 bg-gray-100 px-2.5 py-0.5 rounded border-2 border-slate-700 leading-snug">${wName}總積分 <b class="auto-width-force font-comfortaa text-sm">${st.totalScore}</b></span>
+                    <span class="auto-width-force adjust-baseline inline-flex items-center gap-1 text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-500 leading-snug">${wName}排名 <b class="auto-width-force font-comfortaa">#${st.totalRank}</b></span>
                 </div>
             </div>`
             : `<div class="flex gap-2 mb-2.5 w-full items-stretch">
-                <div class="info-card w-[26%] p-2.5 flex flex-col justify-between">
-                    <div class="flex justify-between w-full mb-1">
-                        <span class="adjust-baseline text-[10px] font-bold text-gray-500 leading-none">週次</span>
-                        <span class="adjust-baseline text-[10px] font-bold text-gray-500 leading-none">統計區間</span>
+                <div class="info-card w-[26%] p-2.5 flex flex-col justify-between shrink-0 whitespace-nowrap">
+                    <div class="flex justify-between w-full mb-1 whitespace-nowrap">
+                        <span class="auto-width-force adjust-baseline text-[10px] font-bold text-gray-500 leading-none">週次</span>
+                        <span class="auto-width-force adjust-baseline text-[10px] font-bold text-gray-500 leading-none">統計區間</span>
                     </div>
-                    <div class="flex justify-between w-full items-end">
-                        <span class="adjust-baseline text-lg font-black leading-none text-slate-900">${escHtml(wState.weekLabel)}</span>
-                        <span class="adjust-baseline text-[13px] font-bold font-comfortaa leading-none text-slate-700">${formatShortDate(startD)} ~ ${formatShortDate(endD)}</span>
+                    <div class="flex justify-between w-full items-end whitespace-nowrap">
+                        <span class="auto-width-force adjust-baseline text-lg font-black leading-none text-slate-900">${escHtml(wState.weekLabel)}</span>
+                        <span class="auto-width-force adjust-baseline text-[13px] font-bold font-comfortaa leading-none text-slate-700">${formatShortDate(startD)} ~ ${formatShortDate(endD)}</span>
                     </div>
                 </div>
                 <div class="flex flex-1 gap-1.5 items-stretch">
-                    <div class="stat-box flex-1 p-2 flex flex-col justify-between">
-                        <div class="adjust-baseline text-[10px] font-bold text-text-light mb-1 leading-none">${wName}加分</div>
-                        <div class="adjust-baseline text-lg font-black font-comfortaa text-emerald-700 leading-none">+${st.plus}</div>
+                    <div class="stat-box flex-1 p-2 flex flex-col justify-between whitespace-nowrap">
+                        <div class="auto-width-force adjust-baseline text-[10px] font-bold text-text-light mb-1 leading-none">${wName}加分</div>
+                        <div class="auto-width-force adjust-baseline text-lg font-black font-comfortaa text-emerald-700 leading-none">+${st.plus}</div>
                     </div>
-                    <div class="stat-box flex-1 p-2 flex flex-col justify-between">
-                        <div class="adjust-baseline text-[10px] font-bold text-text-light mb-1 leading-none">${wName}扣分</div>
-                        <div class="adjust-baseline text-lg font-black font-comfortaa text-red-600 leading-none">${st.minus === 0 ? '0' : '-' + st.minus}</div>
+                    <div class="stat-box flex-1 p-2 flex flex-col justify-between whitespace-nowrap">
+                        <div class="auto-width-force adjust-baseline text-[10px] font-bold text-text-light mb-1 leading-none">${wName}扣分</div>
+                        <div class="auto-width-force adjust-baseline text-lg font-black font-comfortaa text-red-600 leading-none">${st.minus === 0 ? '0' : '-' + st.minus}</div>
                     </div>
-                    <div class="stat-box flex-1 p-2 flex flex-col justify-between border-blue-200 bg-blue-50">
-                        <div class="adjust-baseline text-[10px] font-bold text-blue-800 mb-1 leading-none">${wName}淨分</div>
-                        <div class="adjust-baseline text-lg font-black font-comfortaa text-blue-700 leading-none">${st.net >= 0 ? '+' + st.net : st.net}</div>
+                    <div class="stat-box flex-1 p-2 flex flex-col justify-between border-blue-200 bg-blue-50 whitespace-nowrap">
+                        <div class="auto-width-force adjust-baseline text-[10px] font-bold text-blue-800 mb-1 leading-none">${wName}淨分</div>
+                        <div class="auto-width-force adjust-baseline text-lg font-black font-comfortaa text-blue-700 leading-none">${st.net >= 0 ? '+' + st.net : st.net}</div>
                     </div>
-                    <div class="stat-box stat-box-total flex-[1.2] p-2 border-[2px] border-[#374151] bg-[#f3f4f6] flex flex-col justify-between">
-                        <div class="adjust-baseline text-[10px] font-extrabold text-slate-800 mb-1 leading-none">${wName}總積分</div>
-                        <div class="adjust-baseline text-lg font-black font-comfortaa text-text-main leading-none">${st.totalScore}</div>
+                    <div class="stat-box stat-box-total flex-[1.2] p-2 border-[2px] border-[#374151] bg-[#f3f4f6] flex flex-col justify-between whitespace-nowrap">
+                        <div class="auto-width-force adjust-baseline text-[10px] font-extrabold text-slate-800 mb-1 leading-none">${wName}總積分</div>
+                        <div class="auto-width-force adjust-baseline text-lg font-black font-comfortaa text-text-main leading-none">${st.totalScore}</div>
                     </div>
-                    <div class="stat-box flex-1 p-2 border-emerald-600 bg-emerald-50 border-[2px] flex flex-col justify-between">
-                        <div class="adjust-baseline text-[10px] font-bold text-emerald-800 mb-1 leading-none">${wName}排名</div>
-                        <div class="adjust-baseline text-lg font-black font-comfortaa text-emerald-600 leading-none">${st.totalRank}</div>
+                    <div class="stat-box flex-1 p-2 border-emerald-600 bg-emerald-50 border-[2px] flex flex-col justify-between whitespace-nowrap">
+                        <div class="auto-width-force adjust-baseline text-[10px] font-bold text-emerald-800 mb-1 leading-none">${wName}排名</div>
+                        <div class="auto-width-force adjust-baseline text-lg font-black font-comfortaa text-emerald-600 leading-none">${st.totalRank}</div>
                     </div>
                 </div>
             </div>`;
@@ -2276,27 +2284,225 @@
 
     window.addEventListener('resize', adjustScale);
 
-    async function renderNodeToCanvas(node) {
-        // 優先使用方案 1：modern-screenshot（瀏覽器原生 <foreignObject> 渲染，100% 零文字下沉）
-        if (window.modernScreenshot && typeof window.modernScreenshot.domToCanvas === 'function') {
-            try {
-                return await window.modernScreenshot.domToCanvas(node, {
-                    scale: 2,
-                    backgroundColor: '#ffffff'
-                });
-            } catch (err) {
-                console.warn('modern-screenshot 切換至 html2canvas 備援：', err);
+    /* ============ Google Fonts 智慧子集 Base64 內嵌引擎（解決 SVG <foreignObject> 字體遺失與跑版） ============ */
+    let cachedGoogleFontsRawCss = null;
+    const woff2DataUrlCache = {};
+
+    function doesUnicodeRangeMatchText(rangeStr, codePoints) {
+        if (!rangeStr) return true;
+        const parts = String(rangeStr).split(',');
+        for (let i = 0; i < parts.length; i++) {
+            const token = parts[i].trim().replace(/^[uU]\+/, '');
+            if (!token) continue;
+            let start, end;
+            if (token.includes('-')) {
+                const segs = token.split('-');
+                start = parseInt(segs[0], 16);
+                end = parseInt(segs[1], 16);
+            } else if (token.includes('?')) {
+                start = parseInt(token.replace(/\?/g, '0'), 16);
+                end = parseInt(token.replace(/\?/g, 'F'), 16);
+            } else {
+                start = end = parseInt(token, 16);
+            }
+            if (isNaN(start) || isNaN(end)) continue;
+            for (let j = 0; j < codePoints.length; j++) {
+                const cp = codePoints[j];
+                if (cp >= start && cp <= end) return true;
             }
         }
+        return false;
+    }
+
+    async function fetchUrlAsBase64DataUrl(url) {
+        if (woff2DataUrlCache[url]) return woff2DataUrlCache[url];
+        const resp = await fetch(url, { mode: 'cors', credentials: 'omit' });
+        const blob = await resp.blob();
+        const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+        woff2DataUrlCache[url] = dataUrl;
+        return dataUrl;
+    }
+
+    function collectAllReportText() {
+        const chunks = [
+            '0123456789+-/.:~#%()[]【】「」『』、，。！？：；｜星期一二三四五六日週第學年度上下班級生活計點報表座號姓名統計區間加扣淨總積分排名導師學生確認家長的話簽名本無紀錄正常出勤病事公喪假早退補',
+            getEl('report-template') ? getEl('report-template').innerText : '',
+            getRichVal('input-class-comment'),
+            getRichVal('input-comment')
+        ];
+        weeksList.forEach(w => {
+            chunks.push(w.weekLabel || '', w.startDate || '', w.endDate || '');
+            if (w.dayNotes) {
+                chunks.push(JSON.stringify(w.dayNotes));
+            }
+            Object.values(w.students || {}).forEach(s => {
+                chunks.push(s.name || '', s.seatNo || '', s.comment || '');
+                Object.values(s.records || {}).forEach(arr => {
+                    (arr || []).forEach(r => chunks.push(r.reason || '', r.remarks || ''));
+                });
+            });
+        });
+        return chunks.join('');
+    }
+
+    async function buildEmbeddedFontCssForText(rawText) {
+        try {
+            const cpSet = new Set();
+            for (let c = 0x20; c <= 0x7E; c++) cpSet.add(c);
+            for (const ch of String(rawText || '')) {
+                const cp = ch.codePointAt(0);
+                if (cp) cpSet.add(cp);
+            }
+            const codePoints = Array.from(cpSet);
+
+            if (!cachedGoogleFontsRawCss) {
+                const linkEl = getEl('google-fonts-css');
+                let rulesText = '';
+                if (linkEl && linkEl.sheet) {
+                    try {
+                        const rules = Array.from(linkEl.sheet.cssRules || []);
+                        if (rules.length > 0) {
+                            rulesText = rules.map(r => r.cssText).join('\n');
+                        }
+                    } catch (e) {}
+                }
+                if (!rulesText) {
+                    const fontCssUrl = linkEl ? linkEl.href : 'https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&family=LXGW+WenKai+TC&family=Noto+Sans+TC:wght@400;500;700;900&family=Raleway:wght@400;600;700&display=swap';
+                    const resp = await fetch(fontCssUrl);
+                    rulesText = await resp.text();
+                }
+                cachedGoogleFontsRawCss = rulesText;
+            }
+
+            const blocks = cachedGoogleFontsRawCss.match(/@font-face\s*\{[^}]+\}/g) || [];
+            const matchedBlocks = blocks.filter(block => {
+                const urMatch = block.match(/unicode-range:\s*([^;]+);/i);
+                return doesUnicodeRangeMatchText(urMatch ? urMatch[1] : '', codePoints);
+            });
+
+            const inlinedBlocks = await Promise.all(matchedBlocks.map(async (block) => {
+                const m = block.match(/url\((['"]?)(https:\/\/[^)'"]+)\1\)/i);
+                if (!m || !m[2]) return block;
+                try {
+                    const b64 = await fetchUrlAsBase64DataUrl(m[2]);
+                    return block.replace(m[0], `url("${b64}")`);
+                } catch (e) {
+                    return block;
+                }
+            }));
+
+            return inlinedBlocks.join('\n');
+        } catch (err) {
+            console.warn('字型 Base64 內嵌預處理失敗：', err);
+            return '';
+        }
+    }
+
+    function applyAutoWidthFixesToClone(rootNode) {
+        if (!rootNode || !rootNode.querySelectorAll) return;
+        rootNode.querySelectorAll('.auto-width-force').forEach(el => {
+            el.style.setProperty('width', 'auto', 'important');
+            el.style.setProperty('inline-size', 'auto', 'important');
+            el.style.setProperty('max-width', 'none', 'important');
+            el.style.setProperty('white-space', 'nowrap', 'important');
+        });
+    }
+
+    async function renderNodeToCanvas(node, embeddedFontCss = '') {
+        const w = node.offsetWidth || 971;
+        const h = node.offsetHeight || 688;
+        const scale = 2;
+
+        if (embeddedFontCss) {
+            const fontStyleEl = document.createElement('style');
+            fontStyleEl.className = 'export-inlined-fonts';
+            fontStyleEl.textContent = embeddedFontCss + '\n.auto-width-force { width: auto !important; inline-size: auto !important; max-width: none !important; white-space: nowrap !important; }';
+            node.insertBefore(fontStyleEl, node.firstChild);
+        }
+
+        // 優先使用方案 1：modern-screenshot 轉 SVG + 雙階段字型啟動繪製（100% 零文字下沉 ＋ 100% 完整內嵌字型與防折行）
+        if (window.modernScreenshot && typeof window.modernScreenshot.domToSvg === 'function') {
+            try {
+                let svgDataUrl = await window.modernScreenshot.domToSvg(node, {
+                    width: w,
+                    height: h,
+                    backgroundColor: '#ffffff',
+                    font: false,
+                    onCloneNode: (cloned) => {
+                        applyAutoWidthFixesToClone(cloned);
+                    }
+                });
+
+                if (embeddedFontCss && svgDataUrl.startsWith('data:image/svg+xml;charset=utf-8,')) {
+                    let rawSvg = decodeURIComponent(svgDataUrl.slice('data:image/svg+xml;charset=utf-8,'.length));
+                    if (!rawSvg.includes('data:font/woff2;base64')) {
+                        rawSvg = rawSvg.replace(/<svg([^>]*)>/i, `<svg$1><style>${embeddedFontCss}</style>`);
+                        svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(rawSvg);
+                    }
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = w * scale;
+                canvas.height = h * scale;
+                const ctx = canvas.getContext('2d');
+
+                await new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.width = w * scale;
+                    img.height = h * scale;
+                    img.style.cssText = `position:fixed;left:-9999px;top:0;width:${w * scale}px;height:${h * scale}px;opacity:0.01;pointer-events:none;z-index:-99;`;
+                    document.body.appendChild(img);
+
+                    img.onload = async () => {
+                        try {
+                            if (img.decode) {
+                                try { await img.decode(); } catch (e) {}
+                            }
+                            // 第 1 次繪製：觸發瀏覽器 SVGDocument 內部對 Base64 @font-face 的非同步解碼
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fillRect(0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                            // 等待 180ms 讓該 SVGDocument 完成所有內嵌字型解碼與重排版
+                            await new Promise(r => setTimeout(r, 180));
+
+                            // 第 2 次繪製：將已完成字型解碼的同一張 SVG 影像正式繪入高解析 Canvas
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fillRect(0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        } finally {
+                            img.remove();
+                        }
+                        resolve();
+                    };
+                    img.onerror = (e) => {
+                        img.remove();
+                        reject(e);
+                    };
+                    img.src = svgDataUrl;
+                });
+
+                return canvas;
+            } catch (err) {
+                console.warn('modern-screenshot SVG 雙階段渲染失敗，嘗試備援：', err);
+            }
+        }
+
         // 自動備援方案 2：已修復 Tailwind 圖片基線 Bug 的 html2canvas
         return await html2canvas(node, {
-            scale: 2,
+            scale: scale,
             useCORS: true,
             logging: false,
             backgroundColor: '#ffffff',
             onclone: (clonedDoc) => {
                 const s = clonedDoc.createElement('style');
-                s.textContent = 'img, svg { display: inline-block !important; }';
+                s.textContent = 'img, svg { display: inline !important; vertical-align: baseline !important; } .auto-width-force { width: auto !important; inline-size: auto !important; white-space: nowrap !important; }';
                 clonedDoc.head.appendChild(s);
             }
         });
@@ -2312,10 +2518,12 @@
         printArea.style.display = 'block';
         printArea.innerHTML = '';
 
-        // 確保 Google 網路字型（手寫體、圓體、思源黑體）已完整載入，避免測量失準
+        // 確保 Google 網路字型（手寫體、圓體、思源黑體）已完整載入並轉為 Base64 內嵌至匯出畫布
+        if (loaderText) loaderText.textContent = '正在載入並內嵌高畫質字型（防止跑版與字體遺失）...';
         if (document.fonts && document.fonts.ready) {
             try { await document.fonts.ready; } catch (e) {}
         }
+        const embeddedFontCss = (mode !== 'native_print') ? await buildEmbeddedFontCssForText(collectAllReportText()) : '';
 
         const currentSeat = getEl('input-seat').value;
         const savedChunkIdx = activeChunkIndex;
@@ -2360,7 +2568,7 @@
                     const w = clone.offsetWidth;
                     const h = clone.offsetHeight;
 
-                    const canvas = await renderNodeToCanvas(clone);
+                    const canvas = await renderNodeToCanvas(clone, embeddedFontCss);
                     const imgData = canvas.toDataURL('image/jpeg', 0.98);
 
                     if (!pdf) {
