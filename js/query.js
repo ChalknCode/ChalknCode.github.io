@@ -10,6 +10,34 @@ document.addEventListener('DOMContentLoaded', () => {
     let schoolAvgSubmode = 'interval'; // 'interval' or 'cumulative' – only used when chartMode==='school' and isAvg
     let radarMode = 'class'; // 'class' or 'school'
     const examCache = {};
+    const examPromiseCache = {};
+
+    function fetchExamDataCached(examName) {
+        if (!examName || !currentStudent) return Promise.resolve(null);
+        if (examCache[examName]) return Promise.resolve(examCache[examName]);
+        if (examPromiseCache[examName]) return examPromiseCache[examName];
+
+        const p = fetch(CONFIG.API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'getMajorExamData', examName: examName, seatNo: currentStudent.seatNo })
+        })
+        .then(r => r.json())
+        .then(res => {
+            delete examPromiseCache[examName];
+            if (res && !res.error && res.status !== 'error') {
+                examCache[examName] = res;
+            }
+            return res;
+        })
+        .catch(err => {
+            delete examPromiseCache[examName];
+            console.error('讀取段考失敗:', examName, err);
+            return null;
+        });
+
+        examPromiseCache[examName] = p;
+        return p;
+    }
 
     function parseRawScore(val) {
         if (val === undefined || val === null || val === '') {
@@ -214,6 +242,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             currentStudent = data;
             _savedIdNumber = idNumber; // 儲存供備忘錄使用
+
+            // 清空舊快取，若後端已在登入時一併回傳 examDataMap 則直接寫入快取（0 額外網路請求，圖表秒開）
+            Object.keys(examCache).forEach(k => delete examCache[k]);
+            Object.keys(examPromiseCache).forEach(k => delete examPromiseCache[k]);
+            if (data.examDataMap && typeof data.examDataMap === 'object') {
+                Object.keys(data.examDataMap).forEach(k => {
+                    if (data.examDataMap[k] && !data.examDataMap[k].error) {
+                        examCache[k] = data.examDataMap[k];
+                    }
+                });
+            }
             
             const btnLife = document.getElementById('btn-life');
             const btnExam = document.getElementById('btn-exam');
@@ -354,17 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(radarCanvas) radarCanvas.style.opacity = '0.3';
 
         try {
-            let data = examCache[examName];
-            if (!data) {
-                const response = await fetch(CONFIG.API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'getMajorExamData', examName, seatNo: currentStudent.seatNo })
-                });
-                data = await response.json();
-                if (!data.error && data.status !== 'error') {
-                    examCache[examName] = data;
-                }
-            }
+            let data = await fetchExamDataCached(examName);
 
             // 🌟 轉學生防呆機制：若查無該學生於此段考之成績，自動排除該選項並換至有資料的段考
             if (data && (data.error || data.status === 'error')) {
@@ -390,19 +419,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     prevExamData = examCache[prevExamName];
                 } else {
                     prevExamData = null;
-                    // 背景預先載入前一次段考，載入完成後自動重繪表格以帶出進退步
-                    fetch(CONFIG.API_URL, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: 'getMajorExamData', examName: prevExamName, seatNo: currentStudent.seatNo })
-                    }).then(r => r.json()).then(pData => {
+                    // 背景預先載入前一次段考，與折線圖共用 Promise 不重複請求
+                    fetchExamDataCached(prevExamName).then(pData => {
                         if (pData && !pData.error && pData.status !== 'error') {
-                            examCache[prevExamName] = pData;
                             if (currentExamData && currentExamData.sheetName === examName) {
                                 prevExamData = pData;
                                 renderExamContent();
                             }
                         }
-                    }).catch(console.error);
+                    });
                 }
             } else {
                 prevExamData = null;
@@ -1039,14 +1064,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const exams = currentStudent.availableExams;
         
-        // 為了確保和雷達圖的分數來源完全一致，我們直接往後端拉取所有的段考成績
-        // 若已載入過 currentExamData，可以減少一次 request，但最穩的是全部平行拉取
-        const promises = exams.map(examName => {
-            return fetch(CONFIG.API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'getMajorExamData', examName: examName, seatNo: currentStudent.seatNo })
-            }).then(res => res.json()).catch(err => null);
-        });
+        // 共用快取與 Promise，若後端登入時已預載 examDataMap 則直接 0 延遲完成，否則也不會與 loadExamData 重複發請求
+        const promises = exams.map(examName => fetchExamDataCached(examName));
 
         // 在畫面上可以先顯示個 loading
         const ctx = canvas.getContext('2d');
